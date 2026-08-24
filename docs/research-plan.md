@@ -2,198 +2,230 @@
 
 **Issue:** #1 — Define research questions, hypotheses, and project scope
 
-## 1. Working title
+**Working title:** When Does a Local LLM Start to Break?
 
-**When Does a Local LLM Start to Break?**  
-*Quantization, Long Context, and Agent Reliability in Qwen3.8-27B*
+**Target model:** `Qwen/Qwen3.8-27B`
 
-Alternative framing for the final talk:
+**Plan date:** 2026-08-25
 
-- **The Local Intelligence Frontier** — capability, memory, and context on one machine.
-- **Lost in the Agent** — what happens when a local AI forgets its own work?
-- **How Much Context Does a Local LLM Really Have?**
+## 1. Motivation and central question
 
-The working title should not determine the result. Final naming happens after the strongest measured finding is known.
-
-## 2. Motivation
-
-The interesting local-LLM question is no longer simply whether a capable model can load on one computer. Quantized open-weight models can already fit on consumer systems and can participate in coding, retrieval, tool use, and multi-turn agent workflows.
-
-The unresolved practical question is:
-
-> **How much of the model's useful capability survives under the constraints that make local deployment practical?**
-
-Those constraints include:
+Quantized open-weight models can now fit on consumer systems and participate
+in retrieval, coding, tool use, and multi-turn agent workflows. The practical
+question is no longer only whether a model can load. It is how much useful
+capability survives under the constraints that make local deployment practical:
 
 - reduced weight precision;
 - very large prompts and growing histories;
-- limited memory bandwidth;
-- KV/cache growth;
+- limited memory bandwidth and KV-cache capacity;
 - prompt/prefill cost;
-- runtime/backend implementation;
-- tool-use and state-tracking over many turns.
+- runtime/backend behavior; and
+- tool use and state tracking over many turns.
 
-The project uses Qwen3.8-27B as an experimental subject for that broader question.
+The primary research question is:
 
-## 3. Central research question
+> **When does a local 27B-class model stop behaving reliably as we increase
+> context, reduce precision, and turn static prompts into long-running agent
+> trajectories?**
 
-> **When does a local 27B-class model stop behaving reliably as we increase context, reduce precision, and turn static prompts into long-running agent trajectories?**
+The project uses Qwen3.8-27B as an experimental subject, not as evidence that
+one model represents all local systems. We will measure three kinds of
+breakpoint:
 
-A useful conceptual model is:
+1. **Capability breakpoint:** task correctness falls below the short-context,
+   reference-precision baseline.
+2. **Systems breakpoint:** the request no longer fits available memory, or
+   latency/throughput becomes impractical for the declared setup.
+3. **Trajectory breakpoint:** an agent loses state, violates a tool contract,
+   or fails to reach the required end state as history grows.
+
+The useful model is a high-dimensional function:
 
 ```text
-Reliability = f(
+reliability = f(
     context_length,
     information_position,
-    task_semantic_difficulty,
+    task_difficulty,
     quantization,
     trajectory_length,
-    runtime/system_constraints
+    runtime_and_system_constraints
 )
 ```
 
-The core study will not attempt to fully identify this high-dimensional function. Instead, the numbered experiments isolate important interactions.
+The core study isolates selected interactions rather than trying to identify
+the whole function.
 
-## 4. Research questions
+## 2. Research questions
 
 ### RQ1 — Effective context
 
-Does Qwen3.8-27B's useful context window depend on what the model is being asked to do?
-
-We distinguish:
-
-- accepted / maximum context;
-- literal-retrieval context;
-- semantic-retrieval context;
-- multi-hop reasoning context;
-- repository reasoning context;
-- agent-history context.
-
-The project should avoid saying a model “has N tokens of context” when the underlying claim is only that the runtime accepts N tokens.
+Does useful context depend on the task? We distinguish the maximum context a
+runtime accepts from the length at which literal retrieval, semantic
+retrieval, multi-hop reasoning, repository reasoning, and agent history still
+work reliably.
 
 ### RQ2 — Position bias / Lost in the Middle
 
-When the same evidence appears at different relative positions inside an otherwise controlled context, does task success change?
-
-We care about whether performance at approximately the middle of context is lower than near the beginning or end, especially as total context grows.
+When equivalent evidence appears at different relative positions inside a
+controlled context, does task success change as total context grows?
 
 ### RQ3 — Quantization × context
 
-Is the capability gap between higher- and lower-precision variants approximately constant, or does it grow with context length and semantic difficulty?
-
-This is more important than a standalone “Q4 vs Q8” comparison.
+Is the capability gap between precision variants approximately constant, or
+does it grow with context length and semantic difficulty?
 
 ### RQ4 — Agent-history reliability
 
-As a tool-using agent accumulates its own observations, code snippets, failures, test output, and earlier conclusions, does it continue to reuse relevant discoveries reliably?
+As an agent accumulates observations, code snippets, failures, test output, and
+earlier conclusions, does it continue to reuse relevant discoveries reliably?
+This is the **Lost in the Agent** extension of the static context question.
 
-This motivates the **Lost in the Agent** experiment: bury a critical fact inside an accumulated trajectory rather than a static synthetic document.
+### RQ5 — More context versus better context
 
-### RQ5 — More context vs better context
-
-For repository-level tasks, does supplying a broader portion of the repository help, plateau, or hurt compared with a curated relevant subset?
-
-This tests whether context selection is more valuable than raw context capacity.
+For repository-level tasks, does a broader repository view help, plateau, or
+hurt compared with a curated relevant subset?
 
 ### RQ6 — Local systems trade-off
 
-What is the Pareto frontier among:
+What is the Pareto frontier among task success, memory, time to first token,
+prefill throughput, decode throughput, total task time, and optional energy?
 
-- task success;
-- memory;
-- time to first token;
-- prefill throughput;
-- decode throughput;
-- total task time;
-- optional energy usage?
+## 3. Core hypotheses
 
-The final recommendation should be a configuration trade-off, not simply “use the highest precision.”
+These are hypotheses, not findings. Each has a falsifiable prediction and a
+measurable dependent variable.
 
-## 5. Hypotheses
+| ID | Falsifiable prediction | Primary dependent variable | Minimum falsification test |
+| --- | --- | --- | --- |
+| **H1** | At a fixed long context, evidence near the middle has lower correctness than equivalent evidence near the beginning or end, and the gap grows with length. | Paired position-conditioned accuracy and the middle-vs-edge accuracy difference. | Compare matched examples across positions and bootstrap the paired difference directly. Do not use overlapping marginal confidence intervals as the decision rule. |
+| **H2** | Useful context differs by task: literal retrieval retains performance longer than semantic retrieval, which retains performance longer than multi-hop or repository reasoning. | Task-specific effective context length and accuracy-vs-length curve. | Apply the same breakpoint rule to all task families; reject the ordering if differences are not directionally stable across repeated instances. |
+| **H3** | Lower-bit weights have a larger capability/reliability penalty at long context than at short context while improving memory or throughput. | Accuracy loss, context × precision interaction, peak memory, TTFT, prefill tok/s, and decode tok/s. | Compare identical prompts and lengths across precision variants; test whether the long-minus-short loss is larger for lower precision. |
+| **H4** | A model can pass literal retrieval while failing semantically distributed or multi-hop evidence at the same nominal context length. | Literal, semantic, and multi-hop accuracy plus per-hop failure attribution. | Hold length and distractor budget fixed and compare matched task families. |
+| **H5** | End-state success and valid tool-call rate decline as retained agent history grows, even when individual turns remain locally plausible. | End-state success, valid tool calls, first unrecoverable failure step, retry count, prompt tokens, and `pass^k`. | Replay the same tasks at 1, 4, 8, and 16 tool turns with a fixed sandbox. |
+| **H6** | For repository tasks, a curated relevant subset can outperform a broad repository context on success and systems cost. | Test-passing success, diagnosis accuracy, input tokens, memory, latency, and cost per successful task. | Compare curated files, a local neighborhood, and broad context on the same pinned task and repository revision. |
+| **H7** | On long local agent workloads, prompt processing and repeated context ingestion can dominate decode speed. | TTFT, prefill tok/s, decode tok/s, total task time, and fraction of time spent in prefill. | Measure the same task across context lengths and report prefill and decode separately. |
 
-These are **hypotheses, not findings**.
+### Operational definitions
 
-### H1 — Position bias increases with context length
+- **Short-context reference:** the 8,192-token, reference-precision condition in
+  `exp_001`, with the same task prompt and generation settings.
+- **90% breakpoint:** the smallest tested length whose point estimate is below
+  90% of the corresponding short-context reference. Also report an 80%
+  sensitivity threshold; no threshold is universal.
+- **Task correctness:** exact match or a deterministic structured grader for
+  retrieval; task-specific answer keys for semantic and multi-hop tasks.
+  Free-form answers are not judged by an uncalibrated LLM alone.
+- **Agent success:** the environment reaches the required end state and all
+  mandatory policy/tool constraints pass. A plausible final message without a
+  correct state change is a failure.
+- **Uncertainty:** use repeated task instances and paired bootstrap intervals
+  for accuracy and success rates, reporting the number of instances.
 
-At sufficiently long contexts, accuracy at mid-context evidence positions will be lower than accuracy near prompt boundaries.
+## 4. Core experiment sequence
 
-Conceptually:
+The sequence isolates one variable before introducing the next. Experiment
+numbering follows the repository backlog and existing `experiments/README.md`.
 
-```text
-P(correct | evidence_position ≈ 0.5)
-<
-P(correct | evidence_position ≈ 0.05 or 0.95)
-```
+| Experiment | Status | Main question | Conditions | Hypotheses |
+| --- | --- | --- | --- | --- |
+| `exp_001-context_measurement` | Scaffolded | How does useful context change with length, evidence position, and task type? | 8k, 32k, 64k, 128k, 256k; positions 0.05, 0.25, 0.50, 0.75, 0.95; literal, semantic, multi-hop; reference precision. | H1, H2, H4 |
+| `exp_002-quantization_using_approach_a` | Scaffolded | What capability and systems trade-off comes from one reproducible quantization family? | Reference precision plus q8, q6, q5, q4 after the quantizer/runtime is frozen; short and long contexts; same task suite. | H3, H7 |
+| `exp_003-context_x_quantization` | Planned core | Does the context breakpoint move as precision is reduced? | A smaller factorial subset of `exp_001` × `exp_002`, expanded only after the interaction is observable. | H3; cross-check H1/H2 |
+| `exp_004-agent_context_growth` | Planned core | How does retained trajectory history affect reliable tool use? | Fixed local tool sandbox; 1, 4, 8, and 16 tool turns; repeated tasks; reference and selected quantized configurations. | H5, H7 |
+| `exp_005-repository_reasoning` | Planned core | Do synthetic context findings transfer to repository-level coding tasks? | Pinned repositories/tasks; curated files, local neighborhood, and broad context; machine-checkable tests; selected precision variants. | H6; cross-check H2/H3/H5 |
 
-We do not assume the curve must be perfectly U-shaped.
+`exp_005` is deliberately the repository-level validation experiment from
+Issue #11. The curated-versus-broad comparison is a factor inside that
+experiment, not a new `exp_005` name.
 
-### H2 — Effective context depends on task type
+The first three experiments are the minimum research core. `exp_004` is the
+strongest agent novelty angle and `exp_005` is the realism check.
 
-Literal key/value retrieval will retain accuracy at longer contexts than semantic retrieval, multi-hop reasoning, repository reasoning, or long agent trajectories.
+## 5. Measurement design
 
-Possible ordering to test, not assume:
+### Fixed reference setup
 
-```text
-literal retrieval
->= semantic retrieval
->= multi-hop reasoning
->= repository / agent tasks
-```
+Before collecting comparisons, record the exact model revision, tokenizer,
+inference runtime and version, quantizer, hardware, operating-system power
+mode, maximum output tokens, prompt template, and seed. The floating model
+name is not enough: every result must include a resolved revision or artifact
+checksum.
 
-### H3 — Quantization damage is context-dependent
+The core matrix is text-only and uses explicit non-thinking/instruct mode so
+hidden reasoning-token growth is not an uncontrolled second context variable.
+Thinking mode can be added as a labeled extension. Primary comparisons use
+greedy decoding (`temperature: 0.0`); repeated-sampling analyses get their own
+configuration.
 
-Lower precision may be nearly indistinguishable from a higher-precision baseline at short context but diverge more strongly at long context.
+### Context matrix
 
-The interaction term matters:
+`exp_001` starts with the existing configuration:
 
-```text
-loss(Q4 vs Q8 at long context)
->
-loss(Q4 vs Q8 at short context)
-```
+- context lengths: 8,192; 32,768; 65,536; 131,072; 262,144 tokens;
+- evidence positions: 5%, 25%, 50%, 75%, and 95% of the input;
+- task families: literal retrieval, semantic retrieval, and multi-hop
+  reasoning;
+- same evidence, distractor budget, prompt template, and answer key across
+  positions;
+- at least five independent task instances per pilot cell, increasing to ten
+  for any condition used in the presentation.
 
-A null result is equally valuable: if the gap is stable or negligible, that supports more aggressive local compression.
+For multi-hop instances, store the token position of every required evidence
+span rather than reducing the task to one average position. A failed 256k
+allocation is a systems outcome, not a missing data point.
 
-### H4 — Semantic difficulty exposes failures before literal retrieval does
+### Quantization matrix
 
-A model may pass classic needle/key retrieval while failing semantic and multi-hop tasks at the same context length.
+`exp_002` must name the actual quantizer and storage/runtime format before a
+result is treated as a comparison. “q4” alone is not a method. Record weight
+precision, activation precision, KV-cache precision, group size, calibration
+corpus, outlier policy, packing format, and runtime kernel path.
 
-### H5 — Agent reliability degrades with accumulated history
+Report:
 
-A critical fact discovered early in an agent trajectory may become less likely to influence later actions after many tool calls and context growth.
+- task accuracy and per-task failure cases;
+- peak host/device memory and model load time;
+- time to first token and total latency;
+- prefill tokens/second and decode tokens/second;
+- completion, OOM, timeout, or invalid-response status.
 
-### H6 — Curated repository context can outperform maximal context
+### Agent trajectory matrix
 
-A smaller, high-signal file set may outperform a much larger repository dump on diagnosis or implementation tasks.
+Use a small deterministic tool sandbox. Each task has a machine-checkable end
+state, explicit schemas, a bounded set of valid action paths, and controlled
+tool responses. Vary retained history while holding task, tools, and initial
+state fixed. Preserve model input, tool call, tool result, validation result,
+and timestamp/latency in every trajectory log.
 
-### H7 — Prefill becomes a first-class bottleneck
+Classify failures as:
 
-For long-context local agent workloads, total latency may be dominated by prompt processing and repeated context ingestion rather than decode speed alone.
+1. a bad decision on the current turn;
+2. a stale or lost fact from earlier history;
+3. a tool/schema violation;
+4. a recoverable error followed by success; or
+5. the first unrecoverable failure.
 
-## 6. Core contribution we want
+### Repository reasoning and context controls
 
-The strongest version of the work would contribute:
+`exp_005-repository_reasoning` uses pinned repositories and revisions. Initial
+tasks should include locating an implementation, identifying a seeded
+regression, tracing state mutation, diagnosing a failing test, and making a
+small test-verified fix.
 
-1. a reproducible definition and measurement of **effective context** for a local model;
-2. evidence about whether quantization interacts with long-context capability;
-3. an agent-oriented extension of positional-bias testing (**Lost in the Agent**);
-4. local-system measurements linking capability to memory and latency;
-5. a failure taxonomy that explains *how* long-running local behavior degrades;
-6. a practical configuration recommendation for local users.
+The context comparison uses the same underlying repository, task, and
+answer-bearing evidence:
 
-## 7. Core scope
+- **curated:** tightly selected relevant files;
+- **neighborhood:** relevant files plus their local imports/callers;
+- **broad:** a larger repository view where practical.
 
-The first complete version of the project should include:
+This is intentionally not described as the same information or token budget:
+the input length is one systems variable of interest. If a capability-only
+comparison is needed, add a matched-token distractor/random-selection control
+with the same input length. An oracle-curated condition may be used as an
+upper-bound diagnostic, but it is not a deployable baseline.
 
-- `exp_001` — context length × evidence position × task type;
-- `exp_002` — one concrete quantization approach and precision sweep;
-- `exp_003` — quantization × context interaction;
-- `exp_004` — agent history growth / Lost in the Agent;
-- `exp_005` — small repository-level validation.
-
-The first three are the minimum research core. `exp_004` is the strongest novelty/agent angle. `exp_005` is the realism check.
-
-## 8. Stretch scope
+## 6. Stretch scope
 
 Only add these after the core matrix is working:
 
@@ -201,56 +233,41 @@ Only add these after the core matrix is working:
 - alternate local runtimes;
 - KV-cache precision/compression;
 - power/energy per completed task;
-- other ~20–30B local models;
+- other 20–30B local models;
 - cloud frontier comparison;
-- image/vision agent tasks;
+- image/video agent tasks; and
 - million-token extrapolation or YaRN experiments.
 
-These are interesting, but each adds a new confounder.
+Stretch work must not delay the core answer.
 
-## 9. Explicit non-goals for v1
+## 7. Explicit non-goals for v1
 
-The v1 talk is **not** intended to:
+The first talk is not intended to:
 
 - prove a universal ranking of Qwen against all frontier models;
-- benchmark every Qwen variant;
-- benchmark every quantization algorithm;
+- benchmark every Qwen variant or quantization algorithm;
 - claim that one machine represents all local hardware;
 - measure training-time properties;
-- reproduce all LongBench/RULER/HELMET tasks;
-- optimize the inference engine itself;
-- claim causality for architectural mechanisms without direct evidence.
+- reproduce all LongBench, RULER, or HELMET tasks;
+- optimize the inference engine itself; or
+- claim architectural causality without direct evidence.
 
-## 10. What would make the talk interesting?
+## 8. Presentation-ready success criteria
 
-Any of the following would be a strong result:
+Issue #1 is complete when:
 
-- low-bit variants match high precision at short context but diverge sharply at long context;
-- quantization barely matters and context management dominates;
-- classic Lost in the Middle is weak or absent in Qwen3.8-27B;
-- literal retrieval remains strong while semantic/multi-hop performance collapses much earlier;
-- broad repository context hurts compared with curated files;
-- agent state tracking fails long before the formal context limit;
-- prefill cost, not generation speed, becomes the practical local bottleneck.
+1. RQ1–RQ6 and the hypotheses map to measurable metrics.
+2. `exp_001` reports paired position effects and task-specific breakpoints.
+3. `exp_002` reports an accuracy/performance Pareto comparison and separates
+   model failures from runtime failures.
+4. `exp_003` tests the context × precision interaction.
+5. `exp_004` reports end-state success, tool validity, and first unrecoverable
+   failure as history grows.
+6. `exp_005` connects synthetic findings to pinned repository tasks and
+   machine-checkable outcomes.
+7. Every figure can be regenerated from committed results, and every headline
+   claim names its experiment, task set, and uncertainty.
 
-A null result is not a failed experiment. If Q4 is robust, or position bias is minimal, that is useful evidence.
-
-## 11. Decision rules
-
-When trade-offs arise, prioritize in this order:
-
-1. reproducibility;
-2. interpretability / control of variables;
-3. real-world relevance;
-4. breadth of benchmark coverage;
-5. spectacle/demo value.
-
-## 12. Completion criteria for research planning
-
-Issue #1 can be considered complete when:
-
-- RQ1–RQ6 are accepted or revised explicitly;
-- hypotheses are falsifiable and map to measurable metrics;
-- core vs stretch scope is agreed;
-- every experiment maps to at least one research question;
-- no final result is implied in the wording of the experiment.
+The talk should answer “where does it break?” with a small table of measured
+breakpoints and representative failure traces, rather than one unqualified
+maximum-context number. A null result is useful evidence, not a failed study.
