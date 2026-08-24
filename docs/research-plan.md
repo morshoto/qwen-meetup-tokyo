@@ -97,8 +97,8 @@ measurable dependent variable.
 
 | ID | Falsifiable prediction | Primary dependent variable | Minimum falsification test |
 | --- | --- | --- | --- |
-| **H1** | At a fixed long context, evidence near the middle has lower correctness than equivalent evidence near the beginning or end, and the gap grows with length. | Paired position-conditioned accuracy and the middle-vs-edge accuracy difference. | Compare matched examples across positions and bootstrap the paired difference directly. Do not use overlapping marginal confidence intervals as the decision rule. |
-| **H2** | Useful context differs by task: literal retrieval retains performance longer than semantic retrieval, which retains performance longer than multi-hop or repository reasoning. | Task-specific effective context length and accuracy-vs-length curve. | Apply the same breakpoint rule to all task families; reject the ordering if differences are not directionally stable across repeated instances. |
+| **H1** | At a fixed long context, evidence near the middle has lower correctness than equivalent evidence near the beginning or end, and the gap grows with length. | The position gap `Δ_pos(C) = A_edge(C) - A_middle(C)` at each length and its context-length × position interaction. | Bootstrap the paired position gap at each length and a direct difference-in-differences or fitted interaction across lengths. The fixed-length contrast tests position bias; the across-length contrast tests whether it grows. Do not use overlapping marginal confidence intervals as the decision rule. |
+| **H2** | Useful context differs by task: literal retrieval retains performance longer than semantic retrieval, which retains performance longer than multi-hop or repository reasoning. | Task-specific effective context length and absolute accuracy-vs-length curve. | Apply the baseline-validity gate and the same breakpoint rule to all task families; report baseline-limited families without a relative breakpoint and reject the ordering if differences are not directionally stable across repeated instances. |
 | **H3** | Lower-bit weights have a larger capability/reliability penalty at long context than at short context while improving memory or throughput. | Accuracy loss, context × precision interaction, peak memory, TTFT, prefill tok/s, and decode tok/s. | Compare identical prompts and lengths across precision variants; test whether the long-minus-short loss is larger for lower precision. |
 | **H4** | A model can pass literal retrieval while failing semantically distributed or multi-hop evidence at the same nominal context length. | Literal, semantic, and multi-hop accuracy plus per-hop failure attribution. | Hold length and distractor budget fixed and compare matched task families. |
 | **H5** | End-state success and valid tool-call rate decline as retained agent history grows, even when individual turns remain locally plausible. | End-state success, valid tool calls, first unrecoverable failure step, retry count, prompt tokens, and `pass^k`. | Replay the same tasks at 1, 4, 8, and 16 tool turns with a fixed sandbox. |
@@ -113,6 +113,21 @@ measurable dependent variable.
   below 90% of the corresponding short-context reference, using the crossing
   rule in [`methodology.md`](methodology.md). Also report an 80% sensitivity
   threshold; no threshold is universal.
+- **Position interaction:** for each tested length `C`, define `A_edge(C)` as
+  the mean of the matched beginning and end conditions and calculate
+  `Δ_pos(C) = A_edge(C) - A_middle(C)`. Resample matched task instances to
+  bootstrap both each `Δ_pos(C)` and the predeclared contrast
+  `Δ_pos(C_long) - Δ_pos(C_short)`, or fit an equivalent context-length ×
+  position interaction. A positive long-minus-short contrast is evidence for
+  the “grows with length” component of H1; a fixed-length positive gap is the
+  separate evidence for positional bias.
+- **Baseline-validity gate:** report a relative effective-context breakpoint for
+  a task family only when its 8,192-token reference-precision baseline reaches
+  at least 80% accuracy over the predeclared scored instances. If it misses
+  that gate, classify the family as **baseline-limited** and do not rank its
+  relative breakpoint against other families. Always show the absolute
+  accuracy curve, successes/attempted scored trials, and runtime-failure
+  status for baseline-limited families.
 - **Task correctness:** exact match or a deterministic structured grader for
   retrieval; task-specific answer keys for semantic and multi-hop tasks.
   Free-form answers are not judged by an uncalibrated LLM alone.
@@ -253,12 +268,22 @@ The first talk is not intended to:
 - optimize the inference engine itself; or
 - claim architectural causality without direct evidence.
 
-## 8. Presentation-ready success criteria
+## 8. Issue #1 planning completion criteria
 
 Issue #1 is complete when:
 
-1. RQ1–RQ6 and the hypotheses map to measurable metrics.
-2. `exp_001` reports paired position effects and task-specific breakpoints.
+1. `docs/research-plan.md` exists and is reviewable on its own.
+2. Every planned core experiment maps to at least one hypothesis.
+3. Each hypothesis is falsifiable and names a measurable dependent variable.
+4. Core scope is small enough to execute before presentation synthesis.
+
+## 9. Project / presentation success criteria
+
+The full project is ready for presentation synthesis when:
+
+1. RQ1–RQ6 and the hypotheses map to measured results.
+2. `exp_001` reports paired position effects, the H1 interaction test, and
+   task-specific breakpoints with baseline-validity status.
 3. `exp_002` reports an accuracy/performance Pareto comparison and separates
    model failures from runtime failures.
 4. `exp_003` tests the context × precision interaction.

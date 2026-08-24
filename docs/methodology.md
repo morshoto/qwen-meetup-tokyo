@@ -153,6 +153,20 @@ Implementation requirements:
 - do not let prompt wrappers systematically move “5%” to a different effective location without accounting for them;
 - for multi-hop tasks, record each evidence span's position separately.
 
+For the position-bias analysis, define `A_edge(C)` as the mean of the matched
+beginning and end conditions at context length `C`, then calculate:
+
+```text
+Delta_pos(C) = A_edge(C) - A_middle(C)
+```
+
+Bootstrap matched task instances to estimate `Delta_pos(C)` at each length and
+the predeclared difference-in-differences
+`Delta_pos(C_long) - Delta_pos(C_short)`, or fit an equivalent context-length ×
+position interaction. The first contrast tests a position effect; the second
+tests whether that effect grows with context length. Do not use overlapping
+marginal confidence intervals as the decision rule.
+
 ## 7. Task ladder
 
 The core benchmark increases semantic difficulty deliberately.
@@ -196,6 +210,20 @@ For task family `T`, define a short-context baseline accuracy:
 ```text
 A_baseline(T) = accuracy at baseline context condition
 ```
+
+### Baseline validity and absolute reporting
+
+The relative breakpoint is meaningful only when the task family is already
+usable at the short-context reference. The primary gate is at least `0.80`
+accuracy at the 8,192-token reference-precision baseline, measured over the
+predeclared scored instances. Declare a different gate before collecting a
+phase if the task family requires it.
+
+If a family misses the gate, classify it as **baseline-limited** and do not
+report or rank a relative effective-context breakpoint for that family. Still
+report its absolute accuracy curve, successes/attempted scored trials, and
+runtime-failure status at every tested length. Relative breakpoints never
+replace the absolute curves.
 
 For the primary report, order the tested context lengths from shortest to
 longest and define the first sustained threshold crossing:
