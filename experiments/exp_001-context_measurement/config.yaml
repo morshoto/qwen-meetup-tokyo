@@ -1,0 +1,19 @@
+experiment:
+  id: exp_001
+  name: context_measurement
+  seed: 42
+
+model:
+  model: Qwen/Qwen3.8-27B
+  quantization: null
+
+context:
+  lengths: [8192, 32768, 65536, 131072, 262144]
+  evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
+  tasks: [literal_retrieval, semantic_retrieval, multi_hop]
+
+sampling:
+  temperature: 0.0
+
+output:
+  directory: results

@@ -1,0 +1,19 @@
+experiment:
+  id: exp_NNN
+  name: name
+  seed: 42
+
+model:
+  provider: local
+  model: null
+  quantization: null
+
+runtime:
+  backend: null
+
+sampling:
+  temperature: 0.0
+  max_tokens: 1024
+
+output:
+  directory: results

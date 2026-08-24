@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Experiment artifacts that are typically large or reproducible
+experiments/**/results/raw/
+experiments/**/results/cache/
+
+# Local model/runtime caches
+.cache/
+models/
