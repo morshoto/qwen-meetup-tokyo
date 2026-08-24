@@ -1,0 +1,36 @@
+name: 🛠 Engineering / Runtime / Benchmark Infrastructure
+description: Track reusable code, inference runtimes, telemetry, and benchmark infrastructure
+title: '🛠 '
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Summary / Context / Details
+      description: Describe the engineering problem and the reusable solution required.
+      value: |
+        Summary:
+
+        Context / Motivation:
+
+        Details:
+        - Components affected:
+        - Required interfaces:
+        - Reproducibility concerns:
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Define expected API behavior, tests, and documentation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Resources
+      description: Add runtime docs, repos, implementation references, or papers.
+    validations:
+      required: false

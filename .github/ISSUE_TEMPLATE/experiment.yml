@@ -1,0 +1,46 @@
+name: 🧪 Experiment
+description: Design, run, and document a numbered experiment
+title: '🧪 '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for work tied to a reproducible experiment under `experiments/exp_NNN-*`.
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Summary / Context / Details
+      description: Describe what the experiment tests and why it matters.
+      value: |
+        Summary:
+
+        Context / Motivation:
+
+        Details:
+        - Experiment ID:
+        - Research question:
+        - Hypotheses:
+        - Independent variables:
+        - Controlled variables:
+        - Metrics:
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Define the required runnable artifacts, results, and analysis.
+      placeholder: e.g. config committed, repeated trials complete, analysis notebook reruns, findings summarized.
+    validations:
+      required: true
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Resources
+      description: Add relevant papers, benchmark definitions, datasets, or implementation references.
+      placeholder: Paste links or notes.
+    validations:
+      required: false

@@ -1,0 +1,36 @@
+name: 📊 Analysis / Findings / Presentation
+description: Track statistical analysis, failure analysis, figures, and presentation synthesis
+title: '📊 '
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Summary / Context / Details
+      description: Describe the analysis or communication artifact and the evidence it should use.
+      value: |
+        Summary:
+
+        Context / Motivation:
+
+        Details:
+        - Inputs / experiment results:
+        - Questions to answer:
+        - Expected figures / tables / narrative:
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Define what must be reproducible, reviewed, or presentation-ready.
+    validations:
+      required: true
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Resources
+      description: Add relevant analysis references, examples, or presentation material.
+    validations:
+      required: false

@@ -1,0 +1,43 @@
+name: 🧭 Research / Related Work
+description: Track research questions, hypotheses, literature, and scope decisions
+title: '🧭 '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for research planning and literature work that shapes the experiments.
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Summary / Context / Details
+      description: Describe the research question, motivation, and requested work.
+      value: |
+        Summary:
+
+        Context / Motivation:
+
+        Details:
+        - Research question:
+        - Hypothesis / decision to make:
+        - Expected artifact:
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What must be true for this issue to be considered complete?
+      placeholder: Add measurable or reviewable completion criteria.
+    validations:
+      required: true
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Resources
+      description: Add papers, talks, benchmarks, repos, or other references.
+      placeholder: Paste links or citation notes.
+    validations:
+      required: false
