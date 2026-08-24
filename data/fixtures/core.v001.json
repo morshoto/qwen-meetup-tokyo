@@ -1,0 +1,15 @@
+{
+  "id": "fixture.core.v001",
+  "prompt": "prompts/prompt.qa.v001.txt",
+  "tasks": "tasks/core.v001.jsonl",
+  "context": {
+    "corpus": "corpora/synthetic.v001.json",
+    "seed": 1234,
+    "target_tokens": 64,
+    "evidence_position": 0.5
+  },
+  "provenance": {
+    "source": "project-generated",
+    "license": "CC0-1.0"
+  }
+}
