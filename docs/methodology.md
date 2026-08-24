@@ -58,6 +58,22 @@ Deterministic decoding does **not** remove the need for multiple task instances.
 
 For agent tasks, if deterministic decoding leads to brittle single-trajectory behavior, introduce a controlled nonzero sampling condition only as a separate analysis.
 
+### Seed policy
+
+Keep these seeds distinct in the run manifest:
+
+- **fixture seed:** generates or selects the task, filler, corpus, and initial
+  environment state;
+- **generation seed:** controls stochastic decoding when sampling is enabled;
+- **orchestration seed:** controls randomized tool scheduling or retry behavior,
+  if the harness has any.
+
+The primary deterministic run uses `temperature: 0.0` and still records all
+three seed fields. A repeated stochastic run must use a declared list of
+generation seeds and keep fixture/task IDs fixed so variation is attributable
+to decoding rather than a different problem. Never silently reseed a failed
+trial during analysis.
+
 ## 4. Trial count / phases
 
 Do not launch the full long-context matrix before validating the runner and task construction.
@@ -181,14 +197,25 @@ For task family `T`, define a short-context baseline accuracy:
 A_baseline(T) = accuracy at baseline context condition
 ```
 
-Then define:
+For the primary report, order the tested context lengths from shortest to
+longest and define the first sustained threshold crossing:
 
 ```text
-C_effective(T, q) = largest tested context C such that
-                    A(T, q, C) >= alpha * A_baseline(T, q)
+C_break(T, q, alpha) = smallest tested C_i where
+                       A(T, q, C_i) < alpha * A_baseline(T, q)
+                       and the next tested length is also below the threshold
 ```
 
-where `q` is quantization/configuration.
+The effective context is the tested length immediately before `C_break`. If
+the first tested length crosses the threshold, effective context is reported as
+`< first tested length`. If no crossing is observed, report the result as
+right-censored (`>= largest tested length`) rather than claiming an unlimited
+window. If there is only one tested length after the crossing, mark the
+crossing as provisional and show the non-sustained drop separately.
+
+Here `q` is the complete model/runtime/quantization configuration, not just a
+bit-width label. Use the same task instances and scorer for the baseline and
+each compared condition.
 
 ### Proposed default
 
@@ -207,37 +234,66 @@ The latter is more conservative and may be more relevant to uncontrolled real pr
 
 ### Exact/task accuracy
 
-Binary correctness under a deterministic scorer where possible.
+Binary correctness under a deterministic scorer where possible. Store each
+trial as `0` or `1`; report `successes / attempted scored trials`, `n`, and the
+percentage in `[0, 100]`.
 
 ### Semantic score
 
-Use only when exact matching is inappropriate. Prefer explicit answer normalization or structured expected concepts before using an LLM judge.
+Use only when exact matching is inappropriate. Prefer explicit answer
+normalization or structured expected concepts before using an LLM judge. Record
+the scorer name/version and score range; do not mix a 0–1 normalized score with
+an unnormalized judge score in one summary.
 
 ### Completion rate
 
 For agent/coding tasks:
 
 ```text
-successful final state / attempted tasks
+successful final states / attempted tasks
 ```
+
+Report as a rate in `[0, 1]` and percentage in `[0, 100]`. An attempted task
+whose runtime fails or times out remains in the denominator and has its status
+recorded separately.
 
 A “successful” implementation task should preferably be machine-checkable by tests.
 
 ### Tool-call validity
 
-Fraction of tool calls that are syntactically/schema-valid.
+Fraction of tool calls that are syntactically/schema-valid:
+
+```text
+valid tool calls / all emitted tool calls
+```
+
+Report the numerator, denominator, and rate in `[0, 1]`. A task with no
+emitted tool call is not silently treated as 100% valid; report it as
+`not_applicable` for this metric.
 
 ### Useful tool-call rate
 
-Optional/manual metric: whether a valid call plausibly advances the task. Keep separate from syntactic validity.
+Optional/manual metric: whether a valid call plausibly advances the task. Keep
+separate from syntactic validity, document the rubric, and report the number of
+calls judged.
 
 ### Recovery rate
 
-Among trajectories containing a defined error or failed action, fraction that return to a productive path and ultimately satisfy the task success condition.
+Among trajectories containing a defined error or failed action, fraction that
+return to a productive path and ultimately satisfy the task success condition.
+
+```text
+recovered error trajectories / trajectories with a defined recoverable error
+```
+
+Report the denominator and use `not_applicable` when no qualifying error was
+observed.
 
 ### Steps to solution
 
-Count model turns and tool calls separately.
+Count model turns and tool calls separately. Report both as integer counts per
+trajectory; do not call a tool call a model turn unless the harness defines
+those events as identical.
 
 ## 10. Systems metrics
 
@@ -245,13 +301,16 @@ Every runtime should expose as many of these as reliably possible.
 
 ### Time to first token (TTFT)
 
-Wall-clock time from generation request start until first generated token becomes available.
+Wall-clock time in seconds from generation request start until the first
+generated token becomes available.
 
 ### Prefill throughput
 
 ```text
 input tokens processed / prefill seconds
 ```
+
+Report the result in input tokens per second.
 
 If the runtime cannot expose prefill independently, report prompt-evaluation timing or clearly mark unavailable.
 
@@ -261,11 +320,14 @@ If the runtime cannot expose prefill independently, report prompt-evaluation tim
 generated tokens / decode seconds
 ```
 
+Report the result in generated tokens per second.
+
 Do not report “tok/s” without labeling input/prefill vs output/decode.
 
 ### Total model-call time
 
-End-to-end generation call duration.
+End-to-end generation call duration in seconds, excluding model load unless the
+run explicitly labels it as a cold-start measurement.
 
 ### Total task time
 
@@ -275,17 +337,29 @@ For agents:
 sum(model inference + tools + orchestration overhead)
 ```
 
+Report wall-clock seconds from task start until the success/failure terminal
+state. Include tool and orchestration time for agent tasks; report model-call
+time separately.
+
 ### Peak memory
 
-Record the best available process/system metric and state exactly how it is measured. On unified-memory systems, “VRAM” may be misleading; use peak resident/unified memory terminology appropriate to the measurement source.
+Record peak bytes using the best available process/system metric and state
+exactly how it is measured. On unified-memory systems, “VRAM” may be
+misleading; use peak resident/unified memory terminology appropriate to the
+measurement source. Do not report a number without the measurement source and
+sampling interval.
 
 ### Model artifact size
 
-Size on disk is not the same as peak memory. Record separately.
+Record bytes on disk separately from peak memory. Include the artifact format
+and whether auxiliary files such as a vision projector are included.
 
 ### Energy / power
 
-Stretch metric. Only report if the measurement method is stable and documented. Prefer task-level energy (Wh or joules) over a single instantaneous watt reading.
+Stretch metric. Only report if the measurement method is stable and documented.
+Prefer task-level energy in joules or watt-hours over a single instantaneous
+watt reading; record the sampling interval, device scope, and whether idle
+power is subtracted.
 
 ## 11. Quantization comparisons
 
@@ -355,7 +429,54 @@ cancelled
 
 Do not silently drop OOM or timeout cells. They define part of the practical frontier.
 
-## 15. Hardware/environment record
+## 15. Raw versus processed result provenance
+
+Raw trial records are the immutable evidence layer. Processed summaries,
+figures, and notebooks are derived layers and must never overwrite raw data.
+
+### Raw records
+
+Store one JSONL record per trial, including the complete status, model output
+or a durable reference to it, scores, telemetry, and required run metadata.
+Keep failed calls, OOMs, timeouts, and scorer errors as records. A rerun gets a
+new `run_id` and must not replace an earlier record with the same task/config
+combination.
+
+### Processed records
+
+Every processed table or figure must identify:
+
+- the input raw file(s) and their SHA-256 hashes;
+- the processing script/notebook and repository commit;
+- scorer and normalization versions;
+- filters, exclusions, and aggregation rules;
+- generation timestamp; and
+- the output artifact path.
+
+Processed data may add derived columns or summaries, but it must preserve the
+link back to `trial_id` and must not silently discard non-success statuses.
+
+### Required run manifest
+
+Each batch needs a small manifest containing at least:
+
+- `run_id`, experiment ID, configuration ID, and config hash;
+- model ID, revision/checksum, tokenizer revision, quantization artifact, and
+  KV/cache settings;
+- runtime/backend names and versions;
+- prompt, task, corpus, and generator revisions;
+- fixture, generation, and orchestration seeds;
+- target and actual token lengths/positions;
+- hardware/OS/environment identifiers;
+- repository Git SHA and command invocation;
+- UTC start/end timestamps and timezone;
+- raw record path and processed-output paths; and
+- operator notes for deviations, missing cells, OOMs, or timeouts.
+
+Do not put API keys, personal machine identifiers, or other secrets in a
+manifest. A redacted descriptive hardware label is sufficient.
+
+## 16. Hardware/environment record
 
 Every run batch should record:
 
@@ -372,7 +493,7 @@ Every run batch should record:
 
 Avoid committing personal machine identifiers or secrets.
 
-## 16. Experiment freeze rule
+## 17. Experiment freeze rule
 
 Once a main experiment starts, changes to:
 
@@ -389,7 +510,7 @@ must trigger either:
 
 Never merge incompatible runs into one plot without labeling them.
 
-## 17. Interpretation rules
+## 18. Interpretation rules
 
 - “Supports 262K” means accepted by the declared model/runtime configuration, not necessarily reliable reasoning at 262K.
 - A synthetic retrieval success does not imply repository/agent success.

@@ -109,9 +109,10 @@ measurable dependent variable.
 
 - **Short-context reference:** the 8,192-token, reference-precision condition in
   `exp_001`, with the same task prompt and generation settings.
-- **90% breakpoint:** the smallest tested length whose point estimate is below
-  90% of the corresponding short-context reference. Also report an 80%
-  sensitivity threshold; no threshold is universal.
+- **90% breakpoint:** the first sustained tested length whose point estimate is
+  below 90% of the corresponding short-context reference, using the crossing
+  rule in [`methodology.md`](methodology.md). Also report an 80% sensitivity
+  threshold; no threshold is universal.
 - **Task correctness:** exact match or a deterministic structured grader for
   retrieval; task-specific answer keys for semantic and multi-hop tasks.
   Free-form answers are not judged by an uncalibrated LLM alone.
