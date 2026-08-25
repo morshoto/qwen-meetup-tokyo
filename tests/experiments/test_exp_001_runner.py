@@ -15,27 +15,6 @@ sys.modules[SPEC.name] = runner
 SPEC.loader.exec_module(runner)
 
 
-class FixtureTokenizer:
-    def __init__(self) -> None:
-        self._token_to_id: dict[str, int] = {}
-        self._id_to_token: dict[int, str] = {}
-
-    def encode(self, text: str, *, add_special_tokens: bool = False) -> list[int]:
-        del add_special_tokens
-        ids = []
-        for token in text.split():
-            if token not in self._token_to_id:
-                token_id = len(self._token_to_id) + 1
-                self._token_to_id[token] = token_id
-                self._id_to_token[token_id] = token
-            ids.append(self._token_to_id[token])
-        return ids
-
-    def decode(self, token_ids: list[int], *, skip_special_tokens: bool = False) -> str:
-        del skip_special_tokens
-        return " ".join(self._id_to_token[token_id] for token_id in token_ids)
-
-
 class Exp001RunnerTests(unittest.TestCase):
     def test_planned_conditions_match_smoke_and_main_matrix(self) -> None:
         smoke = runner.planned_conditions("smoke")
@@ -105,26 +84,6 @@ class Exp001RunnerTests(unittest.TestCase):
         )
         self.assertEqual("tokenizer", request.metadata["context_tokenization_mode"])
         self.assertEqual(8192, request.metadata["actual_context_tokens"])
-
-    def test_build_tasks_accepts_a_tokenizer_aware_context_generator(self) -> None:
-        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v001.jsonl")
-        condition = runner.planned_conditions("smoke")[0]
-        generator = runner.TokenizerContextGenerator(runner.FixtureTokenizer())
-
-        tasks = runner.build_tasks(
-            catalog,
-            condition,
-            fixture_seed=42,
-            context_generator=generator,
-        )
-
-        request = tasks[0].build_request(
-            runner.qwen38_model_spec(),
-            runner.SamplingConfig(max_new_tokens=8),
-        )
-        self.assertEqual("tokenizer-v1", request.metadata["context_tokenization"])
-        self.assertEqual(8192, request.metadata["actual_context_tokens"])
-
 
 if __name__ == "__main__":
     unittest.main()

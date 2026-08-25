@@ -7,7 +7,6 @@ from .synthetic import (
     GeneratedContext,
     InferenceTokenizer,
     SyntheticContextGenerator,
-    TokenizerContextGenerator,
 )
 
 __all__ = [
@@ -17,5 +16,4 @@ __all__ = [
     "GeneratedContext",
     "InferenceTokenizer",
     "SyntheticContextGenerator",
-    "TokenizerContextGenerator",
 ]

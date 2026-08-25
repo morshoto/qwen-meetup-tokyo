@@ -234,15 +234,3 @@ class SyntheticContextGenerator:
         if not tokens:
             raise ValueError("evidence text must contain at least one token")
         return tokens
-
-
-class TokenizerContextGenerator(SyntheticContextGenerator):
-    """Compatibility wrapper for callers that provide a raw tokenizer."""
-
-    def __init__(self, tokenizer: Any) -> None:
-        super().__init__(
-            tokenizer=InferenceTokenizer(
-                backend=tokenizer,
-                name=str(getattr(tokenizer, "name", "tokenizer-v1")),
-            )
-        )
