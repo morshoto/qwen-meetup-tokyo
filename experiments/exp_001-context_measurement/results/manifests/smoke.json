@@ -1,0 +1,248 @@
+{
+  "actual_trial_n": 18,
+  "backend": "fixture",
+  "coverage": [
+    {
+      "condition_id": "baseline:ctx008192:p005",
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx008192:p005",
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx008192:p005",
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx008192:p050",
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx008192:p050",
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx008192:p050",
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx008192:p095",
+      "requested_evidence_position": 0.95,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx008192:p095",
+      "requested_evidence_position": 0.95,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx008192:p095",
+      "requested_evidence_position": 0.95,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p005",
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p005",
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p005",
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p050",
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p050",
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p050",
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p095",
+      "requested_evidence_position": 0.95,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p095",
+      "requested_evidence_position": 0.95,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "baseline:ctx032768:p095",
+      "requested_evidence_position": 0.95,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    }
+  ],
+  "environment": {
+    "git_sha": "ea8cd9311d6fe0c90461576f3eafb8329a131b63",
+    "machine": "arm64",
+    "os": "Darwin",
+    "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+    "python_version": "3.13.7"
+  },
+  "excluded_cells": [],
+  "experiment_id": "exp_001",
+  "fixture_seed": 42,
+  "interpretation": "Fixture backend validates task construction, scoring, storage, and coverage only; it is not a Qwen measurement.",
+  "manifest_path": "experiments/exp_001-context_measurement/results/manifests/smoke.json",
+  "phase": "smoke",
+  "planned_cell_n": 18,
+  "planned_condition_n": 6,
+  "planned_trial_n": 18,
+  "raw_results": "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl",
+  "raw_results_sha256": "08dd153488d6f4c48a0c5fad528453bcf07b9c66323ca827df132241efacf94f",
+  "repeats": 1,
+  "schema_version": 1,
+  "task_catalog": "data/tasks/core.v001.jsonl",
+  "task_ids": [
+    "task.literal.000001",
+    "task.semantic.000001",
+    "task.multihop.000001"
+  ]
+}
