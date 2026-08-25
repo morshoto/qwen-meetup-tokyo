@@ -551,7 +551,7 @@ than filling the window.
 | Planned experiment | Prior work that motivates it | What this repository adds |
 | --- | --- | --- |
 | `exp_001-context_measurement` | Lost in the Middle; RULER; HELMET; NoLiMa; LongBench; Byerly & Khashabi; LPES | A compact position × length × task matrix with paired bootstrap effects and local resource logging. |
-| `exp_002-quantization_using_approach_a` | GPTQ; AWQ; SmoothQuant; QQQ; RAMP | A Qwen3.8-27B comparison naming the artifact/runtime and reporting task accuracy beside prefill/decode and memory. |
+| `exp_002-quantization_llama_cpp_gguf` | GPTQ; AWQ; SmoothQuant; QQQ; RAMP | A Qwen3.8-27B GGUF comparison naming the artifact/runtime and reporting task accuracy beside prefill/decode and memory. |
 | `exp_003-context_x_quantization` | AWQ; QQQ; RAMP; KIVI; KVQuant | Directly tests whether precision changes the context breakpoint rather than assuming a constant penalty. |
 | `exp_004-agent_context_growth` | AgentBench; tau-bench; ToolSandbox; MLPerf Edge Agentic | A deterministic local tool sandbox with intermediate validation, first-failure attribution, and repeated-trial reliability. |
 | `exp_005-repository_reasoning` | HELMET; LongBench v2; NoLiMa; SnapKV; repository-level agent work | A pinned, machine-checkable software-engineering validation of curated, neighborhood, and broad context. |

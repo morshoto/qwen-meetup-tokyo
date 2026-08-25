@@ -12,7 +12,7 @@ Examples:
 
 ```text
 exp_001-context_measurement/
-exp_002-quantization_using_approach_a/
+exp_002-quantization_llama_cpp_gguf/
 exp_003-context_x_quantization/
 exp_004-agent_context_growth/
 ```

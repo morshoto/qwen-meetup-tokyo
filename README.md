@@ -13,7 +13,7 @@ Research and presentation repository for a Qwen Meetup Tokyo talk investigating 
 ├── experiments/                  # numbered, self-contained experiments
 │   ├── _template/
 │   ├── exp_001-context_measurement/
-│   └── exp_002-quantization_using_approach_a/
+│   └── exp_002-quantization_llama_cpp_gguf/
 ├── src/llm_lab/                  # reusable local-LLM research library
 ├── tests/                        # tests for reusable library code
 ├── pyproject.toml

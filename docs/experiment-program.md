@@ -107,10 +107,14 @@ multi-hop reasoning
 
 # exp_002 — Quantization baseline
 
-**Current repository path:** `experiments/exp_002-quantization_using_approach_a/`  
+**Current repository path:** `experiments/exp_002-quantization_llama_cpp_gguf/`
 **Issue:** #8
 
-The `approach_a` name is temporary. Rename the experiment once the implementation is selected.
+The selected implementation is `llama.cpp` with GGUF artifacts through the
+`llama-cpp-python` binding. The primary variants are Q8_0, Q6_K, Q5_K_M, and
+Q4_K_M, with F16 retained as a reference when available. Every artifact must
+be tied to an exact source revision, conversion command, converter revision,
+SHA-256 digest, and byte size in the resolved manifest.
 
 ## Research questions
 
