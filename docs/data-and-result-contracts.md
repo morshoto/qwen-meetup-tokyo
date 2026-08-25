@@ -10,6 +10,13 @@ The committed v1 fixture uses `data/tasks/core.v001.jsonl`,
 `SyntheticContextGenerator` records the seed, tokenization convention, target
 length, and evidence offsets used to reproduce a context instance.
 
+Issue #6 formalizes the execution side of this contract: `EvaluationTask` adapts
+catalog definitions into generation requests, `ExpectedAnswerScorer` scores
+responses independently, `TrialResult` serializes one execution, and
+`JsonlResultWriter` appends records without allowing duplicate trial IDs.
+`aggregate_jsonl` produces notebook-ready summaries without counting unscored
+runtime or scorer failures as accuracy observations.
+
 ## 1. Directory roles
 
 ```text
@@ -270,7 +277,9 @@ Recommended JSONL record concept:
 }
 ```
 
-This is a **contract sketch**, not yet a frozen Python dataclass. The implementation issue should formalize it.
+The Python implementation freezes this shape at `schema_version = 1`; new fields
+should be additive and readers should reject unknown schema versions rather than
+silently reinterpret old evidence.
 
 ## 12. Trial ID
 

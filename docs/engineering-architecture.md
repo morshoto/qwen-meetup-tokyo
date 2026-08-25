@@ -160,6 +160,11 @@ Responsibilities:
 
 Generation and scoring must be separate so outputs can be rescored without rerunning the model.
 
+The implemented v1 path is `EvaluationTask` -> `Runtime.generate` -> `Scorer` ->
+`TrialResult`. `EvaluationRunner` repeats that path with deterministic trial IDs,
+`TelemetryCollector`, and append-only JSONL storage. `aggregate_jsonl` is the
+notebook-facing boundary for processed summaries.
+
 ### `datasets/`
 
 Responsibilities:

@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, runtime_checkable
 
+from llm_lab.datasets import TaskDefinition
 from llm_lab.generation import GenerationRequest, GenerationResponse, SamplingConfig
 from llm_lab.models import ModelSpec
 
@@ -31,6 +32,23 @@ class EvaluationTask:
     context: str
     expected: Mapping[str, Any]
     prompt_id: str = "prompt.qa.v001"
+
+    @classmethod
+    def from_definition(
+        cls,
+        definition: TaskDefinition,
+        *,
+        context: str,
+        prompt_id: str = "prompt.qa.v001",
+    ) -> "EvaluationTask":
+        return cls(
+            task_id=definition.task_id,
+            task_type=definition.task_type,
+            question=definition.question,
+            context=context,
+            expected=definition.expected,
+            prompt_id=prompt_id,
+        )
 
     def build_request(
         self,

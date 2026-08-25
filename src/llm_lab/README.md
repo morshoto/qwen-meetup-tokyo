@@ -52,4 +52,27 @@ python -m pip install 'llm-lab[transformers]'
 The Transformers adapter is lazy and injectable, so normal unit tests use fake
 processor/model components and do not download Qwen weights.
 
+## Evaluation flow
+
+The reusable runner records every attempt and can feed raw JSONL directly into
+the analysis helpers:
+
+```python
+from llm_lab.analysis import aggregate_jsonl, write_summary_csv
+from llm_lab.evaluation import EvaluationRunner, ExpectedAnswerScorer
+
+runner = EvaluationRunner(
+    runtime=runtime,
+    model=model,
+    scorer=ExpectedAnswerScorer(),
+    experiment_id="exp_001",
+    output_path="results/raw/trials.jsonl",
+)
+runner.run(tasks, repeats=3, condition_id="q8:ctx65536:p050")
+write_summary_csv("results/processed/summary.csv", aggregate_jsonl("results/raw/trials.jsonl"))
+```
+
+Execution failures remain trial records with a controlled status; they are not
+silently removed before aggregation.
+
 Experiment directories may import this package, but reusable package code must not import experiment-specific modules.

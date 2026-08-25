@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from llm_lab.evaluation import (
     EvaluationTask,
@@ -7,6 +8,7 @@ from llm_lab.evaluation import (
     Scorer,
     Task,
 )
+from llm_lab.datasets import TaskCatalog
 from llm_lab.generation import GenerationResponse, SamplingConfig
 from llm_lab.models import ModelSpec
 
@@ -37,6 +39,21 @@ class TaskAndScoringTests(unittest.TestCase):
         self.assertIn("The access code is ZX-4817.", request.prompt)
         self.assertIn("What is the access code?", request.prompt)
         self.assertEqual(5, request.sampling.max_new_tokens)
+
+    def test_catalog_definition_can_be_adapted_into_a_runnable_evaluation_task(self) -> None:
+        catalog = TaskCatalog.from_jsonl(
+            Path("data/tasks/core.v001.jsonl")
+        )
+        definition = catalog.get("task.literal.000001")
+
+        adapted = EvaluationTask.from_definition(
+            definition,
+            context=definition.evidence[0]["text"],
+        )
+
+        self.assertEqual(definition.task_id, adapted.task_id)
+        self.assertEqual(definition.expected, adapted.expected)
+        self.assertIn("Project Aurora", adapted.question)
 
     def test_expected_answer_scorer_handles_exact_and_normalized_answers(self) -> None:
         scorer = ExpectedAnswerScorer()
