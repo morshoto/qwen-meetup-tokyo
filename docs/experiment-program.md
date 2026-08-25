@@ -121,21 +121,22 @@ SHA-256 digest, and byte size in the resolved manifest.
 - RQ3 — quantization capability trade-off;
 - RQ6 — local systems Pareto frontier.
 
-## Decision required before main run
+## Selected approach
 
-Select **one quantization family/runtime approach** for the controlled first study.
-
-Candidates may include runtime-native or published artifacts appropriate to the selected local inference backend. The goal is not to compare quantizers yet; it is to compare precision levels while minimizing other changes.
+The controlled first study uses `llama.cpp` through `llama-cpp-python` with GGUF
+artifacts. Q8_0, Q6_K, Q5_K_M, and Q4_K_M are produced from one pinned F16
+conversion using the same `llama-quantize` revision. The goal is to compare
+precision levels while minimizing other changes.
 
 ## Proposed variants
 
-Where supported:
+The primary conditions are:
 
 ```text
-Q8
-Q6
-Q5
-Q4
+Q8_0
+Q6_K
+Q5_K_M
+Q4_K_M
 ```
 
 A higher-precision reference may be added if practical, but do not make full-precision execution a hard dependency if it prevents the study from running locally.

@@ -17,6 +17,10 @@ transformers = [
 llama-cpp = [
     "llama-cpp-python>=0.3",
 ]
+analysis = [
+    "matplotlib>=3.8",
+    "pandas>=2.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/llm_lab"]
