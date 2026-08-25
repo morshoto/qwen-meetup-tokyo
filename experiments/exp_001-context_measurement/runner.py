@@ -10,7 +10,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
+import tempfile
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -227,11 +229,25 @@ def run_experiment(
     output_path: Path,
     manifest_path: Path,
     fixture_seed: int = 42,
+    overwrite_smoke: bool = False,
 ) -> dict[str, Any]:
     """Execute one phase and write raw JSONL plus a coverage manifest."""
 
     output_path = _rooted(output_path)
     manifest_path = _rooted(manifest_path)
+    if overwrite_smoke and (phase != "smoke" or backend != "fixture"):
+        raise ValueError("overwrite_smoke is only supported for the fixture smoke phase")
+    if output_path == manifest_path:
+        raise ValueError("output and manifest paths must be different")
+    if not overwrite_smoke and (output_path.exists() or manifest_path.exists()):
+        raise FileExistsError(
+            "smoke output already exists; choose new paths or pass "
+            "--overwrite-smoke for an explicit fixture regeneration"
+        )
+
+    temporary_output = _temporary_sibling(output_path) if overwrite_smoke else None
+    temporary_manifest = _temporary_sibling(manifest_path) if overwrite_smoke else None
+    working_output_path = temporary_output or output_path
     catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
     model = qwen38_model_spec()
     context_tokenizer: ContextTokenizer | None = None
@@ -258,7 +274,7 @@ def run_experiment(
     else:
         raise ValueError(f"unsupported backend: {backend!r}")
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    working_output_path.parent.mkdir(parents=True, exist_ok=True)
     results: list[TrialResult] = []
     conditions = planned_conditions(phase)
     repeats = REPEATS[phase]
@@ -268,7 +284,7 @@ def run_experiment(
             model=model,
             scorer=ExpectedAnswerScorer(),
             experiment_id=EXPERIMENT_ID,
-            output_path=output_path,
+            output_path=working_output_path,
         )
         for condition in conditions:
             results.extend(
@@ -287,6 +303,8 @@ def run_experiment(
     finally:
         runtime.close()
 
+    if temporary_output is not None:
+        os.replace(temporary_output, output_path)
     manifest = _manifest(
         phase=phase,
         backend=backend,
@@ -299,11 +317,26 @@ def run_experiment(
         fixture_seed=fixture_seed,
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(
+    (temporary_manifest or manifest_path).write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    if temporary_manifest is not None:
+        os.replace(temporary_manifest, manifest_path)
     return manifest
+
+
+def _temporary_sibling(path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=path.parent,
+    )
+    os.close(descriptor)
+    temporary_path = Path(temporary_name)
+    temporary_path.unlink()
+    return temporary_path
 
 
 def _manifest(
@@ -397,6 +430,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--fixture-seed", type=int, default=42)
+    parser.add_argument(
+        "--overwrite-smoke",
+        action="store_true",
+        help="atomically regenerate existing fixture smoke artifacts",
+    )
     args = parser.parse_args(argv)
     output_path = args.output or ROOT / "experiments/exp_001-context_measurement/results/raw/{phase}-trials.jsonl".format(phase=args.phase)
     manifest_path = args.manifest or ROOT / "experiments/exp_001-context_measurement/results/manifests/{phase}.json".format(phase=args.phase)
@@ -406,6 +444,7 @@ def main(argv: list[str] | None = None) -> int:
         output_path=output_path,
         manifest_path=manifest_path,
         fixture_seed=args.fixture_seed,
+        overwrite_smoke=args.overwrite_smoke,
     )
     print(json.dumps({key: manifest[key] for key in (
         "phase", "backend", "actual_trial_n", "raw_results", "manifest_path"

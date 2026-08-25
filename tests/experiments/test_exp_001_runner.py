@@ -1,9 +1,11 @@
 import importlib.util
 import sys
+from tempfile import TemporaryDirectory
 import unittest
 from pathlib import Path
 
 from llm_lab.datasets import TaskCatalog
+from llm_lab.evaluation import load_trial_results
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -84,6 +86,41 @@ class Exp001RunnerTests(unittest.TestCase):
         )
         self.assertEqual("tokenizer", request.metadata["context_tokenization_mode"])
         self.assertEqual(8192, request.metadata["actual_context_tokens"])
+
+    def test_fixture_smoke_can_be_regenerated_without_duplicate_trial_ids(self) -> None:
+        results_root = ROOT / "experiments/exp_001-context_measurement/results"
+        with TemporaryDirectory(dir=results_root) as temporary_directory:
+            directory = Path(temporary_directory)
+            output_path = directory / "smoke-trials.jsonl"
+            manifest_path = directory / "smoke.json"
+
+            first = runner.run_experiment(
+                phase="smoke",
+                backend="fixture",
+                output_path=output_path,
+                manifest_path=manifest_path,
+                overwrite_smoke=True,
+            )
+            with self.assertRaises(FileExistsError):
+                runner.run_experiment(
+                    phase="smoke",
+                    backend="fixture",
+                    output_path=output_path,
+                    manifest_path=manifest_path,
+                )
+            second = runner.run_experiment(
+                phase="smoke",
+                backend="fixture",
+                output_path=output_path,
+                manifest_path=manifest_path,
+                overwrite_smoke=True,
+            )
+
+            self.assertEqual(18, first["actual_trial_n"])
+            self.assertEqual(18, second["actual_trial_n"])
+            persisted = load_trial_results(output_path)
+            self.assertEqual(18, len(persisted))
+            self.assertEqual(18, len({result.trial_id for result in persisted}))
 
 if __name__ == "__main__":
     unittest.main()

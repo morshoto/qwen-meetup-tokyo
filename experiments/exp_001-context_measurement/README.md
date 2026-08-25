@@ -39,7 +39,7 @@ experiment contract.
 ```bash
 # From the repository root; no model weights required.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
-  --phase smoke --backend fixture
+  --phase smoke --backend fixture --overwrite-smoke
 
 # Pilot/main runs use the optional local Transformers backend.
 python3 -m pip install -e '.[transformers,analysis]'
@@ -53,6 +53,9 @@ The fixture backend returns catalog answers by design. It validates task
 construction, evidence offsets, scoring, append-only storage, and coverage; it
 is not Qwen evidence and must not be copied into `docs/findings.md` as a model
 finding. The committed smoke manifest records all 18 harness cells as valid.
+The explicit `--overwrite-smoke` flag makes this deterministic fixture command
+safe to rerun against the committed artifact paths; other existing output paths
+fail closed so append-only trial data cannot be accidentally duplicated.
 The main matrix remains resource-dependent; runtime/OOM/timeout cells are kept
 in raw JSONL and listed as exclusions with reasons in the phase manifest.
 
@@ -61,8 +64,11 @@ in raw JSONL and listed as exclusions with reasons in the phase manifest.
 Each raw trial records the task/catalog provenance, fixture/task seeds, target and
 actual context counts, requested and actual evidence positions, evidence
 start/end offsets, model/runtime identity, score, status, timing, memory, and
-environment. The manifest records planned/actual counts, excluded cells, raw
-SHA-256, and the repository SHA.
+environment. Model-backed target context counts use the loaded inference
+tokenizer; final prompt token counts after chat formatting are recorded by the
+runtime. Fixture smoke is explicitly `whitespace-v1` harness data. The manifest
+records planned/actual counts, excluded cells, raw SHA-256, and the repository
+SHA.
 
 The committed smoke artifacts are:
 
