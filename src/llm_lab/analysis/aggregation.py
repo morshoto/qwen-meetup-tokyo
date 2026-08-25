@@ -52,6 +52,15 @@ def aggregate_trials(
                 "error_n": sum(result.status != TrialStatus.COMPLETED for result in group),
                 "scored_n": len(scored),
                 "accuracy": sum(scored) / len(scored) if scored else None,
+                "target_context_tokens": _common_input_value(
+                    group, "target_context_tokens"
+                ),
+                "requested_evidence_position": _common_input_value(
+                    group, "requested_evidence_position"
+                ),
+                "actual_evidence_position": _median(
+                    _numeric_input_values(group, "actual_evidence_position")
+                ),
                 "median_total_s": _median(total_seconds),
                 "median_ttft_s": _median(ttft_seconds),
                 "median_prefill_tokens_per_second": _median(prefill_rates),
@@ -94,3 +103,26 @@ def _numeric_values(
 
 def _median(values: list[float]) -> float | None:
     return median(values) if values else None
+
+
+def _common_input_value(
+    trials: Iterable[TrialResult],
+    key: str,
+) -> Any:
+    values = [trial.input.get(key) for trial in trials]
+    if not values or any(value is None for value in values):
+        return None
+    first = values[0]
+    return first if all(value == first for value in values[1:]) else None
+
+
+def _numeric_input_values(
+    trials: Iterable[TrialResult],
+    key: str,
+) -> list[float]:
+    values: list[float] = []
+    for trial in trials:
+        value = trial.input.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            values.append(float(value))
+    return values
