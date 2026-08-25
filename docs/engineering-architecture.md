@@ -4,6 +4,12 @@
 
 The reusable code under `src/llm_lab/` should support this research program without hard-coding Qwen, one runtime, or one experiment.
 
+The first implementation keeps that boundary concrete: model metadata and Qwen
+message formatting live under `models/`, request/response types live under
+`generation/`, and `QwenTransformersRuntime` is an optional adapter under
+`runtimes/`. Importing the common generation types does not require the
+Transformers or Torch packages.
+
 ## 1. Architectural rule
 
 Experiment directories describe **what to test**. `src/llm_lab/` implements **how to run reusable mechanics**.
@@ -153,6 +159,11 @@ Responsibilities:
 - task-specific metrics.
 
 Generation and scoring must be separate so outputs can be rescored without rerunning the model.
+
+The implemented v1 path is `EvaluationTask` -> `Runtime.generate` -> `Scorer` ->
+`TrialResult`. `EvaluationRunner` repeats that path with deterministic trial IDs,
+`TelemetryCollector`, and append-only JSONL storage. `aggregate_jsonl` is the
+notebook-facing boundary for processed summaries.
 
 ### `datasets/`
 

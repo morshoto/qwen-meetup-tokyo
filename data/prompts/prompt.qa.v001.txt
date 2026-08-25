@@ -1,0 +1,10 @@
+You are answering a benchmark question.
+
+Use only the evidence in the context. Return the shortest answer that satisfies the
+question. Do not explain your reasoning.
+
+Context:
+{context}
+
+Question: {question}
+Answer:

@@ -9,5 +9,11 @@ description = "Reusable infrastructure for local LLM research experiments"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.optional-dependencies]
+transformers = [
+    "transformers>=4.51.0",
+    "torch>=2.6",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/llm_lab"]

@@ -1,0 +1,12 @@
+{
+  "id": "corpus.synthetic.000001",
+  "version": 1,
+  "kind": "deterministic_filler",
+  "generator": "llm_lab.context.synthetic.SyntheticContextGenerator",
+  "tokenization": "whitespace-v1",
+  "default_seed": 1234,
+  "license": "CC0-1.0",
+  "provenance": "Project-generated neutral filler vocabulary; no external corpus is embedded.",
+  "evidence_placement": "insert evidence at the requested normalized token position, then fill to target length",
+  "reproduction": "Pass the seed, target token count, evidence text, and evidence position to the generator."
+}
