@@ -220,7 +220,7 @@
     }
   ],
   "environment": {
-    "git_sha": "e97b90a58bc8e2d5f1de022f49c1bb590f994a8b",
+    "git_sha": "b27f5fe7468fde83be6f2a53910a2a4b05cfcbd8",
     "machine": "arm64",
     "os": "Darwin",
     "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
@@ -236,7 +236,7 @@
   "planned_condition_n": 6,
   "planned_trial_n": 18,
   "raw_results": "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl",
-  "raw_results_sha256": "5d7f0280cbaac98b36bf4e6314a388c5be3146905fdce0cd27cc8dfcf6283e74",
+  "raw_results_sha256": "87aebeb292920f4e8ae8e6a18a477f95c0337206b1fa958ff512d5f9578e4f1a",
   "repeats": 1,
   "schema_version": 1,
   "task_catalog": "data/tasks/core.v001.jsonl",
