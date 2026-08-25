@@ -2,6 +2,7 @@
 
 from .contracts import EvaluationTask, ExpectedAnswerScorer, ScoreResult, Scorer, Task
 from .results import TrialResult, TrialStatus, make_trial_id
+from .runner import EvaluationRunner
 from .storage import JsonlResultWriter, load_trial_results
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     "make_trial_id",
     "JsonlResultWriter",
     "load_trial_results",
+    "EvaluationRunner",
 ]
