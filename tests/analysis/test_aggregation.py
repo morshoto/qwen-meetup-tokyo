@@ -112,6 +112,7 @@ class AggregationTests(unittest.TestCase):
             write_summary_csv(summary_path, summaries)
             with summary_path.open(newline="", encoding="utf-8") as source:
                 rows = list(csv.DictReader(source))
+            self.assertNotIn(b"\r", summary_path.read_bytes())
 
         self.assertEqual("semantic_retrieval", rows[0]["task_type"])
         self.assertEqual("1.0", rows[0]["accuracy"])
