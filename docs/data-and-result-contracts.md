@@ -4,6 +4,12 @@
 
 This document defines shared data structures. Exact serialization can evolve, but identifiers and provenance must remain stable enough for cross-experiment analysis.
 
+The committed v1 fixture uses `data/tasks/core.v001.jsonl`,
+`data/prompts/prompt.qa.v001.txt`, and `data/corpora/synthetic.v001.json`.
+`TaskCatalog` validates the machine-checkable task metadata, while
+`SyntheticContextGenerator` records the seed, tokenization convention, target
+length, and evidence offsets used to reproduce a context instance.
+
 ## 1. Directory roles
 
 ```text

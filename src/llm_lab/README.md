@@ -21,4 +21,35 @@ llm_lab/
 
 The package must not assume Qwen. Qwen-specific code should live behind model/runtime adapters so experiments can later compare other local models without restructuring the project.
 
+## Implemented interfaces
+
+The first reusable seams are available without installing a model backend:
+
+```python
+from llm_lab.generation import GenerationRequest, SamplingConfig
+from llm_lab.models import qwen38_model_spec
+from llm_lab.runtimes import QwenTransformersRuntime, RuntimeConfig
+
+model = qwen38_model_spec()
+runtime = QwenTransformersRuntime()
+runtime.load(model, RuntimeConfig(name="transformers", options={"device_map": "auto"}))
+response = runtime.generate(
+    GenerationRequest(
+        prompt="Answer with one word.",
+        model=model,
+        sampling=SamplingConfig(max_new_tokens=32),
+    )
+)
+runtime.close()
+```
+
+Install the optional backend only for a local model smoke test:
+
+```bash
+python -m pip install 'llm-lab[transformers]'
+```
+
+The Transformers adapter is lazy and injectable, so normal unit tests use fake
+processor/model components and do not download Qwen weights.
+
 Experiment directories may import this package, but reusable package code must not import experiment-specific modules.
