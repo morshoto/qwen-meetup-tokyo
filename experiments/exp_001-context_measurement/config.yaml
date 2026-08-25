@@ -1,19 +1,61 @@
 experiment:
   id: exp_001
   name: context_measurement
-  seed: 42
+  description: Baseline long-context measurement before quantization
+  fixture_seed: 42
+  task_catalog: data/tasks/core.v001.jsonl
+  prompt_template: data/prompts/prompt.qa.v001.txt
+  corpus_manifest: data/corpora/synthetic.v001.json
 
 model:
   model: Qwen/Qwen3.8-27B
+  revision: record-at-run-time
+  tokenizer_revision: record-at-run-time
   quantization: null
 
 context:
   lengths: [8192, 32768, 65536, 131072, 262144]
   evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
   tasks: [literal_retrieval, semantic_retrieval, multi_hop]
+  target_unit: inference-tokenizer-tokens
+  evidence_offsets: record-start-end-token-offsets
+
+phases:
+  smoke:
+    lengths: [8192, 32768]
+    evidence_positions: [0.05, 0.50, 0.95]
+    repeats: 1
+    backend: fixture
+    purpose: Validate context construction, scoring, storage, and coverage only.
+  pilot:
+    lengths: [8192, 32768, 65536]
+    evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
+    repeats: 5
+    purpose: Estimate runtime, variance, and resource exclusions.
+  main:
+    lengths: [8192, 32768, 65536, 131072, 262144]
+    evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
+    repeats: 20
+    purpose: Produce the baseline Qwen measurement when resources permit.
 
 sampling:
   temperature: 0.0
+  max_new_tokens: 32
+  generation_seed: record-at-run-time
+
+effective_context:
+  baseline_length: 8192
+  baseline_accuracy_gate: 0.80
+  alpha: 0.90
+  sensitivity_alphas: [0.85, 0.95]
+  crossing: first-sustained-below-threshold
+
+resource_policy:
+  highest_practical_length: record-at-run-time
+  excluded_cells: retain-in-manifest-with-reason
+  runtime_failures: remain-in-raw-results-and-denominator
 
 output:
-  directory: results
+  raw_directory: results/raw
+  processed_directory: results/processed
+  manifest_directory: results/manifests
