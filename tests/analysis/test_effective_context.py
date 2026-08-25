@@ -2,6 +2,7 @@ import unittest
 
 from llm_lab.analysis.effective_context import (
     effective_context_by_task,
+    effective_context_by_task_and_position,
     missing_context_cells,
     position_curve_rows,
 )
@@ -113,6 +114,36 @@ class EffectiveContextTests(unittest.TestCase):
         self.assertEqual("right_censored", result["status"])
         self.assertIsNone(result["crossing_context_tokens"])
         self.assertEqual(65536, result["largest_tested_context_tokens"])
+
+    def test_position_sensitive_effective_context_exposes_middle_collapse(self) -> None:
+        rows = []
+        for position in (0.05, 0.50, 0.95):
+            rows.append(summary("literal_retrieval", 8192, position, 1.0))
+            rows.append(
+                summary(
+                    "literal_retrieval",
+                    32768,
+                    position,
+                    0.5 if position == 0.50 else 1.0,
+                )
+            )
+            rows.append(
+                summary(
+                    "literal_retrieval",
+                    65536,
+                    position,
+                    0.4 if position == 0.50 else 1.0,
+                )
+            )
+
+        results = effective_context_by_task_and_position(rows)
+        middle = next(row for row in results if row["evidence_position"] == 0.50)
+        edge = next(row for row in results if row["evidence_position"] == 0.05)
+
+        self.assertEqual("estimated", middle["status"])
+        self.assertEqual(8192, middle["effective_context_tokens"])
+        self.assertEqual(32768, middle["crossing_context_tokens"])
+        self.assertEqual("right_censored", edge["status"])
 
 
 if __name__ == "__main__":

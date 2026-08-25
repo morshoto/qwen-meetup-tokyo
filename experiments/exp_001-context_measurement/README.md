@@ -91,7 +91,7 @@ It regenerates `results/processed/summary.csv`, audits coverage, and produces:
 
 1. evidence-position curves by task and context length;
 2. context degradation curves by task family;
-3. baseline-gated effective-context output;
+3. aggregate and evidence-position-conditioned effective-context output;
 4. systems-cost tables for prompt time, decode throughput, and peak memory when
    the runtime supplies those measurements.
 
