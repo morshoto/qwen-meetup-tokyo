@@ -22,7 +22,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from llm_lab.context import Evidence, SyntheticContextGenerator  # noqa: E402
+from llm_lab.context import (  # noqa: E402
+    ContextTokenizer,
+    Evidence,
+    InferenceTokenizer,
+    SyntheticContextGenerator,
+)
 from llm_lab.datasets import TaskCatalog  # noqa: E402
 from llm_lab.evaluation import (  # noqa: E402
     EvaluationRunner,
@@ -54,6 +59,36 @@ MAIN_CONTEXT_LENGTHS = (8192, 32768, 65536, 131072, 262144)
 SMOKE_POSITIONS = (0.05, 0.50, 0.95)
 FULL_POSITIONS = (0.05, 0.25, 0.50, 0.75, 0.95)
 REPEATS = {"smoke": 1, "pilot": 5, "main": 20}
+
+
+class FixtureTokenizer:
+    """Deterministic tokenizer used by tokenizer-contract tests only."""
+
+    name = "tokenizer-v1"
+
+    def __init__(self) -> None:
+        self._token_to_id: dict[str, int] = {}
+        self._id_to_token: dict[int, str] = {}
+
+    def encode(self, text: str, *, add_special_tokens: bool = False) -> list[int]:
+        del add_special_tokens
+        ids = []
+        for token in text.split():
+            if token not in self._token_to_id:
+                token_id = len(self._token_to_id) + 1
+                self._token_to_id[token] = token_id
+                self._id_to_token[token_id] = token
+            ids.append(self._token_to_id[token])
+        return ids
+
+    def decode(
+        self,
+        token_ids: list[int],
+        *,
+        skip_special_tokens: bool = False,
+    ) -> str:
+        del skip_special_tokens
+        return " ".join(self._id_to_token[token_id] for token_id in token_ids)
 
 
 @dataclass(frozen=True)
@@ -92,10 +127,11 @@ def build_tasks(
     condition: Condition,
     *,
     fixture_seed: int,
+    tokenizer: ContextTokenizer | None = None,
 ) -> list[EvaluationTask]:
     """Build reproducible evaluation tasks for one context/position condition."""
 
-    generator = SyntheticContextGenerator()
+    generator = SyntheticContextGenerator(tokenizer=tokenizer)
     tasks: list[EvaluationTask] = []
     for definition in catalog.tasks:
         task_seed = fixture_seed + int(definition.metadata["seed"])
@@ -126,6 +162,14 @@ def build_tasks(
             "evidence_spans": spans,
             "context_generator": generated.metadata["generator"],
             "context_tokenization": generated.metadata["tokenization"],
+            "context_tokenization_mode": generated.metadata.get(
+                "tokenization_mode", "whitespace-fixture"
+            ),
+            "target_unit": (
+                "inference-tokenizer-tokens"
+                if tokenizer is not None
+                else "whitespace-fixture-tokens"
+            ),
         }
         tasks.append(
             EvaluationTask.from_definition(
@@ -190,6 +234,7 @@ def run_experiment(
     manifest_path = _rooted(manifest_path)
     catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
     model = qwen38_model_spec()
+    context_tokenizer: ContextTokenizer | None = None
     if backend == "fixture":
         runtime: Any = FixtureRuntime()
     elif backend == "transformers":
@@ -203,6 +248,12 @@ def run_experiment(
                     "trust_remote_code": True,
                 },
             ),
+        )
+        tokenizer_id = model.tokenizer_id or model.model_id
+        revision = model.tokenizer_revision or "unresolved"
+        context_tokenizer = InferenceTokenizer(
+            backend=runtime.get_tokenizer(),
+            name=f"transformers:{tokenizer_id}@{revision}",
         )
     else:
         raise ValueError(f"unsupported backend: {backend!r}")
@@ -222,7 +273,12 @@ def run_experiment(
         for condition in conditions:
             results.extend(
                 runner.run(
-                    build_tasks(catalog, condition, fixture_seed=fixture_seed),
+                    build_tasks(
+                        catalog,
+                        condition,
+                        fixture_seed=fixture_seed,
+                        tokenizer=context_tokenizer,
+                    ),
                     repeats=repeats,
                     condition_id=condition.condition_id,
                     sampling=SamplingConfig(max_new_tokens=32, temperature=0.0),
