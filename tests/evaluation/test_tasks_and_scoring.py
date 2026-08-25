@@ -21,6 +21,10 @@ class TaskAndScoringTests(unittest.TestCase):
             question="What is the access code?",
             context="The access code is ZX-4817.",
             expected={"type": "exact", "value": "ZX-4817"},
+            metadata={
+                "target_context_tokens": 8192,
+                "requested_evidence_position": 0.05,
+            },
         )
         self.model = ModelSpec(
             model_id="fixture/model",
@@ -39,6 +43,8 @@ class TaskAndScoringTests(unittest.TestCase):
         self.assertIn("The access code is ZX-4817.", request.prompt)
         self.assertIn("What is the access code?", request.prompt)
         self.assertEqual(5, request.sampling.max_new_tokens)
+        self.assertEqual(8192, request.metadata["target_context_tokens"])
+        self.assertEqual(0.05, request.metadata["requested_evidence_position"])
 
     def test_catalog_definition_can_be_adapted_into_a_runnable_evaluation_task(self) -> None:
         catalog = TaskCatalog.from_jsonl(

@@ -53,13 +53,19 @@ class FailingScorer:
         raise ValueError("fixture scorer failed")
 
 
-def task(task_id: str, context: str) -> EvaluationTask:
+def task(
+    task_id: str,
+    context: str,
+    *,
+    metadata: dict[str, object] | None = None,
+) -> EvaluationTask:
     return EvaluationTask(
         task_id=task_id,
         task_type="literal_retrieval",
         question="What is the code?",
         context=context,
         expected={"type": "exact", "value": "ZX-4817"},
+        metadata=metadata or {},
     )
 
 
@@ -113,6 +119,41 @@ class EvaluationRunnerTests(unittest.TestCase):
         self.assertEqual("fixture backend unavailable", results[0].error["message"])
         self.assertEqual("invalid_output", results[1].score["details"]["reason"])
         self.assertIsNone(results[1].score["correct"])
+
+    def test_runner_preserves_task_metadata_in_trial_input(self) -> None:
+        runner = EvaluationRunner(
+            runtime=FixtureRuntime(),
+            model=ModelSpec(model_id="fixture/model"),
+            scorer=ExpectedAnswerScorer(),
+            experiment_id="exp_fixture",
+        )
+
+        [result] = runner.run(
+            [
+                task(
+                    "task.context",
+                    "The code is ZX-4817.",
+                    metadata={
+                        "target_context_tokens": 8192,
+                        "requested_evidence_position": 0.05,
+                        "actual_evidence_position": 0.047,
+                        "evidence_spans": [
+                            {"id": "code", "token_start": 410, "token_end": 413}
+                        ],
+                    },
+                )
+            ],
+            condition_id="baseline:ctx08192:p005",
+        )
+
+        self.assertEqual(8192, result.input["target_context_tokens"])
+        self.assertEqual(0.05, result.input["requested_evidence_position"])
+        self.assertEqual(0.047, result.input["actual_evidence_position"])
+        self.assertEqual(
+            [{"id": "code", "token_start": 410, "token_end": 413}],
+            result.input["evidence_spans"],
+        )
+        self.assertEqual(4, result.input["prompt_tokens"])
 
     def test_runner_records_scorer_failures_after_generation(self) -> None:
         runner = EvaluationRunner(
