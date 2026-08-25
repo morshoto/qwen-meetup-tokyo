@@ -241,7 +241,7 @@ def run_experiment(
         raise ValueError("output and manifest paths must be different")
     if not overwrite_smoke and (output_path.exists() or manifest_path.exists()):
         raise FileExistsError(
-            "smoke output already exists; choose new paths or pass "
+            "output or manifest already exists; choose new paths or pass "
             "--overwrite-smoke for an explicit fixture regeneration"
         )
 
@@ -279,29 +279,34 @@ def run_experiment(
     conditions = planned_conditions(phase)
     repeats = REPEATS[phase]
     try:
-        runner = EvaluationRunner(
-            runtime=runtime,
-            model=model,
-            scorer=ExpectedAnswerScorer(),
-            experiment_id=EXPERIMENT_ID,
-            output_path=working_output_path,
-        )
-        for condition in conditions:
-            results.extend(
-                runner.run(
-                    build_tasks(
-                        catalog,
-                        condition,
-                        fixture_seed=fixture_seed,
-                        tokenizer=context_tokenizer,
-                    ),
-                    repeats=repeats,
-                    condition_id=condition.condition_id,
-                    sampling=SamplingConfig(max_new_tokens=32, temperature=0.0),
-                )
+        try:
+            runner = EvaluationRunner(
+                runtime=runtime,
+                model=model,
+                scorer=ExpectedAnswerScorer(),
+                experiment_id=EXPERIMENT_ID,
+                output_path=working_output_path,
             )
-    finally:
-        runtime.close()
+            for condition in conditions:
+                results.extend(
+                    runner.run(
+                        build_tasks(
+                            catalog,
+                            condition,
+                            fixture_seed=fixture_seed,
+                            tokenizer=context_tokenizer,
+                        ),
+                        repeats=repeats,
+                        condition_id=condition.condition_id,
+                        sampling=SamplingConfig(max_new_tokens=32, temperature=0.0),
+                    )
+                )
+        finally:
+            runtime.close()
+    except BaseException:
+        _remove_temporary(temporary_output)
+        _remove_temporary(temporary_manifest)
+        raise
 
     if temporary_output is not None:
         os.replace(temporary_output, output_path)
@@ -317,12 +322,16 @@ def run_experiment(
         fixture_seed=fixture_seed,
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    (temporary_manifest or manifest_path).write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    if temporary_manifest is not None:
-        os.replace(temporary_manifest, manifest_path)
+    try:
+        (temporary_manifest or manifest_path).write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        if temporary_manifest is not None:
+            os.replace(temporary_manifest, manifest_path)
+    except BaseException:
+        _remove_temporary(temporary_manifest)
+        raise
     return manifest
 
 
@@ -337,6 +346,11 @@ def _temporary_sibling(path: Path) -> Path:
     temporary_path = Path(temporary_name)
     temporary_path.unlink()
     return temporary_path
+
+
+def _remove_temporary(path: Path | None) -> None:
+    if path is not None:
+        path.unlink(missing_ok=True)
 
 
 def _manifest(
