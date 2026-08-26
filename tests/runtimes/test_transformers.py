@@ -28,6 +28,10 @@ class FakeProcessor:
         self.skip_special_tokens = skip_special_tokens
         return "fixture answer"
 
+    def encode(self, text: str, *, add_special_tokens: bool) -> list[int]:
+        del add_special_tokens
+        return list(text.encode("utf-8"))
+
 
 class FakeModel:
     device = "cpu"
@@ -73,6 +77,7 @@ class TransformersRuntimeTests(unittest.TestCase):
 
         self.assertIsInstance(runtime, Runtime)
         runtime.load(model_spec, config)
+        self.assertIs(runtime.get_tokenizer(), processor)
         response = runtime.generate(
             GenerationRequest(
                 prompt="What is the answer?",

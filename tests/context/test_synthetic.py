@@ -3,6 +3,16 @@ import unittest
 from llm_lab.context.synthetic import Evidence, SyntheticContextGenerator
 
 
+class FakeCharacterTokenizer:
+    name = "fixture-character-v1"
+
+    def encode(self, text: str) -> list[int]:
+        return list(text.encode("utf-8"))
+
+    def decode(self, tokens: list[int]) -> str:
+        return bytes(tokens).decode("utf-8")
+
+
 class SyntheticContextGeneratorTests(unittest.TestCase):
     def test_generation_is_reproducible_at_an_exact_target_token_count(self) -> None:
         generator = SyntheticContextGenerator()
@@ -48,6 +58,23 @@ class SyntheticContextGeneratorTests(unittest.TestCase):
             generator.generate([evidence], target_tokens=10, evidence_position=1.1, seed=1)
         with self.assertRaises(ValueError):
             generator.generate([evidence], target_tokens=2, evidence_position=0.5, seed=1)
+
+    def test_tokenizer_path_targets_inference_tokens_and_records_offsets(self) -> None:
+        tokenizer = FakeCharacterTokenizer()
+        generator = SyntheticContextGenerator(tokenizer=tokenizer)
+        evidence = Evidence(id="evidence-1", text="The answer is ZX-4817.")
+
+        generated = generator.generate(
+            [evidence], target_tokens=96, evidence_position=0.5, seed=1234
+        )
+
+        self.assertEqual(96, generated.token_count)
+        self.assertEqual(96, len(tokenizer.encode(generated.text)))
+        self.assertIn(evidence.text, generated.text)
+        span = generated.evidence[0]
+        self.assertEqual(len(tokenizer.encode(evidence.text)), span.token_end - span.token_start)
+        self.assertEqual("fixture-character-v1", generated.metadata["tokenization"])
+        self.assertEqual("tokenizer", generated.metadata["tokenization_mode"])
 
 
 if __name__ == "__main__":

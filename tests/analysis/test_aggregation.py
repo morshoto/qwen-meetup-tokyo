@@ -20,13 +20,16 @@ def trial(
     status: TrialStatus,
     correct: bool | None,
     total_s: float | None,
+    metadata: dict[str, object] | None = None,
 ) -> TrialResult:
+    input_data = {"task_type": task_type, "condition_id": condition_id}
+    input_data.update(metadata or {})
     return TrialResult(
         trial_id=trial_id,
         experiment_id="exp_fixture",
         task_id=trial_id,
         status=status,
-        input={"task_type": task_type, "condition_id": condition_id},
+        input=input_data,
         score={} if correct is None else {"correct": correct, "value": float(correct)},
         timing={} if total_s is None else {"total_s": total_s},
     )
@@ -109,10 +112,47 @@ class AggregationTests(unittest.TestCase):
             write_summary_csv(summary_path, summaries)
             with summary_path.open(newline="", encoding="utf-8") as source:
                 rows = list(csv.DictReader(source))
+            self.assertNotIn(b"\r", summary_path.read_bytes())
 
         self.assertEqual("semantic_retrieval", rows[0]["task_type"])
         self.assertEqual("1.0", rows[0]["accuracy"])
         self.assertEqual("1", rows[0]["scored_n"])
+
+    def test_aggregation_preserves_context_dimensions_for_notebook_analysis(self) -> None:
+        summaries = aggregate_trials(
+            [
+                trial(
+                    "one",
+                    task_type="literal_retrieval",
+                    condition_id="ctx8192:p005",
+                    status=TrialStatus.COMPLETED,
+                    correct=True,
+                    total_s=1.0,
+                    metadata={
+                        "target_context_tokens": 8192,
+                        "requested_evidence_position": 0.05,
+                        "actual_evidence_position": 0.047,
+                    },
+                ),
+                trial(
+                    "two",
+                    task_type="literal_retrieval",
+                    condition_id="ctx8192:p005",
+                    status=TrialStatus.COMPLETED,
+                    correct=False,
+                    total_s=1.0,
+                    metadata={
+                        "target_context_tokens": 8192,
+                        "requested_evidence_position": 0.05,
+                        "actual_evidence_position": 0.053,
+                    },
+                ),
+            ]
+        )
+
+        self.assertEqual(8192, summaries[0]["target_context_tokens"])
+        self.assertEqual(0.05, summaries[0]["requested_evidence_position"])
+        self.assertAlmostEqual(0.05, summaries[0]["actual_evidence_position"])
 
 
 if __name__ == "__main__":

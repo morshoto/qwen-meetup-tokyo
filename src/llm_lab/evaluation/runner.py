@@ -164,6 +164,17 @@ class EvaluationRunner:
                 }
             )
         runtime = _runtime_record(self.runtime, response)
+        input_metadata = dict(request.metadata) if request is not None else {}
+        input_metadata.update(
+            {
+                "task_type": task.task_type,
+                "condition_id": condition_id,
+                "repeat_index": repeat_index,
+                "prompt_tokens": response.usage.prompt_tokens
+                if response is not None
+                else None,
+            }
+        )
         return TrialResult(
             trial_id=trial_id,
             experiment_id=self.experiment_id,
@@ -171,15 +182,7 @@ class EvaluationRunner:
             status=status,
             model=_model_record(self.model),
             runtime=runtime,
-            input={
-                "task_type": task.task_type,
-                "condition_id": condition_id,
-                "repeat_index": repeat_index,
-                "prompt_id": request.metadata.get("prompt_id") if request else None,
-                "prompt_tokens": response.usage.prompt_tokens
-                if response is not None
-                else None,
-            },
+            input=input_metadata,
             generation=_generation_record(response),
             score=score or {},
             timing=timing,

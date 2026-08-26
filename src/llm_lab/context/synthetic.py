@@ -4,7 +4,34 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any, Protocol, Sequence, runtime_checkable
+
+
+@runtime_checkable
+class ContextTokenizer(Protocol):
+    """Minimal tokenizer surface needed for exact context construction."""
+
+    name: str
+
+    def encode(self, text: str) -> Sequence[int]:
+        """Encode text without adding special tokens."""
+
+    def decode(self, tokens: Sequence[int]) -> str:
+        """Decode token IDs without removing ordinary text."""
+
+
+@dataclass(frozen=True)
+class InferenceTokenizer:
+    """Adapt a Transformers tokenizer to the context construction contract."""
+
+    backend: Any
+    name: str
+
+    def encode(self, text: str) -> list[int]:
+        return list(self.backend.encode(text, add_special_tokens=False))
+
+    def decode(self, tokens: Sequence[int]) -> str:
+        return str(self.backend.decode(list(tokens), skip_special_tokens=False))
 
 
 @dataclass(frozen=True)
@@ -38,11 +65,12 @@ class GeneratedContext:
 
 
 class SyntheticContextGenerator:
-    """Generate exact-length whitespace-token contexts from a seed.
+    """Generate exact-length contexts from a deterministic seed.
 
-    The generator intentionally does not pretend that whitespace tokens equal a
-    model's BPE tokens. It provides a stable, dependency-free fixture convention;
-    a future tokenizer-aware generator can use the same result contract.
+    Without a tokenizer, the generator retains the dependency-free
+    ``whitespace-v1`` fixture convention. A supplied tokenizer constructs and
+    validates the context in that tokenizer's token IDs, which is required for
+    model-backed context measurements.
     """
 
     _FILLER_WORDS = (
@@ -60,6 +88,11 @@ class SyntheticContextGenerator:
         "velvet",
     )
 
+    def __init__(self, tokenizer: ContextTokenizer | None = None) -> None:
+        if tokenizer is not None and not isinstance(tokenizer, ContextTokenizer):
+            raise TypeError("tokenizer must implement encode, decode, and name")
+        self._tokenizer = tokenizer
+
     def generate(
         self,
         evidence: Sequence[Evidence],
@@ -74,6 +107,14 @@ class SyntheticContextGenerator:
             raise ValueError("evidence_position must be between 0 and 1")
         if not evidence:
             raise ValueError("at least one evidence span is required")
+
+        if self._tokenizer is not None:
+            return self._generate_with_tokenizer(
+                evidence,
+                target_tokens=target_tokens,
+                evidence_position=evidence_position,
+                seed=seed,
+            )
 
         evidence_tokens = [self._tokenize(item.text) for item in evidence]
         evidence_token_count = sum(len(tokens) for tokens in evidence_tokens)
@@ -113,6 +154,76 @@ class SyntheticContextGenerator:
                 "generator": "synthetic.v001",
                 "seed": seed,
                 "tokenization": "whitespace-v1",
+                "target_tokens": target_tokens,
+            },
+        )
+
+    def _generate_with_tokenizer(
+        self,
+        evidence: Sequence[Evidence],
+        *,
+        target_tokens: int,
+        evidence_position: float,
+        seed: int,
+    ) -> GeneratedContext:
+        tokenizer = self._tokenizer
+        assert tokenizer is not None
+        evidence_tokens = [list(tokenizer.encode(item.text)) for item in evidence]
+        if any(not tokens for tokens in evidence_tokens):
+            raise ValueError("tokenizer produced no tokens for evidence text")
+        evidence_token_count = sum(len(tokens) for tokens in evidence_tokens)
+        filler_count = target_tokens - evidence_token_count
+        if filler_count < 0:
+            raise ValueError("target_tokens must fit all evidence tokens")
+
+        rng = random.Random(seed)
+        filler_tokens: list[int] = []
+        filler_index = 0
+        while len(filler_tokens) < filler_count:
+            word = self._FILLER_WORDS[rng.randrange(len(self._FILLER_WORDS))]
+            fragment = f" {word}-{filler_index:04d}"
+            fragment_tokens = list(tokenizer.encode(fragment))
+            if not fragment_tokens:
+                raise ValueError("tokenizer produced no tokens for filler text")
+            remaining = filler_count - len(filler_tokens)
+            filler_tokens.extend(fragment_tokens[:remaining])
+            filler_index += 1
+
+        insertion = round(filler_count * evidence_position)
+        token_ids = filler_tokens[:insertion]
+        spans: list[EvidenceSpan] = []
+        for item, item_tokens in zip(evidence, evidence_tokens):
+            start = len(token_ids)
+            token_ids.extend(item_tokens)
+            end = len(token_ids)
+            spans.append(
+                EvidenceSpan(
+                    id=item.id,
+                    text=item.text,
+                    token_start=start,
+                    token_end=end,
+                    requested_position=evidence_position,
+                    actual_position=start / max(1, filler_count),
+                )
+            )
+        token_ids.extend(filler_tokens[insertion:])
+        text = tokenizer.decode(token_ids)
+        round_trip_tokens = list(tokenizer.encode(text))
+        if len(round_trip_tokens) != target_tokens:
+            raise ValueError(
+                "tokenizer decode/encode round trip changed the requested "
+                f"token count: expected {target_tokens}, got {len(round_trip_tokens)}"
+            )
+
+        return GeneratedContext(
+            text=text,
+            token_count=len(round_trip_tokens),
+            evidence=tuple(spans),
+            metadata={
+                "generator": "synthetic.v001",
+                "seed": seed,
+                "tokenization": tokenizer.name,
+                "tokenization_mode": "tokenizer",
                 "target_tokens": target_tokens,
             },
         )
