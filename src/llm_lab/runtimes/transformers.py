@@ -51,6 +51,16 @@ class TransformersRuntime:
         self._model_spec = model
         self._runtime_config = config
 
+    def get_tokenizer(self) -> Any:
+        """Return the tokenizer used by the loaded processor for input encoding."""
+
+        if self._processor is None:
+            raise RuntimeError("runtime must be loaded before accessing its tokenizer")
+        tokenizer = getattr(self._processor, "tokenizer", self._processor)
+        if not hasattr(tokenizer, "encode") or not hasattr(tokenizer, "decode"):
+            raise RuntimeError("loaded processor does not expose a compatible tokenizer")
+        return tokenizer
+
     def generate(self, request: GenerationRequest) -> GenerationResponse:
         if self._processor is None or self._model is None or self._runtime_config is None:
             raise RuntimeError("runtime must be loaded before generation")

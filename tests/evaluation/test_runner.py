@@ -33,7 +33,7 @@ class FixtureRuntime:
             timing=GenerationTiming(
                 ttft_seconds=0.1,
                 prefill_seconds=0.2,
-                decode_seconds=0.05,
+                post_first_chunk_seconds=0.05,
                 total_seconds=0.25,
             ),
             runtime=RuntimeMetadata(
@@ -53,13 +53,19 @@ class FailingScorer:
         raise ValueError("fixture scorer failed")
 
 
-def task(task_id: str, context: str) -> EvaluationTask:
+def task(
+    task_id: str,
+    context: str,
+    *,
+    metadata: dict[str, object] | None = None,
+) -> EvaluationTask:
     return EvaluationTask(
         task_id=task_id,
         task_type="literal_retrieval",
         question="What is the code?",
         context=context,
         expected={"type": "exact", "value": "ZX-4817"},
+        metadata=metadata or {},
     )
 
 
@@ -93,6 +99,9 @@ class EvaluationRunnerTests(unittest.TestCase):
         self.assertEqual(True, results[0].score["correct"])
         self.assertEqual("fixture/tokenizer", results[0].runtime["tokenizer_id"])
         self.assertEqual(20.0, results[0].timing["prefill_tokens_per_second"])
+        self.assertEqual(0.1, results[0].timing["stream_ttft_s"])
+        self.assertEqual(40.0, results[0].timing["prompt_throughput_proxy_tok_s"])
+        self.assertEqual(20.0, results[0].timing["post_first_chunk_output_tok_s"])
 
     def test_runner_records_runtime_and_invalid_output_failures(self) -> None:
         runner = EvaluationRunner(
@@ -113,6 +122,41 @@ class EvaluationRunnerTests(unittest.TestCase):
         self.assertEqual("fixture backend unavailable", results[0].error["message"])
         self.assertEqual("invalid_output", results[1].score["details"]["reason"])
         self.assertIsNone(results[1].score["correct"])
+
+    def test_runner_preserves_task_metadata_in_trial_input(self) -> None:
+        runner = EvaluationRunner(
+            runtime=FixtureRuntime(),
+            model=ModelSpec(model_id="fixture/model"),
+            scorer=ExpectedAnswerScorer(),
+            experiment_id="exp_fixture",
+        )
+
+        [result] = runner.run(
+            [
+                task(
+                    "task.context",
+                    "The code is ZX-4817.",
+                    metadata={
+                        "target_context_tokens": 8192,
+                        "requested_evidence_position": 0.05,
+                        "actual_evidence_position": 0.047,
+                        "evidence_spans": [
+                            {"id": "code", "token_start": 410, "token_end": 413}
+                        ],
+                    },
+                )
+            ],
+            condition_id="baseline:ctx08192:p005",
+        )
+
+        self.assertEqual(8192, result.input["target_context_tokens"])
+        self.assertEqual(0.05, result.input["requested_evidence_position"])
+        self.assertEqual(0.047, result.input["actual_evidence_position"])
+        self.assertEqual(
+            [{"id": "code", "token_start": 410, "token_end": 413}],
+            result.input["evidence_spans"],
+        )
+        self.assertEqual(4, result.input["prompt_tokens"])
 
     def test_runner_records_scorer_failures_after_generation(self) -> None:
         runner = EvaluationRunner(

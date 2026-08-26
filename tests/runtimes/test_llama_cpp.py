@@ -74,9 +74,14 @@ class LlamaCppRuntimeTests(unittest.TestCase):
         self.assertEqual("llama.cpp", response.runtime.runtime_name)
         self.assertEqual("/models/q8_0.gguf", response.runtime.config["model_path"])
         self.assertEqual("first_stream_chunk", response.runtime.config["timing_source"])
+        self.assertEqual(
+            "stream_ttft_and_post_first_chunk_elapsed",
+            response.runtime.config["timing_semantics"],
+        )
         self.assertIsNotNone(response.timing.ttft_seconds)
-        self.assertIsNotNone(response.timing.prefill_seconds)
-        self.assertIsNotNone(response.timing.decode_seconds)
+        self.assertIsNone(response.timing.prefill_seconds)
+        self.assertIsNone(response.timing.decode_seconds)
+        self.assertIsNotNone(response.timing.post_first_chunk_seconds)
         self.assertGreaterEqual(response.timing.total_seconds or 0.0, 0.0)
         self.assertEqual(
             {

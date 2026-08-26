@@ -61,19 +61,30 @@ def manifest() -> QuantizationManifest:
     )
 
 
-def summary(condition_id: str, accuracy: float, scored_n: int = 10) -> dict[str, object]:
+def summary(
+    condition_id: str,
+    accuracy: float,
+    scored_n: int = 10,
+    *,
+    attempted_n: int | None = None,
+    correct_n: int | None = None,
+    error_n: int = 0,
+) -> dict[str, object]:
+    attempted_n = scored_n + error_n if attempted_n is None else attempted_n
     return {
         "experiment_id": "exp_002",
         "task_type": "literal_retrieval",
         "condition_id": condition_id,
         "n": scored_n,
         "completed_n": scored_n,
-        "error_n": 0,
+        "error_n": error_n,
         "scored_n": scored_n,
+        "attempted_n": attempted_n,
+        "correct_n": correct_n,
         "accuracy": accuracy,
-        "median_ttft_s": 1.0,
-        "median_prefill_tokens_per_second": 100.0,
-        "median_decode_tokens_per_second": 20.0,
+        "median_stream_ttft_s": 1.0,
+        "median_prompt_throughput_proxy_tok_s": 100.0,
+        "median_post_first_chunk_output_tok_s": 20.0,
         "median_peak_memory_bytes": 200,
     }
 
@@ -119,8 +130,43 @@ class QuantizationAnalysisTests(unittest.TestCase):
         recommendation = recommend_baseline(rows, accuracy_tolerance=0.03)
 
         self.assertEqual("q5_k_m", recommendation["condition_id"])
-        self.assertEqual(0.86, recommendation["best_accuracy"])
+        self.assertEqual(0.86, recommendation["best_end_to_end_success"])
         self.assertEqual(0.03, recommendation["accuracy_tolerance"])
+
+    def test_tradeoff_rows_reports_failures_and_recommendation_uses_end_to_end_success(self) -> None:
+        rows = tradeoff_rows(
+            [
+                summary(
+                    "q8_0",
+                    1.0,
+                    scored_n=8,
+                    attempted_n=10,
+                    correct_n=8,
+                    error_n=2,
+                ),
+                summary(
+                    "q6_k",
+                    0.875,
+                    scored_n=8,
+                    attempted_n=8,
+                    correct_n=7,
+                ),
+                summary("q5_k_m", 0.75, correct_n=6),
+                summary("q4_k_m", 0.5, correct_n=5),
+            ],
+            manifest(),
+        )
+
+        q8 = rows[0]
+        self.assertEqual(10, q8["attempted_n"])
+        self.assertEqual(8, q8["correct_n"])
+        self.assertEqual(1.0, q8["scored_accuracy"])
+        self.assertEqual(0.8, q8["end_to_end_success"])
+        self.assertEqual(0.2, q8["failure_rate"])
+
+        recommendation = recommend_baseline(rows, accuracy_tolerance=0.03)
+        self.assertEqual("q6_k", recommendation["condition_id"])
+        self.assertEqual(0.875, recommendation["best_end_to_end_success"])
 
     def test_notebook_contains_required_analysis_sections(self) -> None:
         notebook_path = Path(
@@ -137,6 +183,9 @@ class QuantizationAnalysisTests(unittest.TestCase):
             "tradeoff_rows",
             "accuracy_vs_memory",
             "speed_vs_memory",
+            "end_to_end_success",
+            "prompt_throughput_proxy_tok_s",
+            "post_first_chunk_output_tok_s",
             "recommend_baseline",
         ):
             self.assertIn(required, source)

@@ -1,4 +1,4 @@
-"""Optional llama.cpp/GGUF runtime adapter with stream-derived timings."""
+"""Optional llama.cpp/GGUF runtime adapter with explicit stream timings."""
 
 from __future__ import annotations
 
@@ -25,10 +25,11 @@ ClientLoader = Callable[[ModelSpec, RuntimeConfig], Any]
 class LlamaCppRuntime:
     """Run GGUF artifacts through the optional llama-cpp-python binding.
 
-    The binding's streaming API does not expose a portable first-token event
-    object, so ``ttft_seconds`` and ``prefill_seconds`` use the elapsed time to
-    the first streamed chunk. The response metadata records this explicitly so
-    the experiment does not confuse it with a backend-native prefill counter.
+    The binding's streaming API does not expose portable backend timing
+    counters. The response therefore records stream TTFT and elapsed time
+    after the first streamed chunk explicitly; it does not populate the shared
+    prefill/decode fields with measurements that could be mistaken for native
+    kernel counters.
     """
 
     name = "llama.cpp"
@@ -88,6 +89,9 @@ class LlamaCppRuntime:
         model_spec = self._model_spec or request.model
         runtime_options = dict(self._runtime_config.options)
         runtime_options["timing_source"] = "first_stream_chunk"
+        runtime_options["timing_semantics"] = (
+            "stream_ttft_and_post_first_chunk_elapsed"
+        )
         return GenerationResponse(
             output_text=output_text,
             usage=TokenUsage(
@@ -96,8 +100,7 @@ class LlamaCppRuntime:
             ),
             timing=GenerationTiming(
                 ttft_seconds=ttft_seconds,
-                prefill_seconds=ttft_seconds,
-                decode_seconds=decode_seconds,
+                post_first_chunk_seconds=decode_seconds,
                 total_seconds=total_seconds,
             ),
             runtime=RuntimeMetadata(

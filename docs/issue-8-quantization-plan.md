@@ -24,12 +24,13 @@ F16 reference when available.
 - A typed quantization manifest that records artifact source, revisions,
   conversion procedure, hashes, sizes, format, and runtime kernel.
 - An injectable `llama.cpp` runtime adapter that preserves the shared generation
-  contract and exposes stream-derived TTFT, prefill, and decode measurements.
+  contract and exposes explicitly named stream-derived TTFT and throughput
+  proxy measurements.
 - A renamed `exp_002-quantization_llama_cpp_gguf` protocol with fixed prompts,
   tasks, short/medium context lengths, greedy sampling, and Q8/Q6/Q5/Q4
   conditions.
-- Notebook-ready accuracy-vs-memory and speed-vs-memory tables/figures and a
-  data-driven recommendation rule.
+- Notebook-ready end-to-end-success-vs-memory and explicit stream-proxy
+  speed-vs-memory tables/figures and a data-driven recommendation rule.
 
 **Out of scope**
 
@@ -44,10 +45,10 @@ F16 reference when available.
 | --- | --- | --- | --- | --- |
 | B1 | A quantization manifest retains stable condition IDs and complete artifact provenance. | Unit | `tests/quantization/test_specs.py` | Duplicate conditions and incomplete hashes are rejected. |
 | B2 | The GGUF runtime loads a declared model path and forwards fixed sampling/runtime options. | Unit | `tests/runtimes/test_llama_cpp.py` | Uses an injected fake client; no model download. |
-| B3 | A streamed response records output, token usage, TTFT, prefill, decode, and runtime metadata. | Unit | `tests/runtimes/test_llama_cpp.py` | Stream timing is explicitly labelled as the measurement source. |
+| B3 | A streamed response records output, token usage, explicit stream timing proxies, and runtime metadata. | Unit | `tests/runtimes/test_llama_cpp.py` | Native prefill/decode fields remain unavailable for this binding. |
 | B4 | The renamed experiment declares the same model, prompt, tasks, sampling, context lengths, and quantization variants. | Contract / file | `tests/quantization/test_experiment_contract.py` | Q8_0, Q6_K, Q5_K_M, and Q4_K_M are required. |
 | B5 | Notebook-facing aggregation joins measured trial summaries to artifact size and emits required trade-off fields. | Unit | `tests/analysis/test_quantization.py` | Missing required conditions or metrics fail loudly. |
-| B6 | The recommendation selects the smallest measured artifact within a declared accuracy tolerance of the best measured accuracy. | Unit | `tests/analysis/test_quantization.py` | No recommendation is returned when measurements are incomplete. |
+| B6 | The recommendation selects the smallest measured artifact within a declared tolerance of the best end-to-end success. | Unit | `tests/analysis/test_quantization.py` | No recommendation is returned when measurements are incomplete. |
 
 ### Acceptance Criteria as Tests
 
@@ -56,8 +57,8 @@ F16 reference when available.
 | Quantization approach and runtime are named and documented. | B2, B4 | `test_experiment_config_names_llama_cpp_gguf_and_fixed_conditions` |
 | All compared artifacts are traceable to reproducible sources/procedures. | B1, B4 | `test_manifest_preserves_variant_provenance_and_controls` |
 | Short/medium runs use fixed prompts, tasks, runtime, and sampling. | B4 | `test_experiment_config_names_llama_cpp_gguf_and_fixed_conditions` |
-| Accuracy, memory, TTFT, prefill, and decode are available to analysis. | B3, B5 | `test_streamed_generation_records_measurement_fields` and `test_tradeoff_rows_join_required_metrics` |
-| Notebook analysis contains accuracy-vs-memory and speed-vs-memory comparisons. | B5 | `test_notebook_contains_required_analysis_sections` |
+| End-to-end success, failure rate, memory, and explicit stream timing proxies are available to analysis. | B3, B5 | `test_streamed_generation_records_measurement_fields` and `test_tradeoff_rows_join_required_metrics` |
+| Notebook analysis contains end-to-end-success-vs-memory and explicit stream-proxy speed-vs-memory comparisons. | B5 | `test_notebook_contains_required_analysis_sections` |
 | A recommended baseline is justified by measured data. | B6 | `test_recommendation_prefers_smallest_artifact_within_accuracy_tolerance` |
 
 ### Test-First Implementation Cycles
@@ -145,7 +146,8 @@ F16 reference when available.
 - Add `src/llm_lab/analysis/quantization.py` with joins, required-field checks,
   Pareto-ready rows, and recommendation selection.
 - Replace the placeholder notebook with cells that load recorded summaries and
-  the resolved manifest, plot accuracy-vs-memory and prefill/decode-vs-memory,
+  the resolved manifest, plot end-to-end-success-vs-memory and explicit
+  stream-proxy-vs-memory,
   and print the recommendation and limitations.
 - Run focused analysis tests and validate notebook JSON/syntax without claiming
   a result when `results/` is absent.

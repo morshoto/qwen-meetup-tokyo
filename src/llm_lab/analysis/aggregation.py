@@ -41,7 +41,23 @@ def aggregate_trials(
             "timing",
             "decode_tokens_per_second",
         )
+        stream_ttft = _numeric_values(group, "timing", "stream_ttft_s")
+        prompt_proxy_rates = _numeric_values(
+            group,
+            "timing",
+            "prompt_throughput_proxy_tok_s",
+        )
+        post_first_chunk_rates = _numeric_values(
+            group,
+            "timing",
+            "post_first_chunk_output_tok_s",
+        )
         peak_memory = _numeric_values(group, "memory", "peak_bytes")
+        correct_n = sum(
+            result.score.get("correct") is True for result in group
+        )
+        attempted_n = len(group)
+        failure_n = sum(result.status != TrialStatus.COMPLETED for result in group)
         summaries.append(
             {
                 "experiment_id": experiment_id,
@@ -50,12 +66,30 @@ def aggregate_trials(
                 "n": len(group),
                 "completed_n": sum(result.status == TrialStatus.COMPLETED for result in group),
                 "error_n": sum(result.status != TrialStatus.COMPLETED for result in group),
+                "attempted_n": attempted_n,
+                "correct_n": correct_n,
+                "failure_n": failure_n,
                 "scored_n": len(scored),
                 "accuracy": sum(scored) / len(scored) if scored else None,
+                "scored_accuracy": sum(scored) / len(scored) if scored else None,
+                "end_to_end_success": correct_n / attempted_n if attempted_n else None,
+                "failure_rate": failure_n / attempted_n if attempted_n else None,
+                "target_context_tokens": _common_input_value(
+                    group, "target_context_tokens"
+                ),
+                "requested_evidence_position": _common_input_value(
+                    group, "requested_evidence_position"
+                ),
+                "actual_evidence_position": _median(
+                    _numeric_input_values(group, "actual_evidence_position")
+                ),
                 "median_total_s": _median(total_seconds),
                 "median_ttft_s": _median(ttft_seconds),
                 "median_prefill_tokens_per_second": _median(prefill_rates),
                 "median_decode_tokens_per_second": _median(decode_rates),
+                "median_stream_ttft_s": _median(stream_ttft),
+                "median_prompt_throughput_proxy_tok_s": _median(prompt_proxy_rates),
+                "median_post_first_chunk_output_tok_s": _median(post_first_chunk_rates),
                 "median_peak_memory_bytes": _median(peak_memory),
             }
         )
@@ -74,7 +108,7 @@ def write_summary_csv(path: str | Path, summaries: Iterable[Mapping[str, Any]]) 
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="", encoding="utf-8") as output:
-        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer = csv.DictWriter(output, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 
@@ -94,3 +128,26 @@ def _numeric_values(
 
 def _median(values: list[float]) -> float | None:
     return median(values) if values else None
+
+
+def _common_input_value(
+    trials: Iterable[TrialResult],
+    key: str,
+) -> Any:
+    values = [trial.input.get(key) for trial in trials]
+    if not values or any(value is None for value in values):
+        return None
+    first = values[0]
+    return first if all(value == first for value in values[1:]) else None
+
+
+def _numeric_input_values(
+    trials: Iterable[TrialResult],
+    key: str,
+) -> list[float]:
+    values: list[float] = []
+    for trial in trials:
+        value = trial.input.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            values.append(float(value))
+    return values

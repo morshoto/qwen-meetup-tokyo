@@ -32,6 +32,7 @@ class EvaluationTask:
     context: str
     expected: Mapping[str, Any]
     prompt_id: str = "prompt.qa.v001"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_definition(
@@ -40,7 +41,10 @@ class EvaluationTask:
         *,
         context: str,
         prompt_id: str = "prompt.qa.v001",
+        metadata: Mapping[str, Any] | None = None,
     ) -> "EvaluationTask":
+        task_metadata = dict(definition.metadata)
+        task_metadata.update(metadata or {})
         return cls(
             task_id=definition.task_id,
             task_type=definition.task_type,
@@ -48,6 +52,7 @@ class EvaluationTask:
             context=context,
             expected=definition.expected,
             prompt_id=prompt_id,
+            metadata=task_metadata,
         )
 
     def build_request(
@@ -62,11 +67,13 @@ class EvaluationTask:
             f"Question: {self.question}\n"
             "Answer:"
         )
+        request_metadata = dict(self.metadata)
+        request_metadata.update({"task_id": self.task_id, "prompt_id": self.prompt_id})
         return GenerationRequest(
             prompt=prompt,
             model=model,
             sampling=sampling,
-            metadata={"task_id": self.task_id, "prompt_id": self.prompt_id},
+            metadata=request_metadata,
         )
 
 
