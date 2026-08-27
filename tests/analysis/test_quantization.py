@@ -1,4 +1,5 @@
 import json
+import math
 import unittest
 from pathlib import Path
 
@@ -168,6 +169,19 @@ class QuantizationAnalysisTests(unittest.TestCase):
         self.assertEqual("q6_k", recommendation["condition_id"])
         self.assertEqual(0.875, recommendation["best_end_to_end_success"])
 
+    def test_tradeoff_rows_rejects_non_finite_metrics(self) -> None:
+        summaries = [
+            summary(condition_id, 1.0)
+            for condition_id in ("q8_0", "q6_k", "q5_k_m", "q4_k_m")
+        ]
+        summaries[0]["median_peak_memory_bytes"] = math.nan
+
+        with self.assertRaisesRegex(
+            QuantizationAnalysisError,
+            "q8_0 is missing measured median_peak_memory_bytes",
+        ):
+            tradeoff_rows(summaries, manifest())
+
     def test_notebook_contains_required_analysis_sections(self) -> None:
         notebook_path = Path(
             "experiments/exp_002-quantization_llama_cpp_gguf/analysis.ipynb"
@@ -178,8 +192,8 @@ class QuantizationAnalysisTests(unittest.TestCase):
         )
 
         for required in (
-            "results/processed/summary.csv",
-            "results/manifest.json",
+            "SUMMARY_PATH = RESULTS_DIR / 'processed/summary.csv'",
+            "MANIFEST_PATH = RESULTS_DIR / 'manifest.json'",
             "tradeoff_rows",
             "accuracy_vs_memory",
             "speed_vs_memory",
@@ -189,6 +203,13 @@ class QuantizationAnalysisTests(unittest.TestCase):
             "recommend_baseline",
         ):
             self.assertIn(required, source)
+
+        self.assertIn("ROOT = next(", source)
+        self.assertIn(
+            "ROOT / 'experiments/exp_002-quantization_llama_cpp_gguf/results'",
+            source,
+        )
+        self.assertNotIn("SUMMARY_PATH = Path('results/processed/summary.csv')", source)
 
 
 if __name__ == "__main__":

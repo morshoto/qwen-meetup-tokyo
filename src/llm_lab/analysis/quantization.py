@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from math import isfinite
 from statistics import median
 from typing import Any, Iterable, Mapping
 
@@ -204,4 +205,9 @@ def _required_median(
 
 
 def _is_number(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        return isfinite(float(value))
+    except (OverflowError, ValueError):
+        return False
