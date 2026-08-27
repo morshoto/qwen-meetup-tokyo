@@ -1,6 +1,10 @@
 import unittest
 
-from llm_lab.context.synthetic import Evidence, SyntheticContextGenerator
+from llm_lab.context.synthetic import (
+    Evidence,
+    SyntheticContextGenerator,
+    _stabilize_token_count,
+)
 
 
 class FakeCharacterTokenizer:
@@ -11,6 +15,22 @@ class FakeCharacterTokenizer:
 
     def decode(self, tokens: list[int]) -> str:
         return bytes(tokens).decode("utf-8")
+
+
+class RepairableTokenizer:
+    name = "fixture-repairable-v1"
+
+    def encode(self, text: str) -> list[int]:
+        if text == "base":
+            return [1]
+        if text == " a":
+            return [2]
+        if text == "base a":
+            return [1, 2]
+        return list(text.encode("utf-8"))
+
+    def decode(self, tokens: list[int]) -> str:
+        return "base a" if tokens == [1, 2] else "base"
 
 
 class SyntheticContextGeneratorTests(unittest.TestCase):
@@ -75,6 +95,14 @@ class SyntheticContextGeneratorTests(unittest.TestCase):
         self.assertEqual(len(tokenizer.encode(evidence.text)), span.token_end - span.token_start)
         self.assertEqual("fixture-character-v1", generated.metadata["tokenization"])
         self.assertEqual("tokenizer", generated.metadata["tokenization_mode"])
+
+    def test_tokenizer_boundary_loss_can_be_repaired_with_verified_filler(self) -> None:
+        text, tokens = _stabilize_token_count(
+            RepairableTokenizer(), "base", target_tokens=2
+        )
+
+        self.assertEqual("base a", text)
+        self.assertEqual([1, 2], tokens)
 
 
 if __name__ == "__main__":

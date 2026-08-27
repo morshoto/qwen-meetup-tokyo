@@ -208,29 +208,21 @@ class SyntheticContextGenerator:
 
         insertion = round(filler_count * evidence_position)
         token_ids = filler_tokens[:insertion]
-        spans: list[EvidenceSpan] = []
-        for item, item_tokens in zip(evidence, evidence_tokens):
-            start = len(token_ids)
+        for item_tokens in evidence_tokens:
             token_ids.extend(item_tokens)
-            end = len(token_ids)
-            spans.append(
-                EvidenceSpan(
-                    id=item.id,
-                    text=item.text,
-                    token_start=start,
-                    token_end=end,
-                    requested_position=evidence_position,
-                    actual_position=start / max(1, filler_count),
-                )
-            )
         token_ids.extend(filler_tokens[insertion:])
         text = tokenizer.decode(token_ids)
-        round_trip_tokens = list(tokenizer.encode(text))
-        if len(round_trip_tokens) != target_tokens:
-            raise ValueError(
-                "tokenizer decode/encode round trip changed the requested "
-                f"token count: expected {target_tokens}, got {len(round_trip_tokens)}"
-            )
+        text, round_trip_tokens = _stabilize_token_count(
+            tokenizer,
+            text,
+            target_tokens=target_tokens,
+        )
+        spans = _locate_evidence_spans(
+            tokenizer,
+            text,
+            evidence,
+            requested_position=evidence_position,
+        )
 
         return GeneratedContext(
             text=text,
@@ -251,3 +243,83 @@ class SyntheticContextGenerator:
         if not tokens:
             raise ValueError("evidence text must contain at least one token")
         return tokens
+
+
+def _stabilize_token_count(
+    tokenizer: ContextTokenizer,
+    text: str,
+    *,
+    target_tokens: int,
+) -> tuple[str, list[int]]:
+    """Retokenize decoded IDs and repair small boundary losses explicitly.
+
+    Tokenizing fragments independently can create a non-canonical token ID
+    sequence at fragment boundaries.  In particular, llama.cpp can decode a
+    target-length sequence whose text retokenizes one or two tokens shorter.
+    We only repair that case by appending a tokenizer-verified one-token
+    filler; any other drift remains a hard failure.
+    """
+
+    round_trip_tokens = list(tokenizer.encode(text))
+    if len(round_trip_tokens) > target_tokens:
+        raise ValueError(
+            "tokenizer decode/encode round trip exceeded the requested "
+            f"token count: expected {target_tokens}, got {len(round_trip_tokens)}"
+        )
+
+    deficit = target_tokens - len(round_trip_tokens)
+    if deficit == 0:
+        return text, round_trip_tokens
+
+    for fragment in (" a", " e", " i", " o", " u", " x", " 0", "\n"):
+        fragment_tokens = list(tokenizer.encode(fragment))
+        if len(fragment_tokens) != 1:
+            continue
+        candidate_text = text
+        candidate_tokens = round_trip_tokens
+        for _ in range(deficit):
+            candidate_text += fragment
+            candidate_tokens = list(tokenizer.encode(candidate_text))
+            if len(candidate_tokens) != len(round_trip_tokens) + _ + 1:
+                break
+        else:
+            if len(candidate_tokens) == target_tokens:
+                return candidate_text, candidate_tokens
+
+    raise ValueError(
+        "tokenizer decode/encode round trip could not be repaired to the "
+        f"requested token count: expected {target_tokens}, got "
+        f"{len(round_trip_tokens)}"
+    )
+
+
+def _locate_evidence_spans(
+    tokenizer: ContextTokenizer,
+    text: str,
+    evidence: Sequence[Evidence],
+    *,
+    requested_position: float,
+) -> list[EvidenceSpan]:
+    """Locate evidence in final text and report final-token offsets."""
+
+    spans: list[EvidenceSpan] = []
+    search_start = 0
+    for item in evidence:
+        start_char = text.find(item.text, search_start)
+        if start_char < 0:
+            raise ValueError(f"evidence text was lost during tokenization: {item.id}")
+        end_char = start_char + len(item.text)
+        token_start = len(tokenizer.encode(text[:start_char]))
+        token_end = len(tokenizer.encode(text[:end_char]))
+        spans.append(
+            EvidenceSpan(
+                id=item.id,
+                text=item.text,
+                token_start=token_start,
+                token_end=token_end,
+                requested_position=requested_position,
+                actual_position=token_start / max(1, len(tokenizer.encode(text))),
+            )
+        )
+        search_start = end_char
+    return spans
