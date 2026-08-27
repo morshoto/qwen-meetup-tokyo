@@ -172,6 +172,22 @@ class EvaluationRunnerTests(unittest.TestCase):
         self.assertEqual("fixture scorer failed", result.error["message"])
         self.assertEqual("ZX-4817", result.generation["output_text"])
 
+    def test_runner_can_execute_a_non_contiguous_repeat_index_for_resume(self) -> None:
+        runner = EvaluationRunner(
+            runtime=FixtureRuntime(),
+            model=ModelSpec(model_id="fixture/model"),
+            scorer=ExpectedAnswerScorer(),
+            experiment_id="exp_fixture",
+        )
+
+        [result] = runner.run(
+            [task("task.resume", "The code is ZX-4817.")],
+            repeats=2,
+            repeat_indices=(2,),
+        )
+
+        self.assertEqual("exp_fixture:task.resume:default:run02", result.trial_id)
+
 
 if __name__ == "__main__":
     unittest.main()

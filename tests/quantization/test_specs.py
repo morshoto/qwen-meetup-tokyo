@@ -47,6 +47,7 @@ class QuantizationManifestTests(unittest.TestCase):
             sampling={"temperature": 0.0, "top_p": 1.0, "max_new_tokens": 64},
             variants=(variant(),),
             repeats=5,
+            runtime_options={"n_ctx": 33088, "n_batch": 512},
         )
 
         record = manifest.to_record()
@@ -56,6 +57,7 @@ class QuantizationManifestTests(unittest.TestCase):
         self.assertEqual("model-sha", record["variants"][0]["artifact"]["source_revision"])
         self.assertEqual(123, record["variants"][0]["artifact"]["artifact_size_bytes"])
         self.assertEqual((8192, 32768), restored.context_lengths)
+        self.assertEqual({"n_ctx": 33088, "n_batch": 512}, restored.runtime_options)
 
     def test_manifest_rejects_duplicate_condition_ids(self) -> None:
         with self.assertRaisesRegex(ValueError, "duplicate condition_id"):

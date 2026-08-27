@@ -25,11 +25,40 @@ class FakeLlamaClient:
     def tokenize(self, value: bytes, *, add_bos: bool) -> list[int]:
         return list(range(3 if add_bos else 2))
 
+    def detokenize(self, tokens: list[int]) -> bytes:
+        return bytes(tokens)
+
     def close(self) -> None:
         self.closed = True
 
 
 class LlamaCppRuntimeTests(unittest.TestCase):
+    def test_loaded_runtime_exposes_a_tokenizer_compatible_context_surface(self) -> None:
+        client = FakeLlamaClient()
+        runtime = LlamaCppRuntime(loader=lambda model, config: client)
+        model = ModelSpec(
+            model_id="Qwen/Qwen3.8-27B",
+            revision="model-sha",
+            tokenizer_id="Qwen/Qwen3.8-27B",
+            tokenizer_revision="tokenizer-sha",
+        )
+        runtime.load(
+            model,
+            RuntimeConfig(
+                name="llama.cpp",
+                version="fixture",
+                options={"model_path": "/models/q8_0.gguf"},
+            ),
+        )
+
+        tokenizer = runtime.get_tokenizer()
+
+        self.assertEqual("llama.cpp:Qwen/Qwen3.8-27B@tokenizer-sha", tokenizer.name)
+        self.assertEqual([0, 1], tokenizer.encode("answer"))
+        self.assertEqual("\x00\x01", tokenizer.decode([0, 1]))
+
+        runtime.close()
+
     def test_streamed_generation_records_measurement_fields(self) -> None:
         client = FakeLlamaClient()
 

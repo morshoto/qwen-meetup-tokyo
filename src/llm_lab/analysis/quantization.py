@@ -36,7 +36,7 @@ def tradeoff_rows(
     variants = _manifest_variants(manifest)
     grouped: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for row in summaries:
-        condition_id = row.get("condition_id")
+        condition_id = row.get("variant_condition_id") or row.get("condition_id")
         if condition_id is not None:
             grouped[str(condition_id)].append(row)
 

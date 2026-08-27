@@ -110,6 +110,27 @@ class QuantizationAnalysisTests(unittest.TestCase):
         self.assertEqual(30, q8["scored_n"])
         self.assertEqual(200, q8["median_peak_memory_bytes"])
 
+    def test_tradeoff_rows_groups_context_scoped_execution_conditions_by_variant(self) -> None:
+        rows = tradeoff_rows(
+            [
+                {
+                    **summary("q8_0:ctx8192", 0.8, 10),
+                    "variant_condition_id": "q8_0",
+                },
+                {
+                    **summary("q8_0:ctx32768", 1.0, 20),
+                    "variant_condition_id": "q8_0",
+                },
+                summary("q6_k", 0.9),
+                summary("q5_k_m", 0.9),
+                summary("q4_k_m", 0.9),
+            ],
+            manifest(),
+        )
+
+        self.assertEqual(30, rows[0]["scored_n"])
+        self.assertEqual(0.9333333333333333, rows[0]["accuracy"])
+
     def test_tradeoff_rows_fail_when_a_declared_condition_has_no_measurements(self) -> None:
         with self.assertRaisesRegex(QuantizationAnalysisError, "q4_k_m"):
             tradeoff_rows(

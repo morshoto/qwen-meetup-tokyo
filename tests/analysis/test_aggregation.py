@@ -159,6 +159,23 @@ class AggregationTests(unittest.TestCase):
         self.assertEqual(0.05, summaries[0]["requested_evidence_position"])
         self.assertAlmostEqual(0.05, summaries[0]["actual_evidence_position"])
 
+    def test_aggregation_preserves_variant_id_when_execution_condition_is_scoped(self) -> None:
+        summaries = aggregate_trials(
+            [
+                trial(
+                    "one",
+                    task_type="literal_retrieval",
+                    condition_id="q8_0:ctx8192",
+                    status=TrialStatus.COMPLETED,
+                    correct=True,
+                    total_s=1.0,
+                    metadata={"variant_condition_id": "q8_0"},
+                )
+            ]
+        )
+
+        self.assertEqual("q8_0", summaries[0]["variant_condition_id"])
+
 
 if __name__ == "__main__":
     unittest.main()

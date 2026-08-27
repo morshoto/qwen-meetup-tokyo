@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 
@@ -142,6 +142,7 @@ class QuantizationManifest:
     repeats: int = 1
     context_length_semantics: str = "input_tokens"
     context_overhead_tokens: int = 0
+    runtime_options: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -192,6 +193,7 @@ class QuantizationManifest:
             "runtime": {
                 "name": self.runtime_name,
                 "version": self.runtime_version,
+                "options": dict(self.runtime_options),
             },
             "controls": {
                 "prompt_id": self.prompt_id,
@@ -232,6 +234,7 @@ class QuantizationManifest:
                 controls.get("context_length_semantics", "input_tokens")
             ),
             context_overhead_tokens=int(controls.get("context_overhead_tokens", 0)),
+            runtime_options=dict(runtime.get("options", {})),
         )
 
 

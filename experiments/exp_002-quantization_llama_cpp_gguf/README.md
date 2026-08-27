@@ -37,6 +37,41 @@ The four quantized artifacts must use the same model revision, conversion
 revision, tokenizer, and source procedure. Any unavailable variant is recorded
 as unavailable with a reason rather than silently substituted.
 
+The checked-in resolver computes the immutable file fields and refuses an
+incomplete artifact set:
+
+```bash
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/resolve_manifest.py \
+  --template experiments/exp_002-quantization_llama_cpp_gguf/manifest.template.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
+  --model-revision MODEL_COMMIT \
+  --tokenizer-revision TOKENIZER_COMMIT \
+  --runtime-version 'llama-cpp-python==PACKAGE_VERSION' \
+  --converter-revision LLAMA_CPP_COMMIT \
+  --artifact q8_0=experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf \
+  --artifact q6_k=experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q6_k.gguf \
+  --artifact q5_k_m=experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q5_k_m.gguf \
+  --artifact q4_k_m=experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf \
+  --command 'q8_0=COMPLETE_CONVERSION_AND_QUANTIZATION_COMMAND' \
+  --command 'q6_k=COMPLETE_CONVERSION_AND_QUANTIZATION_COMMAND' \
+  --command 'q5_k_m=COMPLETE_CONVERSION_AND_QUANTIZATION_COMMAND' \
+  --command 'q4_k_m=COMPLETE_CONVERSION_AND_QUANTIZATION_COMMAND'
+```
+
+Use the same raw output for the pilot and full run: the runner fingerprints
+the resolved manifest, appends only missing trial IDs, and rejects mismatched
+or out-of-scope records. The pilot is Q8_0 × 8,192 × all three tasks × one
+repeat (3 trials); the complete matrix is 4 × 2 × 3 × 5 (120 trials):
+
+```bash
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
+  --condition-id q8_0 --context-length 8192 --repeats 1
+
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json
+```
+
 ## Initial questions
 
 - How do memory, prefill throughput, decode throughput, and task accuracy change by precision?

@@ -6,6 +6,7 @@ from .synthetic import (
     EvidenceSpan,
     GeneratedContext,
     InferenceTokenizer,
+    LlamaCppTokenizer,
     SyntheticContextGenerator,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "EvidenceSpan",
     "GeneratedContext",
     "InferenceTokenizer",
+    "LlamaCppTokenizer",
     "SyntheticContextGenerator",
 ]

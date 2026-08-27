@@ -41,15 +41,24 @@ class EvaluationRunner:
         tasks: Iterable[Task],
         *,
         repeats: int = 1,
+        repeat_indices: Iterable[int] | None = None,
         condition_id: str = "default",
         sampling: SamplingConfig | None = None,
     ) -> list[TrialResult]:
         if repeats < 1:
             raise ValueError("repeats must be positive")
+        if repeat_indices is None:
+            selected_repeat_indices = tuple(range(1, repeats + 1))
+        else:
+            selected_repeat_indices = tuple(repeat_indices)
+            if not selected_repeat_indices:
+                raise ValueError("repeat_indices must not be empty")
+            if any(index < 1 for index in selected_repeat_indices):
+                raise ValueError("repeat_indices must be positive")
         sampling_config = sampling or SamplingConfig()
         results: list[TrialResult] = []
         for task in tasks:
-            for repeat_index in range(1, repeats + 1):
+            for repeat_index in selected_repeat_indices:
                 result = self._run_one(
                     task,
                     repeat_index=repeat_index,

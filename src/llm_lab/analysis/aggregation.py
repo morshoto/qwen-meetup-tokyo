@@ -63,6 +63,9 @@ def aggregate_trials(
                 "experiment_id": experiment_id,
                 "task_type": task_type,
                 "condition_id": condition_id,
+                "variant_condition_id": _common_input_value(
+                    group, "variant_condition_id"
+                ),
                 "n": len(group),
                 "completed_n": sum(result.status == TrialStatus.COMPLETED for result in group),
                 "error_n": sum(result.status != TrialStatus.COMPLETED for result in group),

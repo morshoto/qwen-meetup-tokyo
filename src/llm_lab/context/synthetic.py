@@ -35,6 +35,23 @@ class InferenceTokenizer:
 
 
 @dataclass(frozen=True)
+class LlamaCppTokenizer:
+    """Adapt a loaded llama.cpp client to the context tokenizer contract."""
+
+    backend: Any
+    name: str
+
+    def encode(self, text: str) -> list[int]:
+        return list(self.backend.tokenize(text.encode("utf-8"), add_bos=False))
+
+    def decode(self, tokens: Sequence[int]) -> str:
+        value = self.backend.detokenize(list(tokens))
+        if isinstance(value, bytes):
+            return value.decode("utf-8")
+        return str(value)
+
+
+@dataclass(frozen=True)
 class Evidence:
     """A labelled text span that must remain intact in generated context."""
 

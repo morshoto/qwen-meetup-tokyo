@@ -7,6 +7,7 @@ import importlib.metadata
 from time import perf_counter
 from typing import Any, Callable, Iterable, Mapping
 
+from llm_lab.context import ContextTokenizer, LlamaCppTokenizer
 from llm_lab.generation import (
     GenerationRequest,
     GenerationResponse,
@@ -47,6 +48,18 @@ class LlamaCppRuntime:
         self._client = self._loader(model, config)
         self._model_spec = model
         self._runtime_config = config
+
+    def get_tokenizer(self) -> ContextTokenizer:
+        """Return the tokenizer embedded in the loaded GGUF client."""
+
+        if self._client is None or self._model_spec is None:
+            raise RuntimeError("runtime must be loaded before accessing its tokenizer")
+        tokenizer_id = self._model_spec.tokenizer_id or self._model_spec.model_id
+        revision = self._model_spec.tokenizer_revision or "embedded"
+        return LlamaCppTokenizer(
+            backend=self._client,
+            name=f"llama.cpp:{tokenizer_id}@{revision}",
+        )
 
     def generate(self, request: GenerationRequest) -> GenerationResponse:
         if self._client is None or self._runtime_config is None:
