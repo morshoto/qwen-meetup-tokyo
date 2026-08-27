@@ -69,6 +69,7 @@ class GenerationTiming:
     ttft_seconds: float | None = None
     prefill_seconds: float | None = None
     decode_seconds: float | None = None
+    post_first_chunk_seconds: float | None = None
     total_seconds: float | None = None
 
 

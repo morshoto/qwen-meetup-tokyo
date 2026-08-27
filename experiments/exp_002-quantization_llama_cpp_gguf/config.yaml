@@ -1,0 +1,60 @@
+experiment:
+  id: exp_002
+  name: quantization_llama_cpp_gguf
+  seed: 42
+
+model:
+  model: Qwen/Qwen3.8-27B
+  revision: "SET_TO_EXACT_MODEL_COMMIT_BEFORE_RUN"
+  tokenizer_revision: "SET_TO_EXACT_TOKENIZER_COMMIT_BEFORE_RUN"
+
+runtime:
+  approach: llama.cpp
+  binding: llama-cpp-python
+  version: "SET_TO_EXACT_LLAMA_CPP_COMMIT_OR_PACKAGE_VERSION"
+  kernel: ggml
+  options:
+    n_ctx: 33088
+    n_batch: 512
+    n_gpu_layers: -1
+    flash_attn: true
+    verbose: false
+
+quantization:
+  approach: llama.cpp
+  format: GGUF
+  converter: convert_hf_to_gguf.py
+  quantizer: llama-quantize
+  variants: [Q8_0, Q6_K, Q5_K_M, Q4_K_M]
+
+benchmark:
+  task_source: data/tasks/core.v001.jsonl
+  task_ids:
+    - task.literal.000001
+    - task.semantic.000001
+    - task.multihop.000001
+  prompt_id: prompt.qa.v001
+  context_lengths: [8192, 32768]
+  context_length_semantics: input_tokens
+  context_overhead_tokens: 256
+  repeats: 5
+
+metrics:
+  - scored_accuracy
+  - artifact_size_bytes
+  - peak_memory
+  - stream_ttft_s
+  - prompt_throughput_proxy_tok_s
+  - post_first_chunk_output_tok_s
+  - end_to_end_success
+  - failure_rate
+
+sampling:
+  max_new_tokens: 64
+  temperature: 0.0
+  top_p: 1.0
+  top_k: null
+  seed: 42
+
+output:
+  directory: results

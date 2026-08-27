@@ -145,7 +145,7 @@ numbering follows the repository backlog and existing `experiments/README.md`.
 | Experiment | Status | Main question | Conditions | Hypotheses |
 | --- | --- | --- | --- | --- |
 | `exp_001-context_measurement` | Scaffolded | How does useful context change with length, evidence position, and task type? | 8k, 32k, 64k, 128k, 256k; positions 0.05, 0.25, 0.50, 0.75, 0.95; literal, semantic, multi-hop; reference precision. | H1, H2, H4 |
-| `exp_002-quantization_using_approach_a` | Scaffolded | What capability and systems trade-off comes from one reproducible quantization family? | Reference precision plus q8, q6, q5, q4 after the quantizer/runtime is frozen; short and long contexts; same task suite. | H3, H7 |
+| `exp_002-quantization_llama_cpp_gguf` | Scaffolded | What capability and systems trade-off comes from one reproducible quantization family? | GGUF F16 reference plus Q8_0, Q6_K, Q5_K_M, and Q4_K_M under llama.cpp; short and medium contexts; same task suite. | H3, H7 |
 | `exp_003-context_x_quantization` | Planned core | Does the context breakpoint move as precision is reduced? | A smaller factorial subset of `exp_001` × `exp_002`, expanded only after the interaction is observable. | H3; cross-check H1/H2 |
 | `exp_004-agent_context_growth` | Planned core | How does retained trajectory history affect reliable tool use? | Fixed local tool sandbox; 1, 4, 8, and 16 tool turns; repeated tasks; reference and selected quantized configurations. | H5, H7 |
 | `exp_005-repository_reasoning` | Planned core | Do synthetic context findings transfer to repository-level coding tasks? | Pinned repositories/tasks; curated files, local neighborhood, and broad context; machine-checkable tests; selected precision variants. | H6; cross-check H2/H3/H5 |

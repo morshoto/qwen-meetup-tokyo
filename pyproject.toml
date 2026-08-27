@@ -14,9 +14,13 @@ transformers = [
     "transformers>=4.51.0",
     "torch>=2.6",
 ]
+llama-cpp = [
+    "llama-cpp-python>=0.3",
+]
 analysis = [
     "jupyter>=1.0",
     "matplotlib>=3.8",
+    "pandas>=2.0",
 ]
 
 [tool.hatch.build.targets.wheel]

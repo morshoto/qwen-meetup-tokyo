@@ -91,6 +91,11 @@ class AggregationTests(unittest.TestCase):
                 "median_total_s",
             )},
         )
+        self.assertEqual(3, summaries[0]["attempted_n"])
+        self.assertEqual(1, summaries[0]["correct_n"])
+        self.assertEqual(1, summaries[0]["failure_n"])
+        self.assertEqual(1 / 3, summaries[0]["end_to_end_success"])
+        self.assertEqual(1 / 3, summaries[0]["failure_rate"])
 
     def test_aggregation_can_load_jsonl_and_write_notebook_friendly_csv(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

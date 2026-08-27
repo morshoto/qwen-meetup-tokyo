@@ -33,7 +33,7 @@ class FixtureRuntime:
             timing=GenerationTiming(
                 ttft_seconds=0.1,
                 prefill_seconds=0.2,
-                decode_seconds=0.05,
+                post_first_chunk_seconds=0.05,
                 total_seconds=0.25,
             ),
             runtime=RuntimeMetadata(
@@ -99,6 +99,9 @@ class EvaluationRunnerTests(unittest.TestCase):
         self.assertEqual(True, results[0].score["correct"])
         self.assertEqual("fixture/tokenizer", results[0].runtime["tokenizer_id"])
         self.assertEqual(20.0, results[0].timing["prefill_tokens_per_second"])
+        self.assertEqual(0.1, results[0].timing["stream_ttft_s"])
+        self.assertEqual(40.0, results[0].timing["prompt_throughput_proxy_tok_s"])
+        self.assertEqual(20.0, results[0].timing["post_first_chunk_output_tok_s"])
 
     def test_runner_records_runtime_and_invalid_output_failures(self) -> None:
         runner = EvaluationRunner(
