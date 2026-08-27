@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "template": false,
+  "experiment_id": "exp_002",
+  "model": {
+    "id": "Qwen/Qwen3.8-27B",
+    "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "tokenizer_id": "Qwen/Qwen3.8-27B",
+    "tokenizer_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+  },
+  "runtime": {
+    "name": "llama.cpp",
+    "version": "llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3",
+    "binding": "llama-cpp-python",
+    "kernel": "ggml",
+    "options": {
+      "n_ctx": 33088,
+      "n_batch": 512,
+      "n_gpu_layers": -1,
+      "flash_attn": true,
+      "verbose": false
+    }
+  },
+  "controls": {
+    "prompt_id": "prompt.qa.v001",
+    "task_ids": [
+      "task.literal.000001",
+      "task.semantic.000001",
+      "task.multihop.000001"
+    ],
+    "context_lengths": [
+      8192,
+      32768
+    ],
+    "context_length_semantics": "input_tokens",
+    "context_overhead_tokens": 256,
+    "sampling": {
+      "max_new_tokens": 64,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "top_k": null,
+      "seed": 42
+    },
+    "repeats": 5
+  },
+  "variants": [
+    {
+      "condition_id": "q8_0",
+      "label": "Q8_0",
+      "format": "GGUF",
+      "quantization_type": "Q8_0",
+      "bits": 8,
+      "runtime_kernel": "ggml",
+      "artifact": {
+        "source_uri": "hf://Qwen/Qwen3.8-27B",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf Q8_0 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "artifact_uri": "artifacts/q8_0.gguf",
+        "artifact_sha256": "6cb70620c7811dce01e1a622fe0a4f9ac445e31c569640c36ecfac85c4609b6c",
+        "artifact_size_bytes": 29047084256
+      }
+    },
+    {
+      "condition_id": "q6_k",
+      "label": "Q6_K",
+      "format": "GGUF",
+      "quantization_type": "Q6_K",
+      "bits": 6,
+      "runtime_kernel": "ggml",
+      "artifact": {
+        "source_uri": "hf://Qwen/Qwen3.8-27B",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q6_k.gguf Q6_K 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "artifact_uri": "artifacts/q6_k.gguf",
+        "artifact_sha256": "1f6a8e5d44e8cea0927908fd701348906de3e705564611169cc324f4c8bf8722",
+        "artifact_size_bytes": 22430999776
+      }
+    },
+    {
+      "condition_id": "q5_k_m",
+      "label": "Q5_K_M",
+      "format": "GGUF",
+      "quantization_type": "Q5_K_M",
+      "bits": 5,
+      "runtime_kernel": "ggml",
+      "artifact": {
+        "source_uri": "hf://Qwen/Qwen3.8-27B",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q5_k_m.gguf Q5_K_M 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "artifact_uri": "artifacts/q5_k_m.gguf",
+        "artifact_sha256": "48fbca2bc04f59297981aabd0dbbe5e51efa8df13595e7c694164e652c3879d6",
+        "artifact_size_bytes": 19535701216
+      }
+    },
+    {
+      "condition_id": "q4_k_m",
+      "label": "Q4_K_M",
+      "format": "GGUF",
+      "quantization_type": "Q4_K_M",
+      "bits": 4,
+      "runtime_kernel": "ggml",
+      "artifact": {
+        "source_uri": "hf://Qwen/Qwen3.8-27B",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf Q4_K_M 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "artifact_uri": "artifacts/q4_k_m.gguf",
+        "artifact_sha256": "8b259e30f860c924fa1fd12d459343e8c2520eb12741f943ad5dcea5d1c4d120",
+        "artifact_size_bytes": 16810714336
+      }
+    }
+  ]
+}
