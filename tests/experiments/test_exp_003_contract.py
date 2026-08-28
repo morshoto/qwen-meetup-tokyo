@@ -39,7 +39,7 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             config,
         )
         self.assertIn("context_length_semantics: input_tokens", config)
-        self.assertIn("n_ctx: 262400", config)
+        self.assertIn("n_ctx: 262464", config)
         self.assertIn("approx_constant_gap_tolerance: 0.10", config)
 
         for text in (readme, results_readme):
