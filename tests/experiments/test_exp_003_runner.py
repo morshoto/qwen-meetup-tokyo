@@ -271,6 +271,19 @@ phases:
             self.assertEqual(24, manifest["actual_trial_n"])
             self.assertEqual(24, len(manifest["coverage"]))
             self.assertEqual(0, len(manifest["excluded_cells"]))
+            self.assertEqual(
+                {"n_ctx": 33088, "n_batch": 512},
+                manifest["runtime"]["source_options"],
+            )
+            self.assertEqual(
+                {
+                    "n_ctx": 33088,
+                    "n_batch": 512,
+                    "quantization_type": "Q8_0",
+                    "purpose": "harness-smoke-only",
+                },
+                manifest["runtime"]["effective_options_by_variant"]["q8_0"],
+            )
             self.assertEqual([8192, 32768], manifest["context_lengths"])
             self.assertEqual([0.05, 0.50], manifest["evidence_positions"])
             self.assertEqual(

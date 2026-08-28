@@ -30,6 +30,10 @@ revisions, runtime settings, and conversion provenance come from
 manifest records its SHA-256 so later source-manifest changes cannot silently
 alter the interpretation of a run.
 
+The output run manifest keeps inherited source runtime options separately from
+the effective per-variant options used for execution, including derived
+context capacity and model path settings.
+
 The runner loads phase lengths, evidence positions, repeats, backend, and the
 default quantization variants from `config.yaml`. Matching CLI flags are
 explicit overrides for a selected run.

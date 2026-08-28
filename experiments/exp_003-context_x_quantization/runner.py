@@ -404,6 +404,10 @@ def run_experiment(
         fixture_seed=fixture_seed,
         catalog=catalog,
         fingerprint=fingerprint,
+        effective_runtime_options_by_variant={
+            condition_id: dict(runtime_config.options)
+            for condition_id, runtime_config in runtime_configs.items()
+        },
     )
     manifest_output_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_output_path.write_text(
@@ -704,6 +708,7 @@ def _run_manifest(
     fixture_seed: int,
     catalog: TaskCatalog,
     fingerprint: str,
+    effective_runtime_options_by_variant: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
     result_list = list(results)
     variant_list = list(variants)
@@ -766,7 +771,11 @@ def _run_manifest(
         "runtime": {
             "name": source_manifest.runtime_name,
             "version": source_manifest.runtime_version,
-            "options": dict(source_manifest.runtime_options),
+            "source_options": dict(source_manifest.runtime_options),
+            "effective_options_by_variant": {
+                condition_id: dict(options)
+                for condition_id, options in effective_runtime_options_by_variant.items()
+            },
         },
         "task_catalog": _display_path(TASK_CATALOG),
         "prompt_id": source_manifest.prompt_id,
