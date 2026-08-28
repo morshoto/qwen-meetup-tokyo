@@ -239,6 +239,7 @@ def run_experiment(
     fingerprint = _run_fingerprint(
         source_manifest,
         phase=phase,
+        backend=backend,
         variant_ids=[variant.condition_id for variant in variants],
         conditions=conditions,
         repeats=run_repeats,
@@ -573,6 +574,7 @@ def _run_fingerprint(
     manifest: QuantizationManifest,
     *,
     phase: str,
+    backend: str,
     variant_ids: Iterable[str],
     conditions: Iterable[Condition],
     repeats: int,
@@ -581,6 +583,7 @@ def _run_fingerprint(
     payload = {
         "source_manifest": manifest.to_record(),
         "phase": phase,
+        "backend": backend,
         "variant_ids": list(variant_ids),
         "conditions": [
             {

@@ -265,6 +265,32 @@ class Exp003RunnerTests(unittest.TestCase):
             self.assertEqual(24, len(records))
             self.assertEqual(24, len({record.trial_id for record in records}))
 
+    def test_fixture_and_measured_runs_have_distinct_fingerprints(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = runner.load_manifest(_manifest_file(Path(directory)))
+            conditions = runner.planned_conditions("smoke")
+
+            fixture_fingerprint = runner._run_fingerprint(
+                manifest,
+                phase="smoke",
+                backend="fixture",
+                variant_ids=("q8_0",),
+                conditions=conditions,
+                repeats=1,
+                fixture_seed=42,
+            )
+            measured_fingerprint = runner._run_fingerprint(
+                manifest,
+                phase="smoke",
+                backend="llama.cpp",
+                variant_ids=("q8_0",),
+                conditions=conditions,
+                repeats=1,
+                fixture_seed=42,
+            )
+
+            self.assertNotEqual(fixture_fingerprint, measured_fingerprint)
+
 
 if __name__ == "__main__":
     unittest.main()
