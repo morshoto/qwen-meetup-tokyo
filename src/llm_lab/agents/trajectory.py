@@ -35,6 +35,14 @@ class AgentAction:
         elif self.value is None or not self.value.strip():
             raise ActionParseError("answer action requires a non-empty value")
 
+    def to_record(self) -> dict[str, Any]:
+        return {
+            "action": self.action,
+            "name": self.name,
+            "arguments": dict(self.arguments),
+            "value": self.value,
+        }
+
 
 def parse_action(text: str) -> AgentAction:
     """Parse the strict JSON action format used by the controlled harness."""

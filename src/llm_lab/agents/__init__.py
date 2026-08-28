@@ -10,6 +10,7 @@ from .trajectory import (
     TrajectoryEvent,
     parse_action,
 )
+from .harness import AgentHarness, AgentRun, AgentTask, TrajectoryControl
 
 __all__ = [
     "ActionParseError",
@@ -20,4 +21,8 @@ __all__ = [
     "ToolResult",
     "TrajectoryEvent",
     "parse_action",
+    "AgentHarness",
+    "AgentRun",
+    "AgentTask",
+    "TrajectoryControl",
 ]

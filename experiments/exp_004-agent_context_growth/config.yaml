@@ -1,0 +1,72 @@
+{
+  "experiment": {
+    "id": "exp_004",
+    "name": "agent_context_growth",
+    "description": "Measure reliability as deterministic tool-use history grows.",
+    "default_phase": "main",
+    "fixture_seed": 42,
+    "task_catalog": "data/tasks/agent.v001.jsonl",
+    "source_manifest": "experiments/exp_003-context_x_quantization/results/manifest.json"
+  },
+  "model": {
+    "inherited_from": "source_manifest"
+  },
+  "runtime": {
+    "inherited_from": "source_manifest",
+    "backend": "llama.cpp",
+    "binding": "llama-cpp-python",
+    "kernel": "ggml",
+    "max_action_attempts": 3
+  },
+  "quantization": {
+    "variants": ["q8_0", "q4_k_m"],
+    "source": "exp_003-resolved-manifest",
+    "selection_policy": "selected practical reference and lower-precision representative from exp_003"
+  },
+  "trajectory": {
+    "lengths": [4, 8, 16, 32],
+    "critical_positions": [0.05, 0.25, 0.50, 0.75, 0.95],
+    "length_semantics": "tool_observations_including_critical_fact",
+    "matching": "same-task-seed-control-and-deterministic-observations"
+  },
+  "phases": {
+    "smoke": {
+      "lengths": [4, 8],
+      "critical_positions": [0.05, 0.50, 0.95],
+      "repeats": 1,
+      "backend": "fixture",
+      "purpose": "Validate harness, matching, scoring, storage, and coverage only."
+    },
+    "pilot": {
+      "lengths": [4, 8, 16],
+      "critical_positions": [0.05, 0.25, 0.50, 0.75, 0.95],
+      "repeats": 5,
+      "backend": "llama.cpp",
+      "purpose": "Estimate reliability, variance, and resource exclusions."
+    },
+    "main": {
+      "lengths": [4, 8, 16, 32],
+      "critical_positions": [0.05, 0.25, 0.50, 0.75, 0.95],
+      "repeats": 20,
+      "backend": "llama.cpp",
+      "purpose": "Measure agent reliability when resources permit."
+    }
+  },
+  "sampling": {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_new_tokens": 64,
+    "generation_seed": 42,
+    "orchestration_seed": 42
+  },
+  "analysis": {
+    "primary_metrics": ["final_task_success", "critical_fact_reused", "tool_call_validity", "repeated_action_n", "recovery_n"],
+    "failure_categories": ["retrieval", "state_tracking", "tool_planning", "runtime", "success"]
+  },
+  "output": {
+    "raw_directory": "results/raw",
+    "processed_directory": "results/processed",
+    "manifest_directory": "results/manifests",
+    "figures_directory": "results/figures"
+  }
+}
