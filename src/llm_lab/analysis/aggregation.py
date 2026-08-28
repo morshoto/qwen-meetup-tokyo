@@ -83,6 +83,10 @@ def aggregate_trials(
                 "requested_evidence_position": _common_input_value(
                     group, "requested_evidence_position"
                 ),
+                "context_instance_id": _common_input_value(
+                    group, "context_instance_id"
+                ),
+                "context_sha256": _common_input_value(group, "context_sha256"),
                 "actual_evidence_position": _median(
                     _numeric_input_values(group, "actual_evidence_position")
                 ),

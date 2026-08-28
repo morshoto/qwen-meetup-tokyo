@@ -8,6 +8,13 @@ from .effective_context import (
     missing_context_cells,
     position_curve_rows,
 )
+from .interaction import (
+    InteractionAnalysisError,
+    effective_context_by_variant_and_task,
+    interaction_report,
+    matched_cell_rows,
+    relative_degradation_rows,
+)
 from .quantization import (
     QuantizationAnalysisError,
     recommend_baseline,
@@ -16,14 +23,19 @@ from .quantization import (
 
 __all__ = [
     "ContextAnalysisError",
+    "InteractionAnalysisError",
     "QuantizationAnalysisError",
     "aggregate_jsonl",
     "aggregate_trials",
     "effective_context_by_task",
     "effective_context_by_task_and_position",
+    "effective_context_by_variant_and_task",
+    "interaction_report",
+    "matched_cell_rows",
     "missing_context_cells",
     "position_curve_rows",
     "recommend_baseline",
+    "relative_degradation_rows",
     "tradeoff_rows",
     "write_summary_csv",
 ]

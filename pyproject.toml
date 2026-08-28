@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "matplotlib>=3.11.1",
     "pandas>=3.0.5",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
