@@ -52,6 +52,8 @@ class Exp003ExperimentContractTests(unittest.TestCase):
         notebook = (EXPERIMENT / "analysis.ipynb").read_text(encoding="utf-8")
 
         for required in (
+            "PHASE = 'smoke'",
+            "Change PHASE to 'pilot' or 'main'",
             "RAW_PATH",
             "SUMMARY_PATH",
             "MANIFEST_PATH",
