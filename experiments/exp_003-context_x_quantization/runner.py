@@ -792,7 +792,7 @@ def _run_manifest(
         "matching": "same task seed, generated context text, context length, and evidence position across variants",
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),
-        "planned_trial_n": len(condition_list) * len(TASK_TYPES) * len(variant_list) * repeats,
+        "planned_trial_n": len(condition_list) * len(catalog.ids) * len(variant_list) * repeats,
         "actual_trial_n": len(result_list),
         "raw_results": _display_path(output_path),
         "raw_results_sha256": _sha256(output_path),

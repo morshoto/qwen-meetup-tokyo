@@ -294,6 +294,39 @@ phases:
                 runner._sha256(source_manifest), manifest["source_manifest_sha256"]
             )
 
+    def test_manifest_trial_count_uses_catalog_task_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_manifest = _manifest_file(root)
+            manifest = runner.load_manifest(source_manifest)
+            output_path = root / "raw" / "smoke-trials.jsonl"
+            output_path.parent.mkdir(parents=True)
+            output_path.write_text("", encoding="utf-8")
+
+            class CatalogWithFourTasks:
+                ids = ("task.1", "task.2", "task.3", "task.4")
+
+            run_manifest = runner._run_manifest(
+                source_manifest_path=source_manifest,
+                source_manifest=manifest,
+                output_path=output_path,
+                manifest_output_path=root / "manifests" / "smoke.json",
+                phase="smoke",
+                backend="fixture",
+                variants=(manifest.variants[0],),
+                conditions=(runner.Condition(8192, 0.05),),
+                repeats=1,
+                results=(),
+                fixture_seed=42,
+                catalog=CatalogWithFourTasks(),
+                fingerprint="fingerprint",
+                effective_runtime_options_by_variant={
+                    manifest.variants[0].condition_id: {}
+                },
+            )
+
+            self.assertEqual(4, run_manifest["planned_trial_n"])
+
     def test_runner_resumes_without_duplicate_trial_ids(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
