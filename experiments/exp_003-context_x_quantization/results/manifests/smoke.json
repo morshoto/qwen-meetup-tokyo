@@ -783,7 +783,45 @@
   "run_fingerprint": "a025b494d01a5b955b3b608b5a8037ba729f8d4e6f4dc1bb344314545421293e",
   "runtime": {
     "name": "llama.cpp",
-    "options": {
+    "effective_options_by_variant": {
+      "q4_k_m": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf",
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q4_K_M",
+        "verbose": false
+      },
+      "q5_k_m": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q5_k_m.gguf",
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q5_K_M",
+        "verbose": false
+      },
+      "q6_k": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q6_k.gguf",
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q6_K",
+        "verbose": false
+      },
+      "q8_0": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf",
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q8_0",
+        "verbose": false
+      }
+    },
+    "source_options": {
       "flash_attn": true,
       "n_batch": 512,
       "n_ctx": 33088,
