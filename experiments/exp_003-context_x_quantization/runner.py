@@ -11,6 +11,8 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
@@ -44,25 +46,8 @@ from llm_lab.telemetry import capture_environment  # noqa: E402
 
 TASK_CATALOG = ROOT / "data/tasks/core.v001.jsonl"
 EXPERIMENT_ID = "exp_003"
+CONFIG_PATH = ROOT / "experiments/exp_003-context_x_quantization/config.yaml"
 TASK_TYPES = ("literal_retrieval", "semantic_retrieval", "multi_hop")
-DEFAULT_VARIANT_IDS = ("q8_0", "q6_k", "q5_k_m", "q4_k_m")
-PHASES = {
-    "smoke": {
-        "context_lengths": (8192, 32768),
-        "evidence_positions": (0.05, 0.50),
-        "repeats": 1,
-    },
-    "pilot": {
-        "context_lengths": (8192, 32768, 65536),
-        "evidence_positions": (0.05, 0.25, 0.50, 0.75, 0.95),
-        "repeats": 5,
-    },
-    "main": {
-        "context_lengths": (8192, 32768, 65536, 131072, 262144),
-        "evidence_positions": (0.05, 0.25, 0.50, 0.75, 0.95),
-        "repeats": 20,
-    },
-}
 RuntimeFactory = Callable[[], Any]
 
 
@@ -139,6 +124,33 @@ class _FixtureTokenizer:
         return bytes(tokens).decode("utf-8")
 
 
+def load_experiment_config(path: Path = CONFIG_PATH) -> dict[str, Any]:
+    """Load the committed experiment protocol used by the runner."""
+
+    path = _rooted(path)
+    try:
+        record = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as error:
+        raise ValueError(f"invalid experiment config: {path}") from error
+    if not isinstance(record, dict):
+        raise ValueError(f"experiment config must be a mapping: {path}")
+    return record
+
+
+def _config_section(config: Mapping[str, Any], name: str) -> Mapping[str, Any]:
+    value = config.get(name)
+    if not isinstance(value, Mapping):
+        raise ValueError(f"experiment config section {name!r} must be a mapping")
+    return value
+
+
+def _default_phase(config: Mapping[str, Any]) -> str:
+    value = _config_section(config, "experiment").get("default_phase")
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("experiment config must declare a non-empty default_phase")
+    return value
+
+
 def load_manifest(path: Path) -> QuantizationManifest:
     """Load the resolved exp_002 manifest used as exp_003's artifact source."""
 
@@ -159,10 +171,11 @@ def planned_conditions(
     *,
     context_lengths: Iterable[int] | None = None,
     evidence_positions: Iterable[float] | None = None,
+    config: Mapping[str, Any] | None = None,
 ) -> list[Condition]:
     """Return the deterministic context/position grid for a run phase."""
 
-    phase_controls = _phase_controls(phase)
+    phase_controls = _phase_controls(phase, config)
     lengths = _select_context_lengths(
         phase_controls["context_lengths"]
         if context_lengths is None
@@ -188,16 +201,18 @@ def expected_trial_count(
     context_lengths: Iterable[int] | None = None,
     evidence_positions: Iterable[float] | None = None,
     repeats: int | None = None,
+    config: Mapping[str, Any] | None = None,
 ) -> int:
     """Return the selected matrix size before runtime exclusions."""
 
-    variants = _select_variants(manifest, condition_ids)
+    variants = _select_variants(manifest, condition_ids, config)
     conditions = planned_conditions(
         phase,
         context_lengths=context_lengths,
         evidence_positions=evidence_positions,
+        config=config,
     )
-    run_repeats = _select_repeats(phase, repeats)
+    run_repeats = _select_repeats(phase, repeats, config)
     return len(variants) * len(conditions) * len(manifest.task_ids) * run_repeats
 
 
@@ -208,13 +223,14 @@ def run_experiment(
     manifest_output_path: Path,
     processed_path: Path,
     phase: str,
-    backend: str = "llama.cpp",
+    backend: str | None = None,
     condition_ids: Iterable[str] | None = None,
     context_lengths: Iterable[int] | None = None,
     evidence_positions: Iterable[float] | None = None,
     repeats: int | None = None,
     fixture_seed: int = 42,
     runtime_factory: RuntimeFactory | None = None,
+    config_path: Path | None = None,
 ) -> dict[str, Any]:
     """Run a selected matrix, safely resuming an append-only JSONL file."""
 
@@ -222,16 +238,22 @@ def run_experiment(
     output_path = _rooted(output_path)
     manifest_output_path = _rooted(manifest_output_path)
     processed_path = _rooted(processed_path)
-    if backend not in ("fixture", "llama.cpp"):
-        raise ValueError(f"unsupported backend: {backend!r}")
+    config = load_experiment_config(
+        CONFIG_PATH if config_path is None else config_path
+    )
+    phase_controls = _phase_controls(phase, config)
+    selected_backend = phase_controls["backend"] if backend is None else backend
+    if selected_backend not in ("fixture", "llama.cpp"):
+        raise ValueError(f"unsupported backend: {selected_backend!r}")
     source_manifest = load_manifest(source_manifest_path)
-    variants = _select_variants(source_manifest, condition_ids)
+    variants = _select_variants(source_manifest, condition_ids, config)
     conditions = planned_conditions(
         phase,
         context_lengths=context_lengths,
         evidence_positions=evidence_positions,
+        config=config,
     )
-    run_repeats = _select_repeats(phase, repeats)
+    run_repeats = _select_repeats(phase, repeats, config)
     catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
     if tuple(source_manifest.task_ids) != catalog.ids:
         raise ValueError("source manifest task_ids must exactly match the shared task catalog")
@@ -239,7 +261,7 @@ def run_experiment(
     fingerprint = _run_fingerprint(
         source_manifest,
         phase=phase,
-        backend=backend,
+        backend=selected_backend,
         variant_ids=[variant.condition_id for variant in variants],
         conditions=conditions,
         repeats=run_repeats,
@@ -247,7 +269,7 @@ def run_experiment(
     )
     artifact_paths = (
         _verify_artifacts(source_manifest_path, variants)
-        if backend == "llama.cpp"
+        if selected_backend == "llama.cpp"
         else {}
     )
     model = ModelSpec(
@@ -275,8 +297,19 @@ def run_experiment(
     base_tasks_by_condition: dict[str, tuple[EvaluationTask, ...]] = {}
     total_results = len(existing)
     tokenizer: ContextTokenizer | None = None
+    runtime_configs = {
+        variant.condition_id: _runtime_config(
+            source_manifest,
+            variant,
+            artifact_paths.get(variant.condition_id),
+            conditions=conditions,
+            sampling=sampling,
+            backend=selected_backend,
+        )
+        for variant in variants
+    }
     factory = runtime_factory or (
-        FixtureRuntime if backend == "fixture" else LlamaCppRuntime
+        FixtureRuntime if selected_backend == "fixture" else LlamaCppRuntime
     )
 
     for variant in variants:
@@ -284,14 +317,7 @@ def run_experiment(
         try:
             runtime.load(
                 model,
-                _runtime_config(
-                    source_manifest,
-                    variant,
-                    artifact_paths.get(variant.condition_id),
-                    conditions=conditions,
-                    sampling=sampling,
-                    backend=backend,
-                ),
+                runtime_configs[variant.condition_id],
             )
             if tokenizer is None:
                 get_tokenizer = getattr(runtime, "get_tokenizer", None)
@@ -370,7 +396,7 @@ def run_experiment(
         output_path=output_path,
         manifest_output_path=manifest_output_path,
         phase=phase,
-        backend=backend,
+        backend=selected_backend,
         variants=variants,
         conditions=conditions,
         repeats=run_repeats,
@@ -511,9 +537,18 @@ def _sampling_config(values: Mapping[str, Any]) -> SamplingConfig:
 def _select_variants(
     manifest: QuantizationManifest,
     condition_ids: Iterable[str] | None,
+    config: Mapping[str, Any] | None = None,
 ) -> tuple[QuantizationVariant, ...]:
-    selected = (
-        DEFAULT_VARIANT_IDS if condition_ids is None else tuple(condition_ids)
+    config = load_experiment_config() if config is None else config
+    quantization = _config_section(config, "quantization")
+    configured_variants = quantization.get("variants")
+    if not isinstance(configured_variants, (list, tuple)):
+        raise ValueError("experiment config quantization.variants must be a list")
+    selected = tuple(
+        str(value)
+        for value in (
+            configured_variants if condition_ids is None else tuple(condition_ids)
+        )
     )
     if not selected:
         raise ValueError("at least one quantization variant must be selected")
@@ -524,11 +559,33 @@ def _select_variants(
     return tuple(by_id[condition_id] for condition_id in selected)
 
 
-def _phase_controls(phase: str) -> Mapping[str, Any]:
+def _phase_controls(
+    phase: str,
+    config: Mapping[str, Any] | None = None,
+) -> Mapping[str, Any]:
+    config = load_experiment_config() if config is None else config
+    phases = _config_section(config, "phases")
     try:
-        return PHASES[phase]
+        raw_controls = phases[phase]
     except KeyError as error:
         raise ValueError(f"unsupported phase: {phase!r}") from error
+    if not isinstance(raw_controls, Mapping):
+        raise ValueError(f"phase {phase!r} must be a mapping")
+    try:
+        lengths = raw_controls["lengths"]
+        positions = raw_controls["evidence_positions"]
+        repeats = raw_controls["repeats"]
+        backend = raw_controls["backend"]
+    except KeyError as error:
+        raise ValueError(f"phase {phase!r} is missing {error.args[0]!r}") from error
+    if not isinstance(backend, str) or not backend.strip():
+        raise ValueError(f"phase {phase!r} backend must be a non-empty string")
+    return {
+        "context_lengths": lengths,
+        "evidence_positions": positions,
+        "repeats": repeats,
+        "backend": backend,
+    }
 
 
 def _select_context_lengths(values: Iterable[int]) -> tuple[int, ...]:
@@ -549,8 +606,12 @@ def _select_evidence_positions(values: Iterable[float]) -> tuple[float, ...]:
     return selected
 
 
-def _select_repeats(phase: str, repeats: int | None) -> int:
-    default = int(_phase_controls(phase)["repeats"])
+def _select_repeats(
+    phase: str,
+    repeats: int | None,
+    config: Mapping[str, Any] | None = None,
+) -> int:
+    default = int(_phase_controls(phase, config)["repeats"])
     selected = default if repeats is None else int(repeats)
     if selected < 1 or selected > default:
         raise ValueError(f"repeats must be between 1 and {default} for {phase}")
@@ -784,10 +845,12 @@ def _display_path(path: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    config = load_experiment_config()
+    phase_names = tuple(_config_section(config, "phases"))
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-manifest", type=Path, required=True)
-    parser.add_argument("--phase", choices=tuple(PHASES), default="smoke")
-    parser.add_argument("--backend", choices=("fixture", "llama.cpp"), default="fixture")
+    parser.add_argument("--phase", choices=phase_names)
+    parser.add_argument("--backend", choices=("fixture", "llama.cpp"))
     parser.add_argument("--output", type=Path)
     parser.add_argument("--manifest-output", type=Path)
     parser.add_argument("--processed", type=Path)
@@ -797,16 +860,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repeats", type=int)
     parser.add_argument("--fixture-seed", type=int, default=42)
     args = parser.parse_args(argv)
+    phase = args.phase or _default_phase(config)
     experiment_root = ROOT / "experiments/exp_003-context_x_quantization/results"
-    output_path = args.output or experiment_root / "raw" / f"{args.phase}-trials.jsonl"
-    manifest_output_path = args.manifest_output or experiment_root / "manifests" / f"{args.phase}.json"
-    processed_path = args.processed or experiment_root / "processed" / f"{args.phase}-summary.csv"
+    output_path = args.output or experiment_root / "raw" / f"{phase}-trials.jsonl"
+    manifest_output_path = args.manifest_output or experiment_root / "manifests" / f"{phase}.json"
+    processed_path = args.processed or experiment_root / "processed" / f"{phase}-summary.csv"
     result = run_experiment(
         source_manifest_path=args.source_manifest,
         output_path=output_path,
         manifest_output_path=manifest_output_path,
         processed_path=processed_path,
-        phase=args.phase,
+        phase=phase,
         backend=args.backend,
         condition_ids=args.condition_id,
         context_lengths=args.context_length,

@@ -163,6 +163,46 @@ class Exp003RunnerTests(unittest.TestCase):
     def setUp(self) -> None:
         FakeRuntime.instances = []
 
+    def test_runner_uses_config_for_phase_and_variant_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config_path = root / "config.yaml"
+            config_path.write_text(
+                """experiment:
+  default_phase: smoke
+quantization:
+  variants: [q4_k_m]
+phases:
+  smoke:
+    lengths: [123]
+    evidence_positions: [0.25]
+    repeats: 2
+    backend: fixture
+""",
+                encoding="utf-8",
+            )
+            source_manifest = _manifest_file(root)
+
+            result = runner.run_experiment(
+                source_manifest_path=source_manifest,
+                output_path=root / "raw" / "smoke-trials.jsonl",
+                manifest_output_path=root / "manifests" / "smoke.json",
+                processed_path=root / "processed" / "summary.csv",
+                phase="smoke",
+                runtime_factory=FakeRuntime,
+                config_path=config_path,
+            )
+
+            self.assertEqual(6, result["expected_trial_n"])
+            self.assertEqual(6, result["actual_trial_n"])
+            self.assertEqual(
+                123,
+                json.loads(
+                    (root / "manifests" / "smoke.json").read_text(encoding="utf-8")
+                )["context_lengths"][0],
+            )
+            self.assertEqual("Q4_K_M", FakeRuntime.instances[0].loaded[1].options["quantization_type"])
+
     def test_smoke_plans_context_and_position_cells(self) -> None:
         conditions = runner.planned_conditions("smoke")
 
