@@ -151,6 +151,7 @@ class InteractionAnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(0.1, report["shortest_context_gap"])
         self.assertAlmostEqual(0.8, report["largest_context_gap"])
         self.assertAlmostEqual(0.7, report["gap_change"])
+        self.assertEqual(3 * 10, report["matched_n"])
 
     def test_effective_context_is_grouped_by_variant_and_task(self) -> None:
         rows = complete_rows(

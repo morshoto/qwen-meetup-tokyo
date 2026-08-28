@@ -707,9 +707,14 @@ def _run_manifest(
         "task_catalog": _display_path(TASK_CATALOG),
         "prompt_id": source_manifest.prompt_id,
         "task_ids": list(catalog.ids),
+        "task_types": list(TASK_TYPES),
         "quantization_variants": [variant.to_record() for variant in variant_list],
-        "context_lengths": [condition.target_context_tokens for condition in condition_list],
-        "evidence_positions": [condition.evidence_position for condition in condition_list],
+        "context_lengths": _ordered_unique(
+            condition.target_context_tokens for condition in condition_list
+        ),
+        "evidence_positions": _ordered_unique(
+            condition.evidence_position for condition in condition_list
+        ),
         "repeats": repeats,
         "matching": "same task seed, generated context text, context length, and evidence position across variants",
         "planned_condition_n": len(condition_list),
@@ -758,6 +763,10 @@ def _sha256(path: Path) -> str:
 
 def _text_sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _ordered_unique(values: Iterable[Any]) -> list[Any]:
+    return list(dict.fromkeys(values))
 
 
 def _rooted(path: Path) -> Path:

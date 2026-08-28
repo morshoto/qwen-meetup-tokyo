@@ -231,6 +231,12 @@ class Exp003RunnerTests(unittest.TestCase):
             self.assertEqual(24, manifest["actual_trial_n"])
             self.assertEqual(24, len(manifest["coverage"]))
             self.assertEqual(0, len(manifest["excluded_cells"]))
+            self.assertEqual([8192, 32768], manifest["context_lengths"])
+            self.assertEqual([0.05, 0.50], manifest["evidence_positions"])
+            self.assertEqual(
+                ["literal_retrieval", "semantic_retrieval", "multi_hop"],
+                manifest["task_types"],
+            )
             self.assertEqual(
                 runner._sha256(source_manifest), manifest["source_manifest_sha256"]
             )

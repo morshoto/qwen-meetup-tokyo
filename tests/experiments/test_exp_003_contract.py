@@ -48,6 +48,28 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             self.assertIn("fixture", text.lower())
             self.assertIn("not a Qwen measurement", text)
 
+    def test_notebook_contains_required_interaction_sections(self) -> None:
+        notebook = (EXPERIMENT / "analysis.ipynb").read_text(encoding="utf-8")
+
+        for required in (
+            "RAW_PATH",
+            "SUMMARY_PATH",
+            "MANIFEST_PATH",
+            "FileNotFoundError",
+            "aggregate_jsonl",
+            "matched_cell_rows",
+            "relative_degradation_rows",
+            "interaction_report",
+            "effective_context_by_variant_and_task",
+            "context × quantization",
+            "position × context",
+            "quantization_gap",
+            "accuracy_degradation",
+            "docs/findings.md",
+            "not yet measured",
+        ):
+            self.assertIn(required, notebook)
+
 
 if __name__ == "__main__":
     unittest.main()

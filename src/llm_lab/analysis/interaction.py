@@ -197,6 +197,7 @@ def interaction_report(
                 "largest_context_gap": gaps[-1] if gaps else None,
                 "gap_range": gap_range,
                 "gap_change": gap_change,
+                "matched_n": sum(int(point["matched_n"]) for point in points),
                 "approx_constant_gap_tolerance": approx_constant_gap_tolerance,
                 "classification": classification,
             }
