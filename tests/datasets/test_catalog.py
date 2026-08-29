@@ -18,8 +18,8 @@ class TaskCatalogTests(unittest.TestCase):
         self.assertEqual("v002", manifest.version)
         self.assertEqual(
             {
-                "qa": "tasks/core.v002.jsonl",
-                "agent": "tasks/agent.v001.jsonl",
+                "qa": "core.v002.jsonl",
+                "agent": "agent.v001.jsonl",
             },
             dict(manifest.sources),
         )
@@ -35,6 +35,12 @@ class TaskCatalogTests(unittest.TestCase):
                 "agent_state_tracking": 10,
             },
             dict(manifest.family_counts),
+        )
+        self.assertTrue(
+            all(
+                (REPOSITORY_ROOT / "data" / "tasks" / source).is_file()
+                for source in manifest.sources.values()
+            )
         )
 
     def test_core_catalog_contains_machine_checkable_core_task_types(self) -> None:
@@ -136,6 +142,36 @@ class TaskCatalogTests(unittest.TestCase):
         missing_scorer["expected"] = {"value": "one"}
         with self.assertRaises(ValueError):
             TaskCatalog.from_records([missing_scorer])
+
+    def test_agent_v001_has_ten_independent_machine_checkable_tasks(self) -> None:
+        records = [
+            json.loads(line)
+            for line in (
+                REPOSITORY_ROOT / "data" / "tasks" / "agent.v001.jsonl"
+            ).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+        self.assertEqual(10, len(records))
+        self.assertEqual(
+            10,
+            len({record["id"] for record in records}),
+        )
+        self.assertEqual(
+            10,
+            len({record["metadata"]["seed"] for record in records}),
+        )
+        for record in records:
+            self.assertEqual("agent_state_tracking", record["type"])
+            self.assertTrue(record["objective"].strip())
+            self.assertEqual("exact", record["expected"]["type"])
+            self.assertTrue(record["expected"]["value"].strip())
+            self.assertTrue(record["critical_observation"]["id"].strip())
+            self.assertTrue(record["critical_observation"]["content"].strip())
+            self.assertGreaterEqual(len(record["distractor_outputs"]), 8)
+            self.assertEqual("CC0-1.0", record["metadata"]["license"])
+            self.assertTrue(record["metadata"]["independent"])
+            self.assertTrue(record["metadata"]["presentation_ready"])
 
     def test_fixture_manifest_points_to_versioned_prompt_and_task_catalog(self) -> None:
         fixture = json.loads(
