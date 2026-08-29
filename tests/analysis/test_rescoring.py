@@ -1,6 +1,14 @@
+import hashlib
+import tempfile
 import unittest
+from pathlib import Path
 
-from llm_lab.analysis.rescoring import comparison_rows, rescore_trial, rescore_trials
+from llm_lab.analysis.rescoring import (
+    comparison_rows,
+    render_report,
+    rescore_trial,
+    rescore_trials,
+)
 from llm_lab.evaluation import EvaluationTask, TrialResult, TrialStatus
 
 
@@ -229,6 +237,41 @@ class RescoringTests(unittest.TestCase):
         self.assertEqual("q4_k_m", semantic["variant_condition_id"])
         self.assertEqual(32768, semantic["target_context_tokens"])
         self.assertEqual(1, semantic["mismatch_n"])
+
+    def test_report_records_raw_sha256_and_diagnostic_caveat(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            raw_path = Path(directory) / "trials.jsonl"
+            raw_path.write_text('{"trial_id":"one"}\n', encoding="utf-8")
+            expected_hash = hashlib.sha256(raw_path.read_bytes()).hexdigest()
+
+            report = render_report(
+                raw_path=raw_path,
+                task_catalog_path=Path("data/tasks/core.v001.jsonl"),
+                raw_trial_n=1,
+                rows=[
+                    {
+                        "variant_condition_id": "q8_0",
+                        "variant_label": "Q8_0",
+                        "old_scored_n": 1,
+                        "old_correct_n": 0,
+                        "new_exact_scored_n": 1,
+                        "new_exact_correct_n": 0,
+                        "new_answer_bearing_correct_n": 1,
+                        "new_answer_bearing_scored_n": 1,
+                        "new_format_valid_n": 0,
+                        "new_format_scored_n": 1,
+                        "mismatch_n": 0,
+                        "format_failure_n": 1,
+                        "runtime_failure_n": 0,
+                    }
+                ],
+            )
+
+            self.assertIn(expected_hash, report)
+            self.assertIn("calibrated.v1", report)
+            self.assertIn("Diagnostic re-scoring only", report)
+            self.assertIn("must not be used for a final quantization claim", report)
+            self.assertIn("rescored-summary.csv", report)
 
 
 if __name__ == "__main__":
