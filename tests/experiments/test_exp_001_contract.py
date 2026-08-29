@@ -47,6 +47,8 @@ class Exp001ExperimentContractTests(unittest.TestCase):
         for required in (
             "regenerate",
             "allow_fixture",
+            "summary_rows = regeneration['summary_rows']",
+            "available_summary_rows",
             "position_gap_rows",
             "position-gap-vs-context.png",
             "effective-context-vs-context.png",

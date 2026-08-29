@@ -142,6 +142,15 @@ class Exp001AnalysisTests(unittest.TestCase):
             self.assertIn("attempted_n", summary)
             self.assertIn("runtime_error_n", summary)
             self.assertIn("analysis_status", summary)
+            self.assertEqual(
+                "unavailable",
+                next(
+                    row["analysis_status"]
+                    for row in result["summary_rows"]
+                    if row["target_context_tokens"] == 32768
+                    and row["requested_evidence_position"] == 0.50
+                ),
+            )
             gaps = json.loads(
                 (root / "processed/effective-context.json").read_text(encoding="utf-8")
             )
