@@ -279,7 +279,8 @@ def run_experiment(
 ) -> dict[str, Any]:
     """Execute one phase and write raw JSONL plus a coverage manifest."""
 
-    config = load_config(config_path)
+    config_file = Path(config_path).resolve()
+    config = load_config(config_file)
     experiment_config = config.get("experiment")
     if not isinstance(experiment_config, Mapping):
         raise ValueError("experiment config must declare experiment settings")
@@ -359,6 +360,19 @@ def run_experiment(
     else:
         raise ValueError(f"unsupported backend: {backend!r}")
 
+    working_output_path.parent.mkdir(parents=True, exist_ok=True)
+    results: list[TrialResult] = []
+    conditions = planned_conditions(phase, config=config)
+    phase_config = config["phases"][phase]
+    repeats = int(phase_config["repeats"])
+    context_provenance = _context_provenance(
+        config_path=config_file,
+        catalog_path=catalog_path,
+        catalog=catalog,
+        conditions=conditions,
+        repeats=repeats,
+        fixture_seed=fixture_seed,
+    )
     if resume:
         _validate_resume_checkpoint(
             resume_manifest,
@@ -366,13 +380,8 @@ def run_experiment(
             backend=backend,
             output_path=output_path,
             model=model,
+            context_provenance=context_provenance,
         )
-
-    working_output_path.parent.mkdir(parents=True, exist_ok=True)
-    results: list[TrialResult] = []
-    conditions = planned_conditions(phase, config=config)
-    phase_config = config["phases"][phase]
-    repeats = int(phase_config["repeats"])
     sampling_config = config.get("sampling", {})
     if not isinstance(sampling_config, Mapping):
         raise ValueError("sampling config must be an object")
@@ -393,6 +402,7 @@ def run_experiment(
             output_path=output_path,
             sampling=sampling,
             generation_seed_policy=generation_seed_policy,
+            context_provenance=context_provenance,
         )
     try:
         try:
@@ -457,6 +467,7 @@ def run_experiment(
         sampling=sampling,
         generation_seed_policy=generation_seed_policy,
         model=model,
+        context_provenance=context_provenance,
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -506,6 +517,7 @@ def _manifest(
     sampling: SamplingConfig | None = None,
     generation_seed_policy: str | None = None,
     model: ModelSpec | None = None,
+    context_provenance: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     condition_list = list(conditions)
@@ -568,7 +580,7 @@ def _manifest(
     )
     if generation_seed_policy is not None:
         sampling_record["generation_seed_policy"] = generation_seed_policy
-    return {
+    manifest = {
         "schema_version": 1,
         "experiment_id": EXPERIMENT_ID,
         "scorer_version": SCORER_VERSION,
@@ -606,6 +618,38 @@ def _manifest(
             if backend == "fixture"
             else "Results are model/runtime observations under the recorded environment."
         ),
+    }
+    if context_provenance is not None:
+        manifest["context_provenance"] = dict(context_provenance)
+    return manifest
+
+
+def _context_provenance(
+    *,
+    config_path: Path,
+    catalog_path: Path,
+    catalog: TaskCatalog,
+    conditions: Iterable[Condition],
+    repeats: int,
+    fixture_seed: int,
+) -> dict[str, Any]:
+    return {
+        "fixture_seed": fixture_seed,
+        "config_path": _relative_or_absolute(config_path),
+        "config_sha256": _sha256(config_path),
+        "task_catalog": _relative_or_absolute(catalog_path),
+        "task_catalog_sha256": _sha256(catalog_path),
+        "task_ids": list(catalog.ids),
+        "task_types": list(TASK_TYPES),
+        "conditions": [
+            {
+                "condition_id": condition.condition_id,
+                "target_context_tokens": condition.target_context_tokens,
+                "evidence_position": condition.evidence_position,
+            }
+            for condition in conditions
+        ],
+        "repeats": repeats,
     }
 
 
@@ -695,6 +739,7 @@ def _validate_resume_checkpoint(
     backend: str,
     output_path: Path,
     model: ModelSpec,
+    context_provenance: Mapping[str, Any],
 ) -> None:
     if manifest is None:
         raise ValueError("resume requires an existing run checkpoint")
@@ -723,6 +768,24 @@ def _validate_resume_checkpoint(
         for field in ("id", "revision", "tokenizer_id", "tokenizer_revision"):
             if recorded_model.get(field) != expected_model[field]:
                 mismatches.append(f"model.{field}")
+
+    recorded_context = manifest.get("context_provenance")
+    if not isinstance(recorded_context, Mapping):
+        mismatches.append("context_provenance")
+    else:
+        for field in (
+            "fixture_seed",
+            "config_path",
+            "config_sha256",
+            "task_catalog",
+            "task_catalog_sha256",
+            "task_ids",
+            "task_types",
+            "conditions",
+            "repeats",
+        ):
+            if recorded_context.get(field) != context_provenance.get(field):
+                mismatches.append(f"context_provenance.{field}")
 
     if mismatches:
         raise ValueError(
@@ -798,6 +861,7 @@ def _write_resume_checkpoint(
     output_path: Path,
     sampling: SamplingConfig,
     generation_seed_policy: str,
+    context_provenance: Mapping[str, Any],
 ) -> None:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     sampling_record = sampling.to_record()
@@ -810,6 +874,7 @@ def _write_resume_checkpoint(
         "status": "in_progress",
         "model": _model_record(model),
         "sampling": sampling_record,
+        "context_provenance": dict(context_provenance),
         "raw_results": _relative_or_absolute(output_path),
     }
     manifest_path.write_text(

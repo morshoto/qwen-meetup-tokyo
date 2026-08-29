@@ -79,7 +79,9 @@ trial; resume requires that checkpoint and rejects changes to its effective
 settings or to sampling provenance already stored in raw trials. It also
 requires an in-progress checkpoint matching the experiment phase, backend,
 raw-results path, and resolved model/tokenizer identity; completed or cross-run
-manifests are rejected.
+manifests are rejected. Context-generation provenance (fixture seed, config and
+catalog hashes, task IDs, and the exact phase matrix) is also checkpointed and
+must match before existing trials are reused.
 
 ## Provenance and outputs
 

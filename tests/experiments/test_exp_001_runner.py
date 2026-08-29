@@ -255,6 +255,17 @@ effective_context:
         self.assertEqual("Qwen/Qwen3.8-27B", manifest["model"]["id"])
         self.assertIsNone(manifest["model"]["revision"])
         self.assertIsNone(manifest["sampling"]["seed"])
+        self.assertEqual(42, manifest["context_provenance"]["fixture_seed"])
+        self.assertEqual(
+            [
+                {
+                    "condition_id": "baseline:ctx008192:p005",
+                    "target_context_tokens": 8192,
+                    "evidence_position": 0.05,
+                }
+            ],
+            manifest["context_provenance"]["conditions"],
+        )
         self.assertEqual(
             "greedy-decoding-no-seed",
             manifest["sampling"]["generation_seed_policy"],
@@ -310,6 +321,7 @@ effective_context:
                 output_path=output_path,
                 sampling=sampling,
                 generation_seed_policy="run-resolved-seed",
+                context_provenance={"fixture_seed": 42, "conditions": []},
             )
 
             checkpoint = runner._load_resume_manifest(manifest_path)
@@ -320,6 +332,7 @@ effective_context:
             "run-resolved-seed",
             checkpoint["sampling"]["generation_seed_policy"],
         )
+        self.assertEqual(42, checkpoint["context_provenance"]["fixture_seed"])
 
     def test_resume_checkpoint_requires_matching_in_progress_run_identity(self) -> None:
         with TemporaryDirectory() as directory:
@@ -337,6 +350,23 @@ effective_context:
                 "status": "in_progress",
                 "model": runner._model_record(model),
                 "raw_results": str(output_path),
+                "context_provenance": {
+                    "fixture_seed": 42,
+                    "config_path": "config.yaml",
+                    "config_sha256": "config-hash",
+                    "task_catalog": "tasks.jsonl",
+                    "task_catalog_sha256": "catalog-hash",
+                    "task_ids": ["task.literal.000001"],
+                    "task_types": ["literal_retrieval"],
+                    "conditions": [
+                        {
+                            "condition_id": "baseline:ctx008192:p005",
+                            "target_context_tokens": 8192,
+                            "evidence_position": 0.05,
+                        }
+                    ],
+                    "repeats": 1,
+                },
             }
 
             runner._validate_resume_checkpoint(
@@ -345,6 +375,7 @@ effective_context:
                 backend="transformers",
                 output_path=output_path,
                 model=model,
+                context_provenance=checkpoint["context_provenance"],
             )
 
             invalid_checkpoints = (
@@ -359,6 +390,13 @@ effective_context:
                         "tokenizer_revision": "other-tokenizer-commit",
                     },
                 ),
+                (
+                    "context_provenance",
+                    {
+                        **checkpoint["context_provenance"],
+                        "fixture_seed": 43,
+                    },
+                ),
             )
             for field, value in invalid_checkpoints:
                 with self.subTest(field=field):
@@ -371,6 +409,7 @@ effective_context:
                             backend="transformers",
                             output_path=output_path,
                             model=model,
+                            context_provenance=checkpoint["context_provenance"],
                         )
 
 if __name__ == "__main__":
