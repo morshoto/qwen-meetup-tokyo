@@ -47,6 +47,9 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             self.assertIn("llama.cpp", text)
             self.assertIn("fixture", text.lower())
             self.assertIn("not a Qwen measurement", text)
+        self.assertIn("execution source of truth", readme)
+        self.assertIn("explicit legacy exception", readme)
+        self.assertIn("not directly comparable", readme)
 
     def test_notebook_contains_required_interaction_sections(self) -> None:
         notebook = (EXPERIMENT / "analysis.ipynb").read_text(encoding="utf-8")

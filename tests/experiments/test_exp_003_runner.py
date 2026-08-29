@@ -46,6 +46,9 @@ class ByteTokenizer:
 class FakeRuntime:
     name = "llama.cpp"
     instances: list["FakeRuntime"] = []
+    answers = runner._fixture_answers(
+        runner.TaskCatalog.from_jsonl(runner.TASK_CATALOG)
+    )
 
     def __init__(self) -> None:
         self.loaded: tuple[ModelSpec, RuntimeConfig] | None = None
@@ -59,12 +62,7 @@ class FakeRuntime:
         return ByteTokenizer()
 
     def generate(self, request: Any) -> GenerationResponse:
-        answers = {
-            "task.literal.000001": "ZX-4817",
-            "task.semantic.000001": "Reliability Engineering",
-            "task.multihop.000001": "8392",
-        }
-        output = answers[str(request.metadata["task_id"])]
+        output = self.answers[str(request.metadata["task_id"])]
         prompt_tokens = len(ByteTokenizer().encode(request.prompt))
         return GenerationResponse(
             output_text=output,
@@ -186,7 +184,7 @@ quantization:
   variants: [q4_k_m]
 phases:
   smoke:
-    lengths: [123]
+    lengths: [8192]
     evidence_positions: [0.25]
     repeats: 2
     backend: fixture
@@ -205,10 +203,10 @@ phases:
                 config_path=config_path,
             )
 
-            self.assertEqual(6, result["expected_trial_n"])
-            self.assertEqual(6, result["actual_trial_n"])
+            self.assertEqual(60, result["expected_trial_n"])
+            self.assertEqual(60, result["actual_trial_n"])
             self.assertEqual(
-                123,
+                8192,
                 json.loads(
                     (root / "manifests" / "smoke.json").read_text(encoding="utf-8")
                 )["context_lengths"][0],
@@ -241,8 +239,8 @@ phases:
                 runtime_factory=FakeRuntime,
             )
 
-            self.assertEqual(24, result["expected_trial_n"])
-            self.assertEqual(24, result["actual_trial_n"])
+            self.assertEqual(240, result["expected_trial_n"])
+            self.assertEqual(240, result["actual_trial_n"])
             self.assertEqual(24, result["summary_row_n"])
             self.assertTrue(summary_path.is_file())
             self.assertTrue(all(instance.closed for instance in FakeRuntime.instances))
@@ -258,7 +256,7 @@ phases:
                     )
                 ].append(record)
 
-            self.assertEqual(12, len(grouped))
+            self.assertEqual(120, len(grouped))
             for matched_records in grouped.values():
                 self.assertEqual(2, len(matched_records))
                 self.assertEqual(
@@ -279,16 +277,17 @@ phases:
 
             manifest = json.loads(run_manifest_path.read_text(encoding="utf-8"))
             self.assertEqual("exp_003", manifest["experiment_id"])
-            self.assertEqual(24, manifest["planned_trial_n"])
-            self.assertEqual(24, manifest["actual_trial_n"])
+            self.assertEqual(240, manifest["planned_trial_n"])
+            self.assertEqual(240, manifest["actual_trial_n"])
             self.assertEqual(24, len(manifest["coverage"]))
             self.assertEqual(0, len(manifest["excluded_cells"]))
             self.assertEqual(
-                {1}, {row["independent_task_n"] for row in manifest["coverage"]}
+                {10}, {row["independent_task_n"] for row in manifest["coverage"]}
             )
             self.assertEqual(
-                {1}, {row["expected_trial_n"] for row in manifest["coverage"]}
+                {10}, {row["expected_trial_n"] for row in manifest["coverage"]}
             )
+            self.assertEqual(30, len(manifest["task_ids"]))
             self.assertEqual(
                 {"n_ctx": 33088, "n_batch": 512},
                 manifest["runtime"]["source_options"],
@@ -312,7 +311,7 @@ phases:
                 runner._sha256(source_manifest), manifest["source_manifest_sha256"]
             )
 
-    def test_manifest_trial_count_uses_selected_source_task_ids(self) -> None:
+    def test_manifest_trial_count_uses_catalog_task_ids(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source_manifest = _manifest_file(root)
@@ -343,7 +342,7 @@ phases:
                 },
             )
 
-            self.assertEqual(3, run_manifest["planned_trial_n"])
+            self.assertEqual(4, run_manifest["planned_trial_n"])
 
     def test_runner_resumes_without_duplicate_trial_ids(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -363,11 +362,11 @@ phases:
             runner.run_experiment(**kwargs)
             result = runner.run_experiment(**kwargs)
 
-            self.assertEqual(24, result["actual_trial_n"])
-            self.assertEqual(24, result["skipped_trial_n"])
+            self.assertEqual(240, result["actual_trial_n"])
+            self.assertEqual(240, result["skipped_trial_n"])
             records = load_trial_results(kwargs["output_path"])
-            self.assertEqual(24, len(records))
-            self.assertEqual(24, len({record.trial_id for record in records}))
+            self.assertEqual(240, len(records))
+            self.assertEqual(240, len({record.trial_id for record in records}))
 
     def test_fixture_and_measured_runs_have_distinct_fingerprints(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

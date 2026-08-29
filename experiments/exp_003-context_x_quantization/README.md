@@ -18,6 +18,16 @@ The checked-in exp_003 outputs are historical three-task measurements from the
 previous catalog version. They remain unchanged until a real llama.cpp run
 produces measurements for the expanded catalog.
 
+For new runs, `core.v002.jsonl` is the execution source of truth. The exp_002
+source manifest supplies model, artifact, and runtime provenance; its historical
+task IDs are required to remain valid catalog IDs but do not limit the current
+exp_003 task population.
+
+Scoring compatibility is an explicit legacy exception: exp_003 currently uses
+the `ExpectedAnswerScorer` (`expected.v1`) used by its historical outputs. Its
+accuracy columns are not directly comparable with `calibrated.v1` outputs from
+the separate scoring-calibration work until exp_003 is migrated in a follow-up.
+
 ## Controlled matrix
 
 | Variable | Main values |

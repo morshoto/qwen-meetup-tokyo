@@ -209,7 +209,8 @@ def expected_trial_count(
         config=config,
     )
     run_repeats = _select_repeats(phase, repeats, config)
-    return len(variants) * len(conditions) * len(manifest.task_ids) * run_repeats
+    catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
+    return len(variants) * len(conditions) * len(catalog.ids) * run_repeats
 
 
 def run_experiment(
@@ -288,7 +289,7 @@ def run_experiment(
         )
         for variant in variants
         for condition in conditions
-        for task_id in source_manifest.task_ids
+        for task_id in catalog.ids
         for repeat_index in range(1, run_repeats + 1)
     }
     _validate_existing(existing, expected_ids, fingerprint)
@@ -332,7 +333,7 @@ def run_experiment(
                     condition.condition_id: tuple(
                         build_tasks(
                             catalog,
-                            source_manifest.task_ids,
+                            catalog.ids,
                             condition,
                             tokenizer=tokenizer,
                             prompt_id=source_manifest.prompt_id,
@@ -744,7 +745,7 @@ def _run_manifest(
         ).append(result)
 
     catalog_tasks = getattr(catalog, "tasks", ())
-    selected_task_ids = set(source_manifest.task_ids)
+    selected_task_ids = set(catalog.ids)
     independent_task_n_by_type = {
         task_type: sum(
             task.task_type == task_type and task.task_id in selected_task_ids
@@ -813,7 +814,7 @@ def _run_manifest(
         },
         "task_catalog": _display_path(TASK_CATALOG),
         "prompt_id": source_manifest.prompt_id,
-        "task_ids": list(source_manifest.task_ids),
+        "task_ids": list(catalog.ids),
         "task_types": list(TASK_TYPES),
         "quantization_variants": [variant.to_record() for variant in variant_list],
         "context_lengths": _ordered_unique(
@@ -827,7 +828,7 @@ def _run_manifest(
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),
         "planned_trial_n": len(condition_list)
-        * len(source_manifest.task_ids)
+        * len(catalog.ids)
         * len(variant_list)
         * repeats,
         "actual_trial_n": len(result_list),
