@@ -393,16 +393,27 @@ def _manifest(
             scored_n = sum(
                 result.score.get("correct") is not None for result in cell_results
             )
+            independent_task_n = sum(
+                task.task_type == task_type for task in catalog.tasks
+            )
+            expected_trial_n = independent_task_n * repeats
             coverage.append(
                 {
                     "task_type": task_type,
                     "condition_id": condition.condition_id,
                     "target_context_tokens": condition.target_context_tokens,
                     "requested_evidence_position": condition.evidence_position,
+                    "independent_task_n": independent_task_n,
+                    "expected_trial_n": expected_trial_n,
                     "trial_n": len(cell_results),
                     "scored_n": scored_n,
                     "statuses": dict(sorted(statuses.items())),
-                    "status": "valid" if scored_n == repeats else "excluded",
+                    "status": (
+                        "valid"
+                        if len(cell_results) == expected_trial_n
+                        and scored_n == expected_trial_n
+                        else "excluded"
+                    ),
                 }
             )
 

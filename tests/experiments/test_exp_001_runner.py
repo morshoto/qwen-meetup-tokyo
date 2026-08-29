@@ -1,4 +1,6 @@
+import csv
 import importlib.util
+import json
 import sys
 from tempfile import TemporaryDirectory
 import unittest
@@ -18,6 +20,39 @@ SPEC.loader.exec_module(runner)
 
 
 class Exp001RunnerTests(unittest.TestCase):
+    def test_checked_in_smoke_artifact_covers_expanded_catalog(self) -> None:
+        manifest = json.loads(
+            (
+                ROOT
+                / "experiments/exp_001-context_measurement/results/manifests/smoke.json"
+            ).read_text(encoding="utf-8")
+        )
+
+        self.assertEqual("data/tasks/core.v002.jsonl", manifest["task_catalog"])
+        self.assertEqual(30, len(manifest["task_ids"]))
+        self.assertEqual(180, manifest["planned_trial_n"])
+        self.assertEqual(180, manifest["actual_trial_n"])
+        self.assertEqual(
+            180,
+            len(
+                load_trial_results(
+                    ROOT
+                    / "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl"
+                )
+            ),
+        )
+        self.assertTrue(
+            all(row["independent_task_n"] == 10 for row in manifest["coverage"])
+        )
+        self.assertTrue(all(row["status"] == "valid" for row in manifest["coverage"]))
+        with (
+            ROOT
+            / "experiments/exp_001-context_measurement/results/processed/summary.csv"
+        ).open(encoding="utf-8", newline="") as summary_file:
+            summary_rows = list(csv.DictReader(summary_file))
+        self.assertEqual(18, len(summary_rows))
+        self.assertTrue(all(row["n"] == "10" for row in summary_rows))
+
     def test_planned_conditions_match_smoke_and_main_matrix(self) -> None:
         smoke = runner.planned_conditions("smoke")
         main = runner.planned_conditions("main")
