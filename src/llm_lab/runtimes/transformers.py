@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import importlib
 import importlib.metadata
+from dataclasses import replace
 from time import perf_counter
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from llm_lab.generation import (
     GenerationRequest,
@@ -48,8 +49,15 @@ class TransformersRuntime:
 
     def load(self, model: ModelSpec, config: RuntimeConfig) -> None:
         self._processor, self._model = self._loader(model, config)
-        self._model_spec = model
+        self._model_spec = _resolved_model_spec(model, self._processor, self._model)
         self._runtime_config = config
+
+    def resolved_model_spec(self) -> ModelSpec:
+        """Return the model identity resolved from the loaded components."""
+
+        if self._model_spec is None:
+            raise RuntimeError("runtime must be loaded before reading model identity")
+        return self._model_spec
 
     def get_tokenizer(self) -> Any:
         """Return the tokenizer used by the loaded processor for input encoding."""
@@ -159,6 +167,43 @@ def _load_transformers_components(model: ModelSpec, config: RuntimeConfig) -> tu
 
 def _revision_kwargs(revision: Any) -> dict[str, Any]:
     return {} if revision is None else {"revision": revision}
+
+
+def _resolved_model_spec(
+    model: ModelSpec,
+    processor: Any,
+    model_component: Any,
+) -> ModelSpec:
+    """Capture loaded commit hashes while preserving explicitly pinned values."""
+
+    tokenizer = getattr(processor, "tokenizer", processor)
+    return replace(
+        model,
+        revision=model.revision or _component_commit_hash(model_component),
+        tokenizer_revision=(
+            model.tokenizer_revision or _component_commit_hash(tokenizer)
+        ),
+    )
+
+
+def _component_commit_hash(component: Any) -> str | None:
+    """Read a resolved Hugging Face commit hash from a loaded component."""
+
+    candidates = (component, getattr(component, "config", None))
+    for candidate in candidates:
+        if candidate is None:
+            continue
+        for attribute in ("_commit_hash", "commit_hash"):
+            value = getattr(candidate, attribute, None)
+            if isinstance(value, str) and value.strip():
+                return value
+        init_kwargs = getattr(candidate, "init_kwargs", None)
+        if isinstance(init_kwargs, Mapping):
+            for key in ("_commit_hash", "commit_hash"):
+                value = init_kwargs.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value
+    return None
 
 
 def _resolve_torch_dtype(value: Any) -> Any:

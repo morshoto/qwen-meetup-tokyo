@@ -252,6 +252,8 @@ effective_context:
         self.assertEqual(30, manifest["planned_trial_n"])
         self.assertEqual([8192], manifest["context_lengths"])
         self.assertEqual([0.05], manifest["evidence_positions"])
+        self.assertEqual("Qwen/Qwen3.8-27B", manifest["model"]["id"])
+        self.assertIsNone(manifest["model"]["revision"])
         self.assertIsNone(manifest["sampling"]["seed"])
         self.assertEqual(
             "greedy-decoding-no-seed",

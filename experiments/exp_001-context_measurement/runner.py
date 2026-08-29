@@ -287,8 +287,20 @@ def run_experiment(
     if not isinstance(configured_catalog, str) or not configured_catalog.strip():
         raise ValueError("experiment config must declare task_catalog")
     catalog_path = _rooted(Path(configured_catalog))
-    configured_model = config.get("model", {}).get("model") if isinstance(config.get("model"), Mapping) else None
-    model = qwen38_model_spec()
+    model_config = config.get("model")
+    configured_model = (
+        model_config.get("model") if isinstance(model_config, Mapping) else None
+    )
+    model = qwen38_model_spec(
+        revision=_declared_revision(
+            model_config.get("revision") if isinstance(model_config, Mapping) else None
+        ),
+        tokenizer_revision=_declared_revision(
+            model_config.get("tokenizer_revision")
+            if isinstance(model_config, Mapping)
+            else None
+        ),
+    )
     if configured_model != model.model_id:
         raise ValueError(
             f"config model {configured_model!r} does not match {model.model_id!r}"
@@ -331,6 +343,12 @@ def run_experiment(
                 },
             ),
         )
+        model = runtime.resolved_model_spec()
+        if not model.revision or not model.tokenizer_revision:
+            runtime.close()
+            raise RuntimeError(
+                "real-model runs require resolved model and tokenizer commit hashes"
+            )
         tokenizer_id = model.tokenizer_id or model.model_id
         revision = model.tokenizer_revision or "unresolved"
         context_tokenizer = InferenceTokenizer(
@@ -414,6 +432,7 @@ def run_experiment(
         config=config,
         sampling=sampling,
         generation_seed_policy=generation_seed_policy,
+        model=model,
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -462,6 +481,7 @@ def _manifest(
     config: Mapping[str, Any] | None = None,
     sampling: SamplingConfig | None = None,
     generation_seed_policy: str | None = None,
+    model: ModelSpec | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     condition_list = list(conditions)
@@ -542,6 +562,7 @@ def _manifest(
         },
         "effective_context": effective_context,
         "sampling": sampling_record,
+        "model": _model_record(model) if model is not None else None,
         "repeats": repeats,
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),
@@ -561,6 +582,25 @@ def _manifest(
             if backend == "fixture"
             else "Results are model/runtime observations under the recorded environment."
         ),
+    }
+
+
+def _declared_revision(value: Any) -> str | None:
+    if value is None or value == "record-at-run-time":
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("model revisions must be strings or record-at-run-time")
+    return value
+
+
+def _model_record(model: ModelSpec | None) -> dict[str, Any] | None:
+    if model is None:
+        return None
+    return {
+        "id": model.model_id,
+        "revision": model.revision,
+        "tokenizer_id": model.tokenizer_id,
+        "tokenizer_revision": model.tokenizer_revision,
     }
 
 
