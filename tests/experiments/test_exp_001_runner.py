@@ -121,6 +121,8 @@ class Exp001RunnerTests(unittest.TestCase):
             persisted = load_trial_results(output_path)
             self.assertEqual(18, len(persisted))
             self.assertEqual(18, len({result.trial_id for result in persisted}))
+            self.assertTrue(all(result.score["scorer"] == "calibrated.v1" for result in persisted))
+            self.assertTrue(all("answer_bearing_correct" in result.score for result in persisted))
 
 if __name__ == "__main__":
     unittest.main()

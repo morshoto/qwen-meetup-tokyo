@@ -172,7 +172,10 @@ class Exp002RunnerTests(unittest.TestCase):
             )
 
             self.assertEqual(3, result["actual_trial_n"])
-            self.assertEqual(3, len(runner.load_trial_results(output_path)))
+            trials = runner.load_trial_results(output_path)
+            self.assertEqual(3, len(trials))
+            self.assertTrue(all(item.score["scorer"] == "calibrated.v1" for item in trials))
+            self.assertTrue(all("format_valid" in item.score for item in trials))
             self.assertTrue(summary_path.is_file())
             self.assertTrue(all(instance.closed for instance in FakeRuntime.instances))
 

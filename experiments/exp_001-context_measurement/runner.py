@@ -34,7 +34,7 @@ from llm_lab.datasets import TaskCatalog  # noqa: E402
 from llm_lab.evaluation import (  # noqa: E402
     EvaluationRunner,
     EvaluationTask,
-    ExpectedAnswerScorer,
+    CalibratedAnswerScorer,
     TrialResult,
     TrialStatus,
 )
@@ -283,7 +283,7 @@ def run_experiment(
             runner = EvaluationRunner(
                 runtime=runtime,
                 model=model,
-                scorer=ExpectedAnswerScorer(),
+                scorer=CalibratedAnswerScorer(),
                 experiment_id=EXPERIMENT_ID,
                 output_path=working_output_path,
             )
