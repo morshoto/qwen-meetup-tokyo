@@ -204,6 +204,8 @@ def render_report(
     for row in comparison:
         variant = str(row.get("variant_condition_id") or "<unknown>")
         variants.setdefault(variant, []).append(row)
+    raw_sha256 = sha256_file(raw_path)
+    task_catalog_sha256 = sha256_file(task_catalog_path)
 
     lines = [
         "# exp_002 diagnostic re-scoring report",
@@ -216,8 +218,9 @@ def render_report(
         "",
         f"- Raw input: `results/raw/{Path(raw_path).name}`",
         f"- Raw trial count: {raw_trial_n}",
-        f"- Raw SHA-256: `{sha256_file(raw_path)}`",
+        f"- Raw SHA-256: `{raw_sha256}`",
         f"- Task catalog: `data/tasks/{Path(task_catalog_path).name}`",
+        f"- Task catalog SHA-256: `{task_catalog_sha256}`",
         "- Legacy scorer: `expected.v1` (preserved in the raw records)",
         "- Calibrated scorer: `calibrated.v1`",
         "- Processing entry point: `rescore.py`",
