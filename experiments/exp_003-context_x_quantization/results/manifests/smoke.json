@@ -1,0 +1,848 @@
+{
+  "actual_trial_n": 48,
+  "backend": "llama.cpp",
+  "context_lengths": [
+    8192,
+    32768
+  ],
+  "coverage": [
+    {
+      "condition_id": "q8_0:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q6_k:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q6_k:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q6_k"
+    },
+    {
+      "condition_id": "q5_k_m:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q5_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q5_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p005",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.05,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 1,
+      "variant_condition_id": "q4_k_m"
+    }
+  ],
+  "environment": {
+    "git_sha": "2ab725de3d5b3defd25b3ab14df604e7457e1732",
+    "machine": "arm64",
+    "os": "Darwin",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python_version": "3.11.15"
+  },
+  "evidence_positions": [
+    0.05,
+    0.5
+  ],
+  "excluded_cells": [],
+  "experiment_id": "exp_003",
+  "fixture_seed": 42,
+  "interpretation": "Results are model/runtime observations under the recorded environment.",
+  "manifest_path": "experiments/exp_003-context_x_quantization/results/manifests/smoke.json",
+  "matching": "same task seed, generated context text, context length, and evidence position across variants",
+  "model": {
+    "id": "Qwen/Qwen3.8-27B",
+    "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "tokenizer_id": "Qwen/Qwen3.8-27B",
+    "tokenizer_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+  },
+  "phase": "smoke",
+  "planned_cell_n": 48,
+  "planned_condition_n": 4,
+  "planned_trial_n": 48,
+  "prompt_id": "prompt.qa.v001",
+  "quantization_variants": [
+    {
+      "artifact": {
+        "artifact_sha256": "6cb70620c7811dce01e1a622fe0a4f9ac445e31c569640c36ecfac85c4609b6c",
+        "artifact_size_bytes": 29047084256,
+        "artifact_uri": "artifacts/q8_0.gguf",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf Q8_0 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "source_uri": "hf://Qwen/Qwen3.8-27B"
+      },
+      "bits": 8,
+      "condition_id": "q8_0",
+      "format": "GGUF",
+      "label": "Q8_0",
+      "quantization_type": "Q8_0",
+      "runtime_kernel": "ggml"
+    },
+    {
+      "artifact": {
+        "artifact_sha256": "1f6a8e5d44e8cea0927908fd701348906de3e705564611169cc324f4c8bf8722",
+        "artifact_size_bytes": 22430999776,
+        "artifact_uri": "artifacts/q6_k.gguf",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q6_k.gguf Q6_K 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "source_uri": "hf://Qwen/Qwen3.8-27B"
+      },
+      "bits": 6,
+      "condition_id": "q6_k",
+      "format": "GGUF",
+      "label": "Q6_K",
+      "quantization_type": "Q6_K",
+      "runtime_kernel": "ggml"
+    },
+    {
+      "artifact": {
+        "artifact_sha256": "48fbca2bc04f59297981aabd0dbbe5e51efa8df13595e7c694164e652c3879d6",
+        "artifact_size_bytes": 19535701216,
+        "artifact_uri": "artifacts/q5_k_m.gguf",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q5_k_m.gguf Q5_K_M 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "source_uri": "hf://Qwen/Qwen3.8-27B"
+      },
+      "bits": 5,
+      "condition_id": "q5_k_m",
+      "format": "GGUF",
+      "label": "Q5_K_M",
+      "quantization_type": "Q5_K_M",
+      "runtime_kernel": "ggml"
+    },
+    {
+      "artifact": {
+        "artifact_sha256": "8b259e30f860c924fa1fd12d459343e8c2520eb12741f943ad5dcea5d1c4d120",
+        "artifact_size_bytes": 16810714336,
+        "artifact_uri": "artifacts/q4_k_m.gguf",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf Q4_K_M 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "source_uri": "hf://Qwen/Qwen3.8-27B"
+      },
+      "bits": 4,
+      "condition_id": "q4_k_m",
+      "format": "GGUF",
+      "label": "Q4_K_M",
+      "quantization_type": "Q4_K_M",
+      "runtime_kernel": "ggml"
+    }
+  ],
+  "raw_results": "experiments/exp_003-context_x_quantization/results/raw/smoke-trials.jsonl",
+  "raw_results_sha256": "f97e23332b01039210c83af6e0dd61956ad0af656723a83436e65a720ed5c95d",
+  "repeats": 1,
+  "run_fingerprint": "a025b494d01a5b955b3b608b5a8037ba729f8d4e6f4dc1bb344314545421293e",
+  "runtime": {
+    "name": "llama.cpp",
+    "effective_options_by_variant": {
+      "q4_k_m": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf",
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q4_K_M",
+        "verbose": false
+      },
+      "q5_k_m": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q5_k_m.gguf",
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q5_K_M",
+        "verbose": false
+      },
+      "q6_k": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q6_k.gguf",
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q6_K",
+        "verbose": false
+      },
+      "q8_0": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf",
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q8_0",
+        "verbose": false
+      }
+    },
+    "source_options": {
+      "flash_attn": true,
+      "n_batch": 512,
+      "n_ctx": 33088,
+      "n_gpu_layers": -1,
+      "verbose": false
+    },
+    "version": "llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3"
+  },
+  "schema_version": 1,
+  "source_experiment_id": "exp_002",
+  "source_manifest": "experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json",
+  "source_manifest_sha256": "5e009eb88d2ee28bd778ebdff4e83e0248df08f7a471c18d354d183ce373f43b",
+  "task_catalog": "data/tasks/core.v001.jsonl",
+  "task_ids": [
+    "task.literal.000001",
+    "task.semantic.000001",
+    "task.multihop.000001"
+  ],
+  "task_types": [
+    "literal_retrieval",
+    "semantic_retrieval",
+    "multi_hop"
+  ]
+}

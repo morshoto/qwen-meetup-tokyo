@@ -137,6 +137,8 @@ class AggregationTests(unittest.TestCase):
                         "target_context_tokens": 8192,
                         "requested_evidence_position": 0.05,
                         "actual_evidence_position": 0.047,
+                        "context_instance_id": "task:seed:ctx8192:p005",
+                        "context_sha256": "a" * 64,
                     },
                 ),
                 trial(
@@ -150,6 +152,8 @@ class AggregationTests(unittest.TestCase):
                         "target_context_tokens": 8192,
                         "requested_evidence_position": 0.05,
                         "actual_evidence_position": 0.053,
+                        "context_instance_id": "task:seed:ctx8192:p005",
+                        "context_sha256": "a" * 64,
                     },
                 ),
             ]
@@ -158,6 +162,8 @@ class AggregationTests(unittest.TestCase):
         self.assertEqual(8192, summaries[0]["target_context_tokens"])
         self.assertEqual(0.05, summaries[0]["requested_evidence_position"])
         self.assertAlmostEqual(0.05, summaries[0]["actual_evidence_position"])
+        self.assertEqual("task:seed:ctx8192:p005", summaries[0]["context_instance_id"])
+        self.assertEqual("a" * 64, summaries[0]["context_sha256"])
 
     def test_aggregation_preserves_variant_id_when_execution_condition_is_scoped(self) -> None:
         summaries = aggregate_trials(

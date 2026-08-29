@@ -1376,6 +1376,7 @@ source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
     { name = "pandas" },
+    { name = "pyyaml" },
 ]
 
 [package.optional-dependencies]
@@ -1400,6 +1401,7 @@ requires-dist = [
     { name = "matplotlib", marker = "extra == 'analysis'", specifier = ">=3.8" },
     { name = "pandas", specifier = ">=3.0.5" },
     { name = "pandas", marker = "extra == 'analysis'", specifier = ">=2.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "torch", marker = "extra == 'transformers'", specifier = ">=2.6" },
     { name = "transformers", marker = "extra == 'transformers'", specifier = ">=4.51.0" },
 ]
