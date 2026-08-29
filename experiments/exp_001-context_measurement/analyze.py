@@ -157,10 +157,31 @@ def _load_manifest(path: Path) -> dict[str, Any]:
 def _manifest_dimensions(
     manifest: Mapping[str, Any],
 ) -> tuple[tuple[int, ...], tuple[float, ...], tuple[str, ...]]:
+    dimensions = (
+        manifest.get("context_lengths"),
+        manifest.get("evidence_positions"),
+        manifest.get("task_types"),
+    )
+    if any(value is None for value in dimensions):
+        coverage = manifest.get("coverage")
+        if not isinstance(coverage, list):
+            raise AnalysisInputError(
+                "manifest must declare dimensions or a coverage list"
+            )
+        try:
+            dimensions = (
+                sorted({int(row["target_context_tokens"]) for row in coverage}),
+                sorted({float(row["requested_evidence_position"]) for row in coverage}),
+                sorted({str(row["task_type"]) for row in coverage}),
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise AnalysisInputError(
+                "manifest coverage must declare context, position, and task dimensions"
+            ) from error
     try:
-        lengths = tuple(int(value) for value in manifest["context_lengths"])
-        positions = tuple(float(value) for value in manifest["evidence_positions"])
-        task_types = tuple(str(value) for value in manifest["task_types"])
+        lengths = tuple(int(value) for value in dimensions[0])
+        positions = tuple(float(value) for value in dimensions[1])
+        task_types = tuple(str(value) for value in dimensions[2])
     except (KeyError, TypeError, ValueError) as error:
         raise AnalysisInputError(
             "manifest must declare context_lengths, evidence_positions, and task_types"

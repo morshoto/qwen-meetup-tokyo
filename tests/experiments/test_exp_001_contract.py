@@ -40,6 +40,23 @@ class Exp001ExperimentContractTests(unittest.TestCase):
         ):
             self.assertIn(required, results_readme)
 
+    def test_notebook_is_measured_only_and_saves_required_figures(self) -> None:
+        notebook = (EXPERIMENT / "analysis.ipynb").read_text(encoding="utf-8")
+        readme = (EXPERIMENT / "README.md").read_text(encoding="utf-8")
+
+        for required in (
+            "regenerate",
+            "allow_fixture",
+            "position_gap_rows",
+            "position-gap-vs-context.png",
+            "effective-context-vs-context.png",
+            "savefig",
+            "baseline-limited",
+            "--resume",
+            "real-model",
+        ):
+            self.assertIn(required, notebook + readme)
+
 
 if __name__ == "__main__":
     unittest.main()

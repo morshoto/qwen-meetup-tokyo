@@ -98,11 +98,6 @@ def position_gap_rows(
             (cells[middle_position],),
             middle_scored_n,
         )
-        if edge_accuracy is None or middle_accuracy is None:
-            raise ContextAnalysisError(
-                "position cell has no scored accuracy for "
-                f"task={task_type}, context={context_tokens}"
-            )
         output.append(
             {
                 "task_type": task_type,
@@ -111,9 +106,18 @@ def position_gap_rows(
                 "middle_position": middle_position,
                 "edge_accuracy": edge_accuracy,
                 "middle_accuracy": middle_accuracy,
-                "position_gap": edge_accuracy - middle_accuracy,
+                "position_gap": (
+                    edge_accuracy - middle_accuracy
+                    if edge_accuracy is not None and middle_accuracy is not None
+                    else None
+                ),
                 "edge_scored_n": edge_scored_n,
                 "middle_scored_n": middle_scored_n,
+                "status": (
+                    "valid"
+                    if edge_accuracy is not None and middle_accuracy is not None
+                    else "insufficient_data"
+                ),
             }
         )
     return output

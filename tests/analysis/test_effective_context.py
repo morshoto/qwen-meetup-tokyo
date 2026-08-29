@@ -56,6 +56,20 @@ class EffectiveContextTests(unittest.TestCase):
                 [summary("literal_retrieval", 8192, 0.50, 1.0)]
             )
 
+    def test_position_gap_keeps_runtime_exclusion_as_unavailable(self) -> None:
+        rows = [
+            summary("literal_retrieval", 8192, 0.05, 1.0),
+            summary("literal_retrieval", 8192, 0.50, 0.0, scored_n=0),
+            summary("literal_retrieval", 8192, 0.95, 1.0),
+        ]
+
+        [gap] = position_gap_rows(rows)
+
+        self.assertEqual("insufficient_data", gap["status"])
+        self.assertIsNone(gap["position_gap"])
+        self.assertEqual(20, gap["edge_scored_n"])
+        self.assertEqual(0, gap["middle_scored_n"])
+
     def test_missing_context_cells_reports_task_length_and_position(self) -> None:
         rows = [summary("literal_retrieval", 8192, 0.05, 1.0)]
 

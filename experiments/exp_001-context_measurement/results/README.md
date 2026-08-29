@@ -6,6 +6,7 @@
 results/
 ├── raw/        # append-only TrialResult JSONL; large runs remain ignored
 ├── processed/  # notebook-ready CSV/tables derived from raw JSONL
+├── figures/    # regenerated measured-data figures
 └── manifests/  # planned coverage, exclusions, hashes, and environment
 ```
 
