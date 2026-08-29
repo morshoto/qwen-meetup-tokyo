@@ -17,6 +17,10 @@ responses independently, `TrialResult` serializes one execution, and
 `aggregate_jsonl` produces notebook-ready summaries without counting unscored
 runtime or scorer failures as accuracy observations.
 
+Issue #24 adds the opt-in `CalibratedAnswerScorer` for separating exact
+correctness, answer-bearing correctness, and output-format validity. Existing
+`expected.v1` scores are not rewritten.
+
 ## 1. Directory roles
 
 ```text
@@ -281,6 +285,61 @@ The Python implementation freezes this shape at `schema_version = 1`; new fields
 should be additive and readers should reject unknown schema versions rather than
 silently reinterpret old evidence.
 
+### 11.1 Scoring calibration
+
+There are two versioned scoring policies:
+
+- `expected.v1` is the legacy policy. It keeps the existing exact and
+  normalized-exact behaviour and remains available for reading old results.
+- `calibrated.v1` is the Issue #24 policy. It keeps `score.correct` and
+  `score.value` exact-compatible, and adds independent boolean fields:
+  `exact_correct`, `answer_bearing_correct`, and `format_valid`.
+
+For `calibrated.v1`:
+
+- `exact_correct` is true only when the output equals the canonical answer
+  (after the declared normalized-exact normalization for semantic tasks);
+- `answer_bearing_correct` is true when a complete accepted answer occurs in
+  the output with word boundaries. This is a lexical diagnostic, not a fuzzy
+  or LLM-judged semantic score;
+- `format_valid` checks the declared `expected.format`. `identifier` accepts
+  only letters/digits separated by hyphens or underscores; `phrase` accepts
+  alphanumeric words separated by spaces, hyphens, or underscores.
+
+Semantic tasks must declare their finite allowed answer range in
+`expected.accepted`. Values are normalized for comparison, and an answer is
+not accepted merely because it is plausible or synonymous unless it is listed
+in that range. The canonical answer remains in `expected.value`.
+
+For example, with `expected.value: "ZX-4817"` and
+`expected.format: "identifier"`, the output `ZX-4817.659` is:
+
+```text
+exact_correct           = false
+answer_bearing_correct  = true
+format_valid             = false
+```
+
+This distinguishes a model response that contains the expected answer from a
+strictly correct, correctly formatted response. A wrong but well-formed value
+such as `ZX-4818` has `format_valid = true` and both correctness fields false.
+
+Every trial records the selected policy in `score.scorer`, including failure
+records. `runtime_error` means generation did not complete; `scorer_error`
+means generation completed but scoring raised an exception; and
+`invalid_output` means the scorer received no scoreable output. These statuses
+must not be collapsed into model correctness.
+
+Processed summaries expose `exact_accuracy`, `answer_bearing_accuracy`, and
+`format_validity` with their own scored denominators. Legacy records without
+the additive fields retain their existing `accuracy` and are treated as
+exact-only for the compatibility `exact_accuracy` column; missing calibrated
+dimensions are not fabricated.
+
+When migrating a run, keep the original JSONL immutable and run new trials with
+`CalibratedAnswerScorer`. Do not relabel old `expected.v1` records as
+`calibrated.v1`.
+
 ## 12. Trial ID
 
 Trial IDs must be unique and deterministic enough to detect accidental duplicates.
@@ -355,6 +414,9 @@ context_tokens
 evidence_position
 n
 accuracy
+exact_accuracy
+answer_bearing_accuracy
+format_validity
 accuracy_ci_low
 accuracy_ci_high
 median_ttft_s

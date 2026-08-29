@@ -13,14 +13,21 @@ from llm_lab.evaluation.storage import load_trial_results
 
 def aggregate_trials(
     trials: Iterable[TrialResult | Mapping[str, Any]],
+    *,
+    expected_scorer: str | None = None,
 ) -> list[dict[str, Any]]:
     groups: dict[tuple[str, str, str], list[TrialResult]] = {}
+    parsed_trials: list[TrialResult] = []
     for value in trials:
         trial = value if isinstance(value, TrialResult) else TrialResult.from_record(value)
+        parsed_trials.append(trial)
         task_type = str(trial.input.get("task_type", "unknown"))
         condition_id = str(trial.input.get("condition_id", "default"))
         key = (trial.experiment_id, task_type, condition_id)
         groups.setdefault(key, []).append(trial)
+
+    if expected_scorer is not None:
+        _require_scorer_version(parsed_trials, expected_scorer)
 
     summaries: list[dict[str, Any]] = []
     for (experiment_id, task_type, condition_id), group in sorted(groups.items()):
@@ -29,6 +36,9 @@ def aggregate_trials(
             for result in group
             if isinstance(result.score.get("correct"), bool)
         ]
+        exact_scored = _metric_values(group, "exact_correct", fallback="correct")
+        answer_bearing_scored = _metric_values(group, "answer_bearing_correct")
+        format_scored = _metric_values(group, "format_valid")
         total_seconds = _numeric_values(group, "timing", "total_s")
         ttft_seconds = _numeric_values(group, "timing", "ttft_s")
         prefill_rates = _numeric_values(
@@ -75,6 +85,25 @@ def aggregate_trials(
                 "scored_n": len(scored),
                 "accuracy": sum(scored) / len(scored) if scored else None,
                 "scored_accuracy": sum(scored) / len(scored) if scored else None,
+                "scorer_version": _common_score_value(group, "scorer"),
+                "exact_correct_n": sum(exact_scored),
+                "exact_scored_n": len(exact_scored),
+                "exact_accuracy": _accuracy(exact_scored),
+                "answer_bearing_correct_n": sum(answer_bearing_scored),
+                "answer_bearing_scored_n": len(answer_bearing_scored),
+                "answer_bearing_accuracy": _accuracy(answer_bearing_scored),
+                "format_valid_n": sum(format_scored),
+                "format_scored_n": len(format_scored),
+                "format_validity": _accuracy(format_scored),
+                "runtime_error_n": sum(
+                    result.status == TrialStatus.RUNTIME_ERROR for result in group
+                ),
+                "scorer_error_n": sum(
+                    result.status == TrialStatus.SCORER_ERROR for result in group
+                ),
+                "invalid_output_n": sum(
+                    result.status == TrialStatus.INVALID_OUTPUT for result in group
+                ),
                 "end_to_end_success": correct_n / attempted_n if attempted_n else None,
                 "failure_rate": failure_n / attempted_n if attempted_n else None,
                 "target_context_tokens": _common_input_value(
@@ -103,8 +132,15 @@ def aggregate_trials(
     return summaries
 
 
-def aggregate_jsonl(path: str | Path) -> list[dict[str, Any]]:
-    return aggregate_trials(load_trial_results(path))
+def aggregate_jsonl(
+    path: str | Path,
+    *,
+    expected_scorer: str | None = None,
+) -> list[dict[str, Any]]:
+    return aggregate_trials(
+        load_trial_results(path),
+        expected_scorer=expected_scorer,
+    )
 
 
 def write_summary_csv(path: str | Path, summaries: Iterable[Mapping[str, Any]]) -> None:
@@ -133,6 +169,43 @@ def _numeric_values(
     return values
 
 
+def _metric_values(
+    trials: Iterable[TrialResult],
+    key: str,
+    *,
+    fallback: str | None = None,
+) -> list[int]:
+    values: list[int] = []
+    for trial in trials:
+        value = trial.score.get(key)
+        if value is None and fallback is not None:
+            value = trial.score.get(fallback)
+        if isinstance(value, bool):
+            values.append(int(value))
+    return values
+
+
+def _accuracy(values: list[int]) -> float | None:
+    return sum(values) / len(values) if values else None
+
+
+def _require_scorer_version(
+    trials: Iterable[TrialResult],
+    expected_scorer: str,
+) -> None:
+    if not expected_scorer.strip():
+        raise ValueError("expected scorer version must be non-empty")
+    versions = {trial.score.get("scorer") for trial in trials}
+    if versions != {expected_scorer}:
+        actual = sorted(
+            "<missing>" if version is None else str(version)
+            for version in versions
+        )
+        raise ValueError(
+            f"expected scorer version {expected_scorer!r}; found {actual}"
+        )
+
+
 def _median(values: list[float]) -> float | None:
     return median(values) if values else None
 
@@ -142,6 +215,17 @@ def _common_input_value(
     key: str,
 ) -> Any:
     values = [trial.input.get(key) for trial in trials]
+    if not values or any(value is None for value in values):
+        return None
+    first = values[0]
+    return first if all(value == first for value in values[1:]) else None
+
+
+def _common_score_value(
+    trials: Iterable[TrialResult],
+    key: str,
+) -> Any:
+    values = [trial.score.get(key) for trial in trials]
     if not values or any(value is None for value in values):
         return None
     first = values[0]
