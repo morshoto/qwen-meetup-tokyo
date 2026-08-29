@@ -176,6 +176,62 @@ class AggregationTests(unittest.TestCase):
 
         self.assertEqual("q8_0", summaries[0]["variant_condition_id"])
 
+    def test_aggregation_reports_calibrated_metrics_and_failure_kinds(self) -> None:
+        calibrated_one = TrialResult(
+            trial_id="calibrated-one",
+            experiment_id="exp_fixture",
+            task_id="calibrated-one",
+            status=TrialStatus.COMPLETED,
+            input={"task_type": "literal_retrieval", "condition_id": "calibrated"},
+            score={
+                "correct": True,
+                "value": 1.0,
+                "scorer": "calibrated.v1",
+                "exact_correct": True,
+                "answer_bearing_correct": True,
+                "format_valid": True,
+            },
+        )
+        calibrated_two = TrialResult(
+            trial_id="calibrated-two",
+            experiment_id="exp_fixture",
+            task_id="calibrated-two",
+            status=TrialStatus.COMPLETED,
+            input={"task_type": "literal_retrieval", "condition_id": "calibrated"},
+            score={
+                "correct": False,
+                "value": 0.0,
+                "scorer": "calibrated.v1",
+                "exact_correct": False,
+                "answer_bearing_correct": True,
+                "format_valid": False,
+            },
+        )
+        runtime_failure = TrialResult(
+            trial_id="calibrated-runtime",
+            experiment_id="exp_fixture",
+            task_id="calibrated-runtime",
+            status=TrialStatus.RUNTIME_ERROR,
+            input={"task_type": "literal_retrieval", "condition_id": "calibrated"},
+            score={"scorer": "calibrated.v1"},
+        )
+
+        [summary] = aggregate_trials([calibrated_one, calibrated_two, runtime_failure])
+
+        self.assertEqual("calibrated.v1", summary["scorer_version"])
+        self.assertEqual(1, summary["exact_correct_n"])
+        self.assertEqual(2, summary["exact_scored_n"])
+        self.assertEqual(0.5, summary["exact_accuracy"])
+        self.assertEqual(2, summary["answer_bearing_correct_n"])
+        self.assertEqual(2, summary["answer_bearing_scored_n"])
+        self.assertEqual(1.0, summary["answer_bearing_accuracy"])
+        self.assertEqual(1, summary["format_valid_n"])
+        self.assertEqual(2, summary["format_scored_n"])
+        self.assertEqual(0.5, summary["format_validity"])
+        self.assertEqual(1, summary["runtime_error_n"])
+        self.assertEqual(0, summary["scorer_error_n"])
+        self.assertEqual(0, summary["invalid_output_n"])
+
 
 if __name__ == "__main__":
     unittest.main()
