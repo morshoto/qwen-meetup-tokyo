@@ -71,6 +71,23 @@ def runtime_trial(task_id: str) -> TrialResult:
     )
 
 
+def invalid_output_trial(task_id: str) -> TrialResult:
+    return TrialResult(
+        trial_id=f"exp_002:{task_id}:q8_0:ctx8192:run04",
+        experiment_id="exp_002",
+        task_id=task_id,
+        status=TrialStatus.INVALID_OUTPUT,
+        input={
+            "task_type": "literal_retrieval",
+            "condition_id": "q8_0:ctx8192",
+            "variant_condition_id": "q8_0",
+            "target_context_tokens": 8192,
+        },
+        generation={"output_text": ""},
+        score={},
+    )
+
+
 class RescoringTests(unittest.TestCase):
     def test_completed_trials_are_classified_by_calibrated_outcome(self) -> None:
         cases = (
@@ -160,6 +177,23 @@ class RescoringTests(unittest.TestCase):
         self.assertEqual("runtime_failure", result.category)
         self.assertIsNone(result.score)
         self.assertIsNone(result.legacy_correct)
+
+    def test_invalid_output_is_classified_as_a_format_failure(self) -> None:
+        evaluation_task = task(
+            "task.literal.000001",
+            "literal_retrieval",
+            {"type": "exact", "value": "ZX-4817"},
+        )
+
+        [result] = rescore_trials(
+            [invalid_output_trial(evaluation_task.task_id)],
+            {evaluation_task.task_id: evaluation_task},
+        )
+
+        self.assertEqual("format_failure", result.category)
+        self.assertIsNotNone(result.score)
+        self.assertIsNone(result.score.exact_correct)
+        self.assertFalse(result.score.format_valid)
 
     def test_comparison_rows_group_by_task_variant_and_context(self) -> None:
         literal_task = task(
