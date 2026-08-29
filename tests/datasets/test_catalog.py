@@ -2,13 +2,32 @@ import json
 import unittest
 from pathlib import Path
 
-from llm_lab.datasets.catalog import TaskCatalog
+from llm_lab.datasets.catalog import TaskCatalog, TaskCatalogManifest
 
 
 REPOSITORY_ROOT = Path(__file__).parents[2]
 
 
 class TaskCatalogTests(unittest.TestCase):
+    def test_catalog_manifest_declares_versioned_shared_sources(self) -> None:
+        manifest = TaskCatalogManifest.from_json(
+            REPOSITORY_ROOT / "data" / "tasks" / "catalog.v002.json"
+        )
+
+        self.assertEqual("catalog.tasks", manifest.catalog_id)
+        self.assertEqual("v002", manifest.version)
+        self.assertEqual(
+            {
+                "qa": "tasks/core.v002.jsonl",
+                "agent": "tasks/agent.v001.jsonl",
+            },
+            dict(manifest.sources),
+        )
+        self.assertEqual(
+            "repeat_count is separate from independent task count",
+            manifest.independence_policy,
+        )
+
     def test_core_catalog_contains_machine_checkable_core_task_types(self) -> None:
         catalog = TaskCatalog.from_jsonl(
             REPOSITORY_ROOT / "data" / "tasks" / "core.v001.jsonl"

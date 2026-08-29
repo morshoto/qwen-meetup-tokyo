@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "id": "catalog.tasks",
+  "version": "v002",
+  "sources": {
+    "qa": "tasks/core.v002.jsonl",
+    "agent": "tasks/agent.v001.jsonl"
+  },
+  "independence_policy": "repeat_count is separate from independent task count"
+}
