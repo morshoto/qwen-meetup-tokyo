@@ -13,6 +13,15 @@ from .quantization import (
     recommend_baseline,
     tradeoff_rows,
 )
+from .agent_reliability import (
+    AgentAnalysisError,
+    aggregate_agent_trials,
+    missing_agent_cells,
+    plot_reliability_by_length,
+    plot_reliability_by_position,
+    require_measured_trials,
+    validate_complete_matrix,
+)
 
 __all__ = [
     "ContextAnalysisError",
@@ -26,4 +35,11 @@ __all__ = [
     "recommend_baseline",
     "tradeoff_rows",
     "write_summary_csv",
+    "AgentAnalysisError",
+    "aggregate_agent_trials",
+    "missing_agent_cells",
+    "plot_reliability_by_length",
+    "plot_reliability_by_position",
+    "require_measured_trials",
+    "validate_complete_matrix",
 ]
