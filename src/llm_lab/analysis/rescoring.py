@@ -22,6 +22,14 @@ EXACT_MATCH = "exact_match"
 MISMATCH = "mismatch"
 FORMAT_FAILURE = "format_failure"
 RUNTIME_FAILURE = "runtime_failure"
+_RUNTIME_FAILURE_STATUSES = frozenset(
+    {
+        TrialStatus.RUNTIME_ERROR,
+        TrialStatus.OUT_OF_MEMORY,
+        TrialStatus.TIMEOUT,
+        TrialStatus.CANCELLED,
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -46,12 +54,17 @@ def rescore_trial(
     if not isinstance(legacy_correct, bool):
         legacy_correct = None
 
-    if trial.status != TrialStatus.COMPLETED:
+    if trial.status in _RUNTIME_FAILURE_STATUSES:
         return RescoredTrial(
             trial=trial,
             score=None,
             category=RUNTIME_FAILURE,
             legacy_correct=legacy_correct,
+        )
+    if trial.status not in (TrialStatus.COMPLETED, TrialStatus.INVALID_OUTPUT):
+        raise ValueError(
+            "unsupported non-runtime status for diagnostic re-scoring: "
+            f"{trial.status.value}"
         )
 
     output = trial.generation.get("output_text")
@@ -270,8 +283,9 @@ def render_report(
             "",
             "- `mismatch`: completed output is not an exact calibrated answer but",
             "  remains format-valid.",
-            "- `format_failure`: completed output is empty or violates the expected",
-            "  answer shape; this category takes precedence over mismatch.",
+            "- `format_failure`: output is empty or violates the expected answer",
+            "  shape, including an `invalid_output` trial; this category takes",
+            "  precedence over mismatch.",
             "- `runtime_failure`: the original trial did not complete; no output is",
             "  rescored and it remains in the attempted denominator.",
             "",
