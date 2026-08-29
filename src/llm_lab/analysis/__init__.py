@@ -20,6 +20,14 @@ from .quantization import (
     recommend_baseline,
     tradeoff_rows,
 )
+from .rescoring import (
+    EXACT_MATCH,
+    FORMAT_FAILURE,
+    MISMATCH,
+    RUNTIME_FAILURE,
+    RescoredTrial,
+    rescore_trial,
+)
 from .agent_reliability import (
     AgentAnalysisError,
     aggregate_agent_trials,
@@ -47,6 +55,12 @@ __all__ = [
     "relative_degradation_rows",
     "tradeoff_rows",
     "write_summary_csv",
+    "EXACT_MATCH",
+    "FORMAT_FAILURE",
+    "MISMATCH",
+    "RUNTIME_FAILURE",
+    "RescoredTrial",
+    "rescore_trial",
     "AgentAnalysisError",
     "aggregate_agent_trials",
     "missing_agent_cells",
