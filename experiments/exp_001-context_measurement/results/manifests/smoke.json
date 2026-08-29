@@ -288,7 +288,7 @@
     ]
   },
   "environment": {
-    "git_sha": "5324beb4998c878d3c645cabd08ac0844a40bf73",
+    "git_sha": "0b81f4afc8a0f293cbdf19a2c5e4040c2d3ea5f6",
     "machine": "arm64",
     "os": "Darwin",
     "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
@@ -309,16 +309,27 @@
   },
   "interpretation": "Fixture backend validates task construction, scoring, storage, and coverage only; it is not a Qwen measurement.",
   "manifest_path": "experiments/exp_001-context_measurement/results/manifests/smoke.json",
+  "model": {
+    "id": "Qwen/Qwen3.8-27B",
+    "revision": null,
+    "tokenizer_id": "Qwen/Qwen3.8-27B",
+    "tokenizer_revision": null
+  },
   "phase": "smoke",
   "planned_cell_n": 18,
   "planned_condition_n": 6,
   "planned_trial_n": 180,
   "raw_results": "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl",
-  "raw_results_sha256": "987660786ae82e69637a642f11a60641ee587870cdf5051a006794ba5c360f6c",
+  "raw_results_sha256": "a77d222ee1700a9d298bfc76b011a45b4a76753cded7a3886772bfbc7164a199",
   "repeats": 1,
   "sampling": {
+    "do_sample": false,
+    "generation_seed_policy": "greedy-decoding-no-seed",
     "max_new_tokens": 32,
-    "temperature": 0.0
+    "seed": null,
+    "temperature": 0.0,
+    "top_k": null,
+    "top_p": 1.0
   },
   "schema_version": 1,
   "scorer_version": "calibrated.v1",
