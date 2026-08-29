@@ -10,6 +10,7 @@ measurement.
 - Raw trial count: 120
 - Raw SHA-256: `24ec3aca8687d369a58bc33843a8d2beaf37643c781b32fee2d198c035cf0188`
 - Task catalog: `data/tasks/core.v001.jsonl`
+- Task catalog SHA-256: `fadee118140aca37f2e624be782bf13ef40a785855b4992c71d0422810e36cf8`
 - Legacy scorer: `expected.v1` (preserved in the raw records)
 - Calibrated scorer: `calibrated.v1`
 - Processing entry point: `rescore.py`
@@ -30,8 +31,9 @@ per task, quantization variant, and context length.
 
 - `mismatch`: completed output is not an exact calibrated answer but
   remains format-valid.
-- `format_failure`: completed output is empty or violates the expected
-  answer shape; this category takes precedence over mismatch.
+- `format_failure`: output is empty or violates the expected answer
+  shape, including an `invalid_output` trial; this category takes
+  precedence over mismatch.
 - `runtime_failure`: the original trial did not complete; no output is
   rescored and it remains in the attempted denominator.
 
