@@ -26,7 +26,9 @@ from .rescoring import (
     MISMATCH,
     RUNTIME_FAILURE,
     RescoredTrial,
+    comparison_rows,
     rescore_trial,
+    rescore_trials,
 )
 from .agent_reliability import (
     AgentAnalysisError,
@@ -60,7 +62,9 @@ __all__ = [
     "MISMATCH",
     "RUNTIME_FAILURE",
     "RescoredTrial",
+    "comparison_rows",
     "rescore_trial",
+    "rescore_trials",
     "AgentAnalysisError",
     "aggregate_agent_trials",
     "missing_agent_cells",

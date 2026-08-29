@@ -178,7 +178,7 @@ class RescoringTests(unittest.TestCase):
             runtime_trial(literal_task.task_id),
             trial(
                 semantic_task.task_id,
-                "Reliability Engineering",
+                "Reliability Engineering group",
                 old_correct=False,
                 task_type="semantic_retrieval",
             ),
