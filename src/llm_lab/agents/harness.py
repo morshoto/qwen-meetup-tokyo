@@ -345,12 +345,13 @@ class AgentHarness:
             generated_action_n += 1
             trajectory.add_message(
                 "assistant",
-                response.output_text,
+                response.output_text or "[empty model response]",
                 source="model",
                 kind="action",
                 metadata={
                     "stage": stage,
                     "attempt": attempt,
+                    "empty_output": not bool(response.output_text.strip()),
                     "prompt_tokens": response.usage.prompt_tokens,
                     "completion_tokens": response.usage.completion_tokens,
                 },

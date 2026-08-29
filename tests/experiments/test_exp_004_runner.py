@@ -80,6 +80,24 @@ class FakeRuntime:
         self.closed = True
 
 
+class EmptyAnswerRuntime(FakeRuntime):
+    def generate(self, request: Any) -> GenerationResponse:
+        if request.metadata["agent_stage"] != "answer":
+            return super().generate(request)
+        return GenerationResponse(
+            output_text="",
+            usage=TokenUsage(prompt_tokens=1, completion_tokens=0),
+            timing=GenerationTiming(total_seconds=0.01),
+            runtime=RuntimeMetadata(
+                runtime_name=self.name,
+                runtime_version="fixture",
+                model_id=request.model.model_id,
+                tokenizer_id=request.model.tokenizer_id,
+                config={"purpose": "harness-smoke-only"},
+            ),
+        )
+
+
 def _source_manifest(directory: Path) -> Path:
     variants = []
     for condition_id, label, quantization_type, bits in (
@@ -279,6 +297,38 @@ class Exp004RunnerTests(unittest.TestCase):
             self.assertEqual(2, len(runner.load_trial_results(paths["output_path"])))
             manifest = json.loads(paths["manifest_output_path"].read_text(encoding="utf-8"))
             self.assertEqual("fixture-agent", manifest["effective_runtime"]["name"])
+
+    def test_empty_model_response_is_recorded_as_invalid_output(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_manifest = _source_manifest(root)
+            output_path = root / "raw" / "trials.jsonl"
+            runner.run_experiment(
+                source_manifest_path=source_manifest,
+                output_path=output_path,
+                manifest_output_path=root / "manifests" / "run.json",
+                processed_path=root / "processed" / "summary.csv",
+                phase="smoke",
+                backend="fixture",
+                condition_ids=("q8_0",),
+                trajectory_lengths=(4,),
+                critical_positions=(0.5,),
+                repeats=1,
+                runtime_factory=EmptyAnswerRuntime,
+            )
+
+            trials = runner.load_trial_results(output_path)
+            self.assertEqual(2, len(trials))
+            self.assertTrue(all(trial.status.value == "invalid_output" for trial in trials))
+            self.assertTrue(
+                all(
+                    any(
+                        event["content"] == "[empty model response]"
+                        for event in trial.input["trajectory"]
+                    )
+                    for trial in trials
+                )
+            )
 
     def test_real_backend_rejects_changed_selected_artifact(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
