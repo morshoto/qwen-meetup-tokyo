@@ -40,7 +40,7 @@ from llm_lab.telemetry import capture_environment  # noqa: E402
 
 EXPERIMENT_ID = "exp_004"
 CONFIG_PATH = ROOT / "experiments/exp_004-agent_context_growth/config.yaml"
-TASK_CATALOG = ROOT / "data/tasks/agent.v001.jsonl"
+TASK_CATALOG = ROOT / "data/tasks/agent.v002.jsonl"
 RuntimeFactory = Callable[[], Runtime]
 
 
@@ -697,6 +697,7 @@ def _build_manifest(
             "config": str(CONFIG_PATH.relative_to(ROOT)),
             "task_catalog": str(_section(config, "experiment")["task_catalog"]),
             "task_ids": [task.task_id for task in task_list],
+            "independent_task_n": len(task_list),
             "task_types": sorted({task.task_type for task in task_list}),
             "fixture_seed": fixture_seed,
             "repeats": repeats,

@@ -20,7 +20,7 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             "source_manifest: ../exp_002-quantization_llama_cpp_gguf/results/manifest.json",
             config,
         )
-        self.assertIn("task_catalog: data/tasks/core.v001.jsonl", config)
+        self.assertIn("task_catalog: data/tasks/core.v002.jsonl", config)
         self.assertIn("prompt_id: prompt.qa.v001", config)
         self.assertIn(
             "lengths: [8192, 32768, 65536, 131072, 262144]",
@@ -47,6 +47,9 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             self.assertIn("llama.cpp", text)
             self.assertIn("fixture", text.lower())
             self.assertIn("not a Qwen measurement", text)
+        self.assertIn("execution source of truth", readme)
+        self.assertIn("explicit legacy exception", readme)
+        self.assertIn("not directly comparable", readme)
 
     def test_notebook_contains_required_interaction_sections(self) -> None:
         notebook = (EXPERIMENT / "analysis.ipynb").read_text(encoding="utf-8")

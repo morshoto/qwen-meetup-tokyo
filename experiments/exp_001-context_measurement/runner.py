@@ -16,7 +16,7 @@ import tempfile
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,7 +52,7 @@ from llm_lab.runtimes.transformers import QwenTransformersRuntime  # noqa: E402
 from llm_lab.telemetry import capture_environment  # noqa: E402
 
 
-TASK_CATALOG = ROOT / "data/tasks/core.v001.jsonl"
+TASK_CATALOG = ROOT / "data/tasks/core.v002.jsonl"
 EXPERIMENT_ID = "exp_001"
 SCORER_VERSION = CalibratedAnswerScorer.name
 TASK_TYPES = ("literal_retrieval", "semantic_retrieval", "multi_hop")
@@ -188,11 +188,9 @@ class FixtureRuntime:
     """Deterministic backend for smoke validation; it is not model evidence."""
 
     name = "fixture"
-    _answers = {
-        "task.literal.000001": "ZX-4817",
-        "task.semantic.000001": "Reliability Engineering",
-        "task.multihop.000001": "8392",
-    }
+
+    def __init__(self, answers: Mapping[str, str] | None = None) -> None:
+        self._answers = dict(answers or {})
 
     def load(self, model: ModelSpec, config: RuntimeConfig) -> None:
         del model, config
@@ -221,6 +219,20 @@ class FixtureRuntime:
 
     def close(self) -> None:
         return None
+
+
+def _fixture_answers(catalog: TaskCatalog) -> dict[str, str]:
+    """Return canonical answers for the deterministic smoke backend."""
+
+    answers: dict[str, str] = {}
+    for task in catalog.tasks:
+        value = task.expected.get("value")
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(
+                f"fixture smoke requires a string expected value: {task.task_id}"
+            )
+        answers[task.task_id] = value
+    return answers
 
 
 def run_experiment(
@@ -253,7 +265,7 @@ def run_experiment(
     model = qwen38_model_spec()
     context_tokenizer: ContextTokenizer | None = None
     if backend == "fixture":
-        runtime: Any = FixtureRuntime()
+        runtime: Any = FixtureRuntime(_fixture_answers(catalog))
     elif backend == "transformers":
         runtime = QwenTransformersRuntime()
         runtime.load(
@@ -382,16 +394,27 @@ def _manifest(
             scored_n = sum(
                 result.score.get("correct") is not None for result in cell_results
             )
+            independent_task_n = sum(
+                task.task_type == task_type for task in catalog.tasks
+            )
+            expected_trial_n = independent_task_n * repeats
             coverage.append(
                 {
                     "task_type": task_type,
                     "condition_id": condition.condition_id,
                     "target_context_tokens": condition.target_context_tokens,
                     "requested_evidence_position": condition.evidence_position,
+                    "independent_task_n": independent_task_n,
+                    "expected_trial_n": expected_trial_n,
                     "trial_n": len(cell_results),
                     "scored_n": scored_n,
                     "statuses": dict(sorted(statuses.items())),
-                    "status": "valid" if scored_n == repeats else "excluded",
+                    "status": (
+                        "valid"
+                        if len(cell_results) == expected_trial_n
+                        and scored_n == expected_trial_n
+                        else "excluded"
+                    ),
                 }
             )
 

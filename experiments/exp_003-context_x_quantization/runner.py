@@ -44,7 +44,7 @@ from llm_lab.runtimes import LlamaCppRuntime, RuntimeConfig  # noqa: E402
 from llm_lab.telemetry import capture_environment  # noqa: E402
 
 
-TASK_CATALOG = ROOT / "data/tasks/core.v001.jsonl"
+TASK_CATALOG = ROOT / "data/tasks/core.v002.jsonl"
 EXPERIMENT_ID = "exp_003"
 CONFIG_PATH = ROOT / "experiments/exp_003-context_x_quantization/config.yaml"
 TASK_TYPES = ("literal_retrieval", "semantic_retrieval", "multi_hop")
@@ -68,15 +68,11 @@ class FixtureRuntime:
     """Deterministic harness backend; it is not model evidence."""
 
     name = "llama.cpp"
-    _answers = {
-        "task.literal.000001": "ZX-4817",
-        "task.semantic.000001": "Reliability Engineering",
-        "task.multihop.000001": "8392",
-    }
 
-    def __init__(self) -> None:
+    def __init__(self, answers: Mapping[str, str]) -> None:
         self._model: ModelSpec | None = None
         self._config: RuntimeConfig | None = None
+        self._answers = dict(answers)
         self.closed = False
 
     def load(self, model: ModelSpec, config: RuntimeConfig) -> None:
@@ -213,7 +209,8 @@ def expected_trial_count(
         config=config,
     )
     run_repeats = _select_repeats(phase, repeats, config)
-    return len(variants) * len(conditions) * len(manifest.task_ids) * run_repeats
+    catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
+    return len(variants) * len(conditions) * len(catalog.ids) * run_repeats
 
 
 def run_experiment(
@@ -255,8 +252,12 @@ def run_experiment(
     )
     run_repeats = _select_repeats(phase, repeats, config)
     catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
-    if tuple(source_manifest.task_ids) != catalog.ids:
-        raise ValueError("source manifest task_ids must exactly match the shared task catalog")
+    unknown_task_ids = set(source_manifest.task_ids) - set(catalog.ids)
+    if unknown_task_ids:
+        raise ValueError(
+            "source manifest task_ids must be present in the shared task catalog: "
+            f"{sorted(unknown_task_ids)}"
+        )
     sampling = _sampling_config(source_manifest.sampling)
     fingerprint = _run_fingerprint(
         source_manifest,
@@ -288,7 +289,7 @@ def run_experiment(
         )
         for variant in variants
         for condition in conditions
-        for task_id in source_manifest.task_ids
+        for task_id in catalog.ids
         for repeat_index in range(1, run_repeats + 1)
     }
     _validate_existing(existing, expected_ids, fingerprint)
@@ -308,9 +309,13 @@ def run_experiment(
         )
         for variant in variants
     }
-    factory = runtime_factory or (
-        FixtureRuntime if selected_backend == "fixture" else LlamaCppRuntime
-    )
+    if runtime_factory is not None:
+        factory = runtime_factory
+    elif selected_backend == "fixture":
+        fixture_answers = _fixture_answers(catalog)
+        factory = lambda: FixtureRuntime(fixture_answers)
+    else:
+        factory = LlamaCppRuntime
 
     for variant in variants:
         runtime = factory()
@@ -328,7 +333,7 @@ def run_experiment(
                     condition.condition_id: tuple(
                         build_tasks(
                             catalog,
-                            source_manifest.task_ids,
+                            catalog.ids,
                             condition,
                             tokenizer=tokenizer,
                             prompt_id=source_manifest.prompt_id,
@@ -499,6 +504,21 @@ def build_tasks(
             )
         )
     return tasks
+
+
+def _fixture_answers(catalog: TaskCatalog) -> dict[str, str]:
+    """Build deterministic answers from the versioned catalog definitions."""
+
+    answers: dict[str, str] = {}
+    for task in catalog.tasks:
+        value = task.expected.get("value")
+        if value is None:
+            accepted = task.expected.get("accepted")
+            if not isinstance(accepted, list) or not accepted:
+                raise ValueError(f"fixture task has no answer value: {task.task_id}")
+            value = accepted[0]
+        answers[task.task_id] = str(value)
+    return answers
 
 
 def _runtime_config(
@@ -724,6 +744,15 @@ def _run_manifest(
             [],
         ).append(result)
 
+    catalog_tasks = getattr(catalog, "tasks", ())
+    selected_task_ids = set(catalog.ids)
+    independent_task_n_by_type = {
+        task_type: sum(
+            task.task_type == task_type and task.task_id in selected_task_ids
+            for task in catalog_tasks
+        )
+        for task_type in TASK_TYPES
+    }
     coverage: list[dict[str, Any]] = []
     for variant in variant_list:
         for condition in condition_list:
@@ -735,6 +764,12 @@ def _run_manifest(
                     result.score.get("correct") is not None
                     for result in cell_results
                 )
+                independent_task_n = independent_task_n_by_type[task_type]
+                expected_trial_n = independent_task_n * repeats
+                is_complete = (
+                    len(cell_results) == expected_trial_n
+                    and scored_n == expected_trial_n
+                )
                 coverage.append(
                     {
                         "variant_condition_id": variant.condition_id,
@@ -745,12 +780,12 @@ def _run_manifest(
                         "trial_n": len(cell_results),
                         "scored_n": scored_n,
                         "statuses": dict(sorted(statuses.items())),
-                        "status": "valid" if scored_n == repeats else "excluded",
-                        "exclusion_reason": (
-                            None
-                            if scored_n == repeats
-                            else "not all planned trials produced scored outputs; see raw results"
-                        ),
+                        "independent_task_n": independent_task_n,
+                        "expected_trial_n": expected_trial_n,
+                        "status": "valid" if is_complete else "excluded",
+                        "exclusion_reason": None
+                        if is_complete
+                        else "not all planned trials produced scored outputs; see raw results",
                     }
                 )
     return {
@@ -792,7 +827,10 @@ def _run_manifest(
         "matching": "same task seed, generated context text, context length, and evidence position across variants",
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),
-        "planned_trial_n": len(condition_list) * len(catalog.ids) * len(variant_list) * repeats,
+        "planned_trial_n": len(condition_list)
+        * len(catalog.ids)
+        * len(variant_list)
+        * repeats,
         "actual_trial_n": len(result_list),
         "raw_results": _display_path(output_path),
         "raw_results_sha256": _sha256(output_path),

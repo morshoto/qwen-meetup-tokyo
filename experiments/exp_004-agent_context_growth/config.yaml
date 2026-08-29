@@ -5,7 +5,7 @@
     "description": "Measure reliability as deterministic tool-use history grows.",
     "default_phase": "main",
     "fixture_seed": 42,
-    "task_catalog": "data/tasks/agent.v001.jsonl",
+    "task_catalog": "data/tasks/agent.v002.jsonl",
     "source_manifest": "experiments/exp_003-context_x_quantization/results/manifest.json"
   },
   "model": {

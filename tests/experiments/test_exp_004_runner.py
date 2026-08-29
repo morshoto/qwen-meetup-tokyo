@@ -37,6 +37,14 @@ class FakeRuntime:
     answers = {
         "task.agent.000001": "middleware/auth.ts",
         "task.agent.000002": "src/cache/redis.py",
+        "task.agent.000003": "deploy/kubernetes/production.yaml",
+        "task.agent.000004": "src/telemetry/exporter.py",
+        "task.agent.000005": "config/flags/registry.yaml",
+        "task.agent.000006": "services/payments/retry_policy.go",
+        "task.agent.000007": "workers/notifications/dispatcher.py",
+        "task.agent.000008": "packages/audit/logger.ts",
+        "task.agent.000009": "db/migrations/2026_08_add_events.sql",
+        "task.agent.000010": "app/routes/settings.tsx",
     }
 
     def __init__(self) -> None:
@@ -218,8 +226,8 @@ class Exp004RunnerTests(unittest.TestCase):
                     trial.input["context_instance_id"], []
                 ).append(trial)
 
-            self.assertEqual(8, result["actual_trial_n"])
-            self.assertEqual(4, len(by_context))
+            self.assertEqual(40, result["actual_trial_n"])
+            self.assertEqual(20, len(by_context))
             for matched_trials in by_context.values():
                 self.assertEqual(2, len(matched_trials))
                 self.assertEqual(
@@ -239,6 +247,7 @@ class Exp004RunnerTests(unittest.TestCase):
             self.assertTrue(manifest["fixture_only"])
             self.assertEqual("exp_003", manifest["source_manifest"]["experiment_id"])
             self.assertEqual(2, len(manifest["source_manifest"]["variants"]))
+            self.assertEqual(10, manifest["protocol"]["independent_task_n"])
             self.assertEqual("fixture-agent", manifest["effective_runtime"]["name"])
             self.assertEqual("model-sha", trials[0].model["revision"])
             self.assertEqual(
@@ -264,7 +273,7 @@ class Exp004RunnerTests(unittest.TestCase):
                 runtime_factory=FakeRuntime,
             )
 
-            self.assertEqual(2, result["actual_trial_n"])
+            self.assertEqual(10, result["actual_trial_n"])
             manifest = json.loads(
                 (root / "manifests" / "run.json").read_text(encoding="utf-8")
             )
@@ -292,9 +301,9 @@ class Exp004RunnerTests(unittest.TestCase):
             runner.run_experiment(**paths)
             second = runner.run_experiment(**paths)
 
-            self.assertEqual(2, second["expected_trial_n"])
-            self.assertEqual(2, second["skipped_trial_n"])
-            self.assertEqual(2, len(runner.load_trial_results(paths["output_path"])))
+            self.assertEqual(10, second["expected_trial_n"])
+            self.assertEqual(10, second["skipped_trial_n"])
+            self.assertEqual(10, len(runner.load_trial_results(paths["output_path"])))
             manifest = json.loads(paths["manifest_output_path"].read_text(encoding="utf-8"))
             self.assertEqual("fixture-agent", manifest["effective_runtime"]["name"])
 
@@ -318,7 +327,7 @@ class Exp004RunnerTests(unittest.TestCase):
             )
 
             trials = runner.load_trial_results(output_path)
-            self.assertEqual(2, len(trials))
+            self.assertEqual(10, len(trials))
             self.assertTrue(all(trial.status.value == "invalid_output" for trial in trials))
             self.assertTrue(
                 all(

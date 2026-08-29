@@ -1,226 +1,262 @@
 {
-  "actual_trial_n": 18,
+  "actual_trial_n": 180,
   "backend": "fixture",
   "coverage": [
     {
       "condition_id": "baseline:ctx008192:p005",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.05,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "literal_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx008192:p005",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.05,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "semantic_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx008192:p005",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.05,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "multi_hop",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx008192:p050",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.5,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "literal_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx008192:p050",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.5,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "semantic_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx008192:p050",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.5,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "multi_hop",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx008192:p095",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.95,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "literal_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx008192:p095",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.95,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "semantic_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx008192:p095",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.95,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 8192,
       "task_type": "multi_hop",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p005",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.05,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "literal_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p005",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.05,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "semantic_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p005",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.05,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "multi_hop",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p050",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.5,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "literal_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p050",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.5,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "semantic_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p050",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.5,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "multi_hop",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p095",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.95,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "literal_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p095",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.95,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "semantic_retrieval",
-      "trial_n": 1
+      "trial_n": 10
     },
     {
       "condition_id": "baseline:ctx032768:p095",
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
       "requested_evidence_position": 0.95,
-      "scored_n": 1,
+      "scored_n": 10,
       "status": "valid",
       "statuses": {
-        "completed": 1
+        "completed": 10
       },
       "target_context_tokens": 32768,
       "task_type": "multi_hop",
-      "trial_n": 1
+      "trial_n": 10
     }
   ],
   "environment": {
-    "git_sha": "b27f5fe7468fde83be6f2a53910a2a4b05cfcbd8",
+    "git_sha": "ee167937ddbe5359923ed82eef77320eaf97204f",
     "machine": "arm64",
     "os": "Darwin",
     "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
@@ -234,15 +270,42 @@
   "phase": "smoke",
   "planned_cell_n": 18,
   "planned_condition_n": 6,
-  "planned_trial_n": 18,
+  "planned_trial_n": 180,
   "raw_results": "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl",
-  "raw_results_sha256": "87aebeb292920f4e8ae8e6a18a477f95c0337206b1fa958ff512d5f9578e4f1a",
+  "raw_results_sha256": "475e449e458ee5735fc25ba43edec594dd81f5886f3f3496d42b5fa94fbf0fda",
   "repeats": 1,
   "schema_version": 1,
-  "task_catalog": "data/tasks/core.v001.jsonl",
+  "task_catalog": "data/tasks/core.v002.jsonl",
   "task_ids": [
     "task.literal.000001",
+    "task.literal.000002",
+    "task.literal.000003",
+    "task.literal.000004",
+    "task.literal.000005",
+    "task.literal.000006",
+    "task.literal.000007",
+    "task.literal.000008",
+    "task.literal.000009",
+    "task.literal.000010",
     "task.semantic.000001",
-    "task.multihop.000001"
+    "task.semantic.000002",
+    "task.semantic.000003",
+    "task.semantic.000004",
+    "task.semantic.000005",
+    "task.semantic.000006",
+    "task.semantic.000007",
+    "task.semantic.000008",
+    "task.semantic.000009",
+    "task.semantic.000010",
+    "task.multihop.000001",
+    "task.multihop.000002",
+    "task.multihop.000003",
+    "task.multihop.000004",
+    "task.multihop.000005",
+    "task.multihop.000006",
+    "task.multihop.000007",
+    "task.multihop.000008",
+    "task.multihop.000009",
+    "task.multihop.000010"
   ]
 }

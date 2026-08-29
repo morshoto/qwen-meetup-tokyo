@@ -60,8 +60,11 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/resolve_m
 
 Use the same raw output for the pilot and full run: the runner fingerprints
 the resolved manifest, appends only missing trial IDs, and rejects mismatched
-or out-of-scope records. The pilot is Q8_0 × 8,192 × all three tasks × one
-repeat (3 trials); the complete matrix is 4 × 2 × 3 × 5 (120 trials):
+or out-of-scope records. The current `core.v002` protocol has 30 independent
+QA tasks. Its pilot is Q8_0 × 8,192 × 30 tasks × one repeat (30 trials); the
+complete matrix is 4 × 2 × 30 × 5 (1,200 trials). The checked-in resolved
+manifest and summaries are historical `core.v001` measurements and remain
+unchanged until a new v002 run is measured.
 
 ```bash
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
@@ -80,7 +83,7 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 
 ## Fixed controls
 
-- Shared tasks: `data/tasks/core.v001.jsonl`.
+- Shared tasks: `data/tasks/core.v002.jsonl` (30 independent tasks).
 - Shared prompt: `data/prompts/prompt.qa.v001.txt` (`prompt.qa.v001`).
 - Context lengths: 8,192 and 32,768 input tokens. The prompt/template
   convention is explicit in the resolved manifest as

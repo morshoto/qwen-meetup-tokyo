@@ -6,12 +6,27 @@ Measure whether quantization degradation is approximately constant across
 context length or grows at long context, and whether lower precision amplifies
 evidence-position effects.
 
-This experiment reuses the exact `data/tasks/core.v001.jsonl`,
-`prompt.qa.v001`, `ExpectedAnswerScorer`, and synthetic context generator used
-by exp_001. It selects the `q8_0`, `q6_k`, `q5_k_m`, and `q4_k_m` artifacts from
-the resolved exp_002 manifest. A context instance is generated once for each
-task, context length, evidence position, and seed, then reused for every
+This experiment reuses the versioned `data/tasks/core.v002.jsonl` catalog with
+10 independent tasks in each QA family, `prompt.qa.v001`,
+`ExpectedAnswerScorer`, and the synthetic context generator used by exp_001.
+It selects the `q8_0`, `q6_k`, `q5_k_m`, and `q4_k_m` artifacts from the
+resolved exp_002 manifest. A context instance is generated once for each task,
+context length, evidence position, and seed, then reused for every
 quantization variant so matched-cell comparisons are valid.
+
+The checked-in exp_003 outputs are historical three-task measurements from the
+previous catalog version. They remain unchanged until a real llama.cpp run
+produces measurements for the expanded catalog.
+
+For new runs, `core.v002.jsonl` is the execution source of truth. The exp_002
+source manifest supplies model, artifact, and runtime provenance; its historical
+task IDs are required to remain valid catalog IDs but do not limit the current
+exp_003 task population.
+
+Scoring compatibility is an explicit legacy exception: exp_003 currently uses
+the `ExpectedAnswerScorer` (`expected.v1`) used by its historical outputs. Its
+accuracy columns are not directly comparable with `calibrated.v1` outputs from
+the separate scoring-calibration work until exp_003 is migrated in a follow-up.
 
 ## Controlled matrix
 

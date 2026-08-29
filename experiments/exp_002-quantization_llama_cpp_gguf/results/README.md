@@ -18,7 +18,9 @@ results/
 actual model/runtime revisions, artifact SHA-256 digests, and artifact sizes.
 The template or a result with placeholder values is not a completed run.
 
-The pilot command selects `q8_0`, context length `8192`, and `--repeats 1`,
-for three trials. Running the runner again without selectors resumes the same
-JSONL file and completes the full 120-trial matrix; duplicate trial IDs are
-rejected.
+The current v002 pilot command selects `q8_0`, context length `8192`, and
+`--repeats 1`, for 30 trials. Running a new v002 output again without selectors
+resumes the same JSONL file and completes the full 1,200-trial matrix;
+duplicate trial IDs are rejected. The committed result files in this directory
+are historical v001 measurements over three tasks and 120 trials; their
+provenance is intentionally preserved.

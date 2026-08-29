@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "catalog.tasks",
+  "version": "v002",
+  "sources": {
+    "qa": "core.v002.jsonl",
+    "agent": "agent.v002.jsonl"
+  },
+  "family_counts": {
+    "literal_retrieval": 10,
+    "semantic_retrieval": 10,
+    "multi_hop": 10,
+    "agent_state_tracking": 10
+  },
+  "independence_policy": "repeat_count is separate from independent task count"
+}

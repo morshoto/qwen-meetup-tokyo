@@ -18,6 +18,11 @@ trajectory length includes the critical observation. The same task seed,
 control, observation list, and environment fingerprint are reused across
 selected quantization variants.
 
+The current versioned agent catalog contains 10 independent,
+presentation-ready task instances. Repeats in the pilot/main protocol are
+additional measurements of those independent tasks, not additional task
+definitions.
+
 The model emits strict JSON actions:
 
 ```json
@@ -40,7 +45,9 @@ agent catalog.
 
 Real pilot/main runs require that source manifest, local artifacts, and a
 compatible `llama-cpp-python` runtime. The runner verifies artifact paths for
-non-fixture execution and records the effective runtime options.
+non-fixture execution and records the effective runtime options. The committed
+pilot outputs are a historical two-task run and are not evidence for the
+expanded catalog.
 
 ## Smoke, pilot, and main
 

@@ -4,7 +4,7 @@ experiment:
   description: Measure whether quantization loss changes with context length and evidence position.
   default_phase: smoke
   source_manifest: ../exp_002-quantization_llama_cpp_gguf/results/manifest.json
-  task_catalog: data/tasks/core.v001.jsonl
+  task_catalog: data/tasks/core.v002.jsonl
   prompt_id: prompt.qa.v001
   fixture_seed: 42
 

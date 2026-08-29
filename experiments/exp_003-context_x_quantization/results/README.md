@@ -23,3 +23,7 @@ variant/artifact identities, the complete context/position/task matrix, matched
 cell coverage, exclusions, and the raw-result SHA-256. Raw runtime failures
 remain in the denominator. The real backend is llama.cpp; generated fixture
 output validates the harness only and is not a Qwen measurement.
+
+The checked-in manifest and processed outputs are historical three-task
+measurements from catalog v001. New runs use catalog v002, which contains 10
+independent tasks per QA family; no expanded real measurement is claimed here.

@@ -21,7 +21,7 @@ additional variable.
 | --- | --- |
 | Context length | 8K, 32K, 64K, 128K, 262K or highest practical |
 | Evidence position | 5%, 25%, 50%, 75%, 95% |
-| Task family | literal, semantic, multi-hop |
+| Task family | literal, semantic, multi-hop; 10 independent tasks per family |
 | Repeats | 20 per cell where resources permit |
 | Sampling | temperature 0.0, max 32 generated tokens |
 
@@ -52,7 +52,8 @@ PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
 The fixture backend returns catalog answers by design. It validates task
 construction, evidence offsets, scoring, append-only storage, and coverage; it
 is not Qwen evidence and must not be copied into `docs/findings.md` as a model
-finding. The committed smoke manifest records all 18 harness cells as valid.
+finding. The committed smoke manifest records all 18 harness cells and 180
+independent-task trials as valid.
 The explicit `--overwrite-smoke` flag makes this deterministic fixture command
 safe to rerun against the committed artifact paths; other existing output paths
 fail closed so append-only trial data cannot be accidentally duplicated.
@@ -72,17 +73,18 @@ SHA.
 
 The committed smoke artifacts are:
 
-- `results/raw/smoke-trials.jsonl` — 18 deterministic fixture trials;
+- `results/raw/smoke-trials.jsonl` — 180 deterministic fixture trials;
 - `results/manifests/smoke.json` — coverage and provenance manifest;
 - `results/processed/summary.csv` — notebook-ready aggregation.
 
 ### Preliminary status — harness only
 
-The recorded fixture smoke phase completed and scored 18 of 18 planned cells
-across both smoke context lengths, three positions, and three task families;
-the manifest lists zero exclusions. This establishes that the matrix,
-provenance, scoring, and processing path are reproducible. It does not measure
-Qwen behavior, so no accuracy or effective-context conclusion is drawn from it.
+The recorded fixture smoke phase completed and scored 180 of 180 planned trials
+across both smoke context lengths, three positions, ten independent tasks per
+family, and three task families; the manifest lists zero exclusions. This
+establishes that the matrix, provenance, scoring, and processing path are
+reproducible. It does not measure Qwen behavior, so no accuracy or
+effective-context conclusion is drawn from it.
 
 ## Analysis
 

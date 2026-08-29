@@ -18,6 +18,10 @@ class Exp004ContractTests(unittest.TestCase):
             "experiments/exp_003-context_x_quantization/results/manifest.json",
             config["experiment"]["source_manifest"],
         )
+        self.assertEqual(
+            "data/tasks/agent.v002.jsonl",
+            config["experiment"]["task_catalog"],
+        )
         self.assertEqual(["q8_0", "q4_k_m"], config["quantization"]["variants"])
         self.assertEqual([4, 8, 16, 32], config["trajectory"]["lengths"])
         self.assertEqual(

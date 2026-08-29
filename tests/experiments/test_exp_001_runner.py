@@ -1,4 +1,6 @@
+import csv
 import importlib.util
+import json
 import sys
 from tempfile import TemporaryDirectory
 import unittest
@@ -18,6 +20,39 @@ SPEC.loader.exec_module(runner)
 
 
 class Exp001RunnerTests(unittest.TestCase):
+    def test_checked_in_smoke_artifact_covers_expanded_catalog(self) -> None:
+        manifest = json.loads(
+            (
+                ROOT
+                / "experiments/exp_001-context_measurement/results/manifests/smoke.json"
+            ).read_text(encoding="utf-8")
+        )
+
+        self.assertEqual("data/tasks/core.v002.jsonl", manifest["task_catalog"])
+        self.assertEqual(30, len(manifest["task_ids"]))
+        self.assertEqual(180, manifest["planned_trial_n"])
+        self.assertEqual(180, manifest["actual_trial_n"])
+        self.assertEqual(
+            180,
+            len(
+                load_trial_results(
+                    ROOT
+                    / "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl"
+                )
+            ),
+        )
+        self.assertTrue(
+            all(row["independent_task_n"] == 10 for row in manifest["coverage"])
+        )
+        self.assertTrue(all(row["status"] == "valid" for row in manifest["coverage"]))
+        with (
+            ROOT
+            / "experiments/exp_001-context_measurement/results/processed/summary.csv"
+        ).open(encoding="utf-8", newline="") as summary_file:
+            summary_rows = list(csv.DictReader(summary_file))
+        self.assertEqual(18, len(summary_rows))
+        self.assertTrue(all(row["n"] == "10" for row in summary_rows))
+
     def test_planned_conditions_match_smoke_and_main_matrix(self) -> None:
         smoke = runner.planned_conditions("smoke")
         main = runner.planned_conditions("main")
@@ -28,7 +63,7 @@ class Exp001RunnerTests(unittest.TestCase):
         self.assertEqual("baseline:ctx262144:p095", main[-1].condition_id)
 
     def test_build_tasks_records_context_provenance_and_evidence_offsets(self) -> None:
-        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v001.jsonl")
+        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")
         condition = runner.planned_conditions("smoke")[0]
 
         tasks = runner.build_tasks(
@@ -37,7 +72,7 @@ class Exp001RunnerTests(unittest.TestCase):
             fixture_seed=42,
         )
 
-        self.assertEqual(3, len(tasks))
+        self.assertEqual(30, len(tasks))
         self.assertEqual("literal_retrieval", tasks[0].task_type)
         request = tasks[0].build_request(
             runner.qwen38_model_spec(),
@@ -66,7 +101,7 @@ class Exp001RunnerTests(unittest.TestCase):
             def decode(self, tokens: list[int]) -> str:
                 return bytes(tokens).decode("utf-8")
 
-        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v001.jsonl")
+        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")
         condition = runner.planned_conditions("smoke")[0]
 
         tasks = runner.build_tasks(
@@ -116,11 +151,11 @@ class Exp001RunnerTests(unittest.TestCase):
                 overwrite_smoke=True,
             )
 
-            self.assertEqual(18, first["actual_trial_n"])
-            self.assertEqual(18, second["actual_trial_n"])
+            self.assertEqual(180, first["actual_trial_n"])
+            self.assertEqual(180, second["actual_trial_n"])
             persisted = load_trial_results(output_path)
-            self.assertEqual(18, len(persisted))
-            self.assertEqual(18, len({result.trial_id for result in persisted}))
+            self.assertEqual(180, len(persisted))
+            self.assertEqual(180, len({result.trial_id for result in persisted}))
             self.assertTrue(all(result.score["scorer"] == "calibrated.v1" for result in persisted))
             self.assertTrue(all("answer_bearing_correct" in result.score for result in persisted))
 
