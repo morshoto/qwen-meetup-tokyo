@@ -210,33 +210,36 @@ def _effective_context_for_rows(
     minimum_baseline_accuracy: float,
 ) -> dict[str, Any]:
     points = _weighted_context_points(rows)
-    if not points:
-        raise ContextAnalysisError(f"{task_type} has no scored context points")
     baseline = next(
         (point for point in points if point["context_tokens"] == baseline_context_tokens),
         None,
     )
-    if baseline is None or baseline["accuracy"] is None:
-        raise ContextAnalysisError(
-            f"{task_type} is missing a scored {baseline_context_tokens}-token baseline"
-        )
-    baseline_accuracy = float(baseline["accuracy"])
-    threshold = alpha * baseline_accuracy
+    baseline_accuracy = (
+        float(baseline["accuracy"])
+        if baseline is not None and baseline["accuracy"] is not None
+        else None
+    )
+    threshold = alpha * baseline_accuracy if baseline_accuracy is not None else None
     result: dict[str, Any] = {
         "task_type": task_type,
         "baseline_context_tokens": baseline_context_tokens,
         "baseline_accuracy": baseline_accuracy,
-        "baseline_valid": baseline_accuracy >= minimum_baseline_accuracy,
+        "baseline_valid": (
+            baseline_accuracy is not None
+            and baseline_accuracy >= minimum_baseline_accuracy
+        ),
         "minimum_baseline_accuracy": minimum_baseline_accuracy,
         "alpha": alpha,
         "threshold_accuracy": threshold,
-        "largest_tested_context_tokens": points[-1]["context_tokens"],
+        "largest_tested_context_tokens": (
+            points[-1]["context_tokens"] if points else None
+        ),
         "crossing_context_tokens": None,
         "effective_context_tokens": None,
-        "status": "baseline_limited",
+        "status": "unavailable" if baseline_accuracy is None else "baseline_limited",
         "points": points,
     }
-    if not result["baseline_valid"]:
+    if baseline_accuracy is None or not result["baseline_valid"]:
         return result
 
     crossing_index = next(
@@ -283,7 +286,7 @@ def _weighted_context_points(rows: Iterable[Mapping[str, Any]]) -> list[dict[str
     grouped: dict[int, dict[str, float]] = defaultdict(lambda: {"scored_n": 0.0, "successes": 0.0})
     for row in rows:
         context_tokens = int(row["target_context_tokens"])
-        scored_n = int(row.get("scored_n", 0))
+        scored_n = _scored_n(row)
         accuracy = row.get("accuracy")
         if scored_n < 0:
             raise ContextAnalysisError("scored_n cannot be negative")
@@ -310,6 +313,8 @@ def _weighted_context_points(rows: Iterable[Mapping[str, Any]]) -> list[dict[str
 
 
 def _scored_n(row: Mapping[str, Any]) -> int:
+    if row.get("analysis_status") == "unavailable":
+        return 0
     value = row.get("scored_n", 0)
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         raise ContextAnalysisError("scored_n must be a non-negative integer")

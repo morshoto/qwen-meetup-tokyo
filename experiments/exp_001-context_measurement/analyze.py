@@ -90,6 +90,7 @@ def regenerate(
     )
     if missing:
         raise AnalysisInputError(f"missing planned cells: {missing[:10]}")
+    summaries = _validate_coverage(summaries, manifest.get("coverage"))
 
     outputs = _output_paths(
         manifest_file,
@@ -138,6 +139,118 @@ def regenerate(
         ),
         "outputs": {key: str(path) for key, path in outputs.items()},
     }
+
+
+def _validate_coverage(
+    summaries: Iterable[Mapping[str, Any]],
+    coverage_value: Any,
+) -> list[dict[str, Any]]:
+    """Attach availability to each aggregate using the manifest cell contract."""
+
+    if not isinstance(coverage_value, list) or not coverage_value:
+        raise AnalysisInputError("manifest must include a non-empty coverage list")
+
+    summary_rows = [dict(row) for row in summaries]
+    summary_by_key: dict[tuple[str, int, float], dict[str, Any]] = {}
+    for row in summary_rows:
+        key = _coverage_key(row)
+        if key in summary_by_key:
+            raise AnalysisInputError(f"duplicate summary cell: {key}")
+        summary_by_key[key] = row
+
+    coverage_by_key: dict[tuple[str, int, float], Mapping[str, Any]] = {}
+    for coverage in coverage_value:
+        if not isinstance(coverage, Mapping):
+            raise AnalysisInputError("manifest coverage entries must be objects")
+        key = _coverage_key(coverage)
+        if key in coverage_by_key:
+            raise AnalysisInputError(f"duplicate manifest coverage cell: {key}")
+        coverage_by_key[key] = coverage
+
+    missing = sorted(set(coverage_by_key) - set(summary_by_key))
+    extra = sorted(set(summary_by_key) - set(coverage_by_key))
+    if missing or extra:
+        raise AnalysisInputError(
+            "summary and manifest coverage cells differ: "
+            f"missing={missing[:10]}, extra={extra[:10]}"
+        )
+
+    validated: list[dict[str, Any]] = []
+    for key in sorted(coverage_by_key):
+        summary = summary_by_key[key]
+        coverage = coverage_by_key[key]
+        status = coverage.get("status")
+        if status not in {"valid", "excluded"}:
+            raise AnalysisInputError(
+                f"unsupported coverage status for {key}: {status!r}"
+            )
+        expected_trial_n = _non_negative_int(coverage, "expected_trial_n", key)
+        coverage_trial_n = _non_negative_int(coverage, "trial_n", key)
+        coverage_scored_n = _non_negative_int(coverage, "scored_n", key)
+        summary_trial_n = _summary_trial_n(summary, key)
+        summary_scored_n = _non_negative_int(summary, "scored_n", key)
+        if status == "valid" and (
+            coverage_trial_n != expected_trial_n
+            or coverage_scored_n != expected_trial_n
+        ):
+            raise AnalysisInputError(
+                f"manifest marks incomplete cell valid: {key}; "
+                f"expected_trial_n={expected_trial_n}, "
+                f"trial_n={coverage_trial_n}, scored_n={coverage_scored_n}"
+            )
+
+        available = (
+            status == "valid"
+            and coverage_trial_n == expected_trial_n
+            and coverage_scored_n == expected_trial_n
+            and summary_trial_n == coverage_trial_n
+            and summary_scored_n == coverage_scored_n
+        )
+        annotated = dict(summary)
+        annotated["analysis_status"] = "available" if available else "unavailable"
+        if not available:
+            annotated["analysis_unavailable_reason"] = (
+                coverage.get("exclusion_reason")
+                or "summary counts do not match the manifest coverage contract"
+            )
+        validated.append(annotated)
+    return validated
+
+
+def _coverage_key(row: Mapping[str, Any]) -> tuple[str, int, float]:
+    try:
+        return (
+            str(row["task_type"]),
+            int(row["target_context_tokens"]),
+            float(row["requested_evidence_position"]),
+        )
+    except (KeyError, TypeError, ValueError) as error:
+        raise AnalysisInputError(
+            "coverage and summary rows must declare task, context, and position"
+        ) from error
+
+
+def _non_negative_int(
+    row: Mapping[str, Any],
+    field: str,
+    key: tuple[str, int, float],
+) -> int:
+    value = row.get(field)
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise AnalysisInputError(f"{field} must be a non-negative integer for {key}")
+    return value
+
+
+def _summary_trial_n(
+    row: Mapping[str, Any],
+    key: tuple[str, int, float],
+) -> int:
+    value = row.get("attempted_n", row.get("n"))
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise AnalysisInputError(
+            f"summary attempted_n/n must be a non-negative integer for {key}"
+        )
+    return value
 
 
 def _load_manifest(path: Path) -> dict[str, Any]:

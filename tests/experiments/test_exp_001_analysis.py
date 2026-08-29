@@ -69,6 +69,9 @@ class Exp001AnalysisTests(unittest.TestCase):
                 "requested_evidence_position": position,
                 "status": "excluded" if context_tokens == 32768 and position == 0.50 else "valid",
                 "reason": "simulated runtime failure" if context_tokens == 32768 and position == 0.50 else None,
+                "expected_trial_n": 2,
+                "trial_n": 2,
+                "scored_n": 1 if context_tokens == 32768 and position == 0.50 else 2,
             }
             for context_tokens in (8192, 32768)
             for position in (0.05, 0.50, 0.95)
@@ -138,10 +141,11 @@ class Exp001AnalysisTests(unittest.TestCase):
             summary = (root / "processed/summary.csv").read_text(encoding="utf-8")
             self.assertIn("attempted_n", summary)
             self.assertIn("runtime_error_n", summary)
+            self.assertIn("analysis_status", summary)
             gaps = json.loads(
                 (root / "processed/effective-context.json").read_text(encoding="utf-8")
             )
-            self.assertEqual("provisional", gaps[0]["status"])
+            self.assertEqual("right_censored", gaps[0]["status"])
 
     def test_regeneration_rejects_raw_hash_mismatch_before_writing(self) -> None:
         with TemporaryDirectory() as directory:
