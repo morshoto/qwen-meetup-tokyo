@@ -264,5 +264,62 @@ effective_context:
             persisted[0].input["sampling"]["generation_seed_policy"],
         )
 
+    def test_sampling_resume_reuses_and_validates_resolved_seed(self) -> None:
+        config = {
+            "temperature": 0.7,
+            "max_new_tokens": 32,
+            "generation_seed": "record-at-run-time",
+        }
+        first, first_policy = runner._sampling_from_config(config)
+        manifest = {
+            "sampling": {
+                **first.to_record(),
+                "generation_seed_policy": first_policy,
+            }
+        }
+
+        resumed, resumed_policy = runner._sampling_from_config(
+            config,
+            resume_manifest=manifest,
+        )
+
+        self.assertEqual(first.seed, resumed.seed)
+        self.assertEqual("run-resolved-seed", resumed_policy)
+        mismatched_config = {**config, "max_new_tokens": 64}
+        with self.assertRaisesRegex(ValueError, "sampling provenance mismatch"):
+            runner._sampling_from_config(mismatched_config, resume_manifest=manifest)
+
+    def test_resume_checkpoint_persists_resolved_sampling(self) -> None:
+        with TemporaryDirectory() as directory:
+            manifest_path = Path(directory) / "main.json"
+            output_path = Path(directory) / "main-trials.jsonl"
+            sampling = runner.SamplingConfig(
+                max_new_tokens=32,
+                temperature=0.7,
+                seed=1234,
+            )
+
+            runner._write_resume_checkpoint(
+                manifest_path=manifest_path,
+                phase="main",
+                backend="transformers",
+                model=runner.qwen38_model_spec(
+                    revision="model-commit",
+                    tokenizer_revision="tokenizer-commit",
+                ),
+                output_path=output_path,
+                sampling=sampling,
+                generation_seed_policy="run-resolved-seed",
+            )
+
+            checkpoint = runner._load_resume_manifest(manifest_path)
+
+        self.assertEqual("in_progress", checkpoint["status"])
+        self.assertEqual(1234, checkpoint["sampling"]["seed"])
+        self.assertEqual(
+            "run-resolved-seed",
+            checkpoint["sampling"]["generation_seed_policy"],
+        )
+
 if __name__ == "__main__":
     unittest.main()

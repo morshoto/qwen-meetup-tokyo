@@ -309,6 +309,7 @@ def run_experiment(
         fixture_seed = int(experiment_config.get("fixture_seed", 42))
     output_path = _rooted(output_path)
     manifest_path = _rooted(manifest_path)
+    resume_manifest = _load_resume_manifest(manifest_path) if resume else None
     if overwrite_smoke and (phase != "smoke" or backend != "fixture"):
         raise ValueError("overwrite_smoke is only supported for the fixture smoke phase")
     if overwrite_smoke and resume:
@@ -366,10 +367,24 @@ def run_experiment(
     sampling_config = config.get("sampling", {})
     if not isinstance(sampling_config, Mapping):
         raise ValueError("sampling config must be an object")
-    sampling, generation_seed_policy = _sampling_from_config(sampling_config)
-    existing_ids = {
-        result.trial_id for result in load_trial_results(working_output_path)
-    } if resume else set()
+    sampling, generation_seed_policy = _sampling_from_config(
+        sampling_config,
+        resume_manifest=resume_manifest,
+    )
+    existing_results = load_trial_results(working_output_path) if resume else []
+    if resume:
+        _validate_resume_sampling(existing_results, sampling)
+    existing_ids = {result.trial_id for result in existing_results}
+    if backend == "transformers" and not resume:
+        _write_resume_checkpoint(
+            manifest_path=manifest_path,
+            phase=phase,
+            backend=backend,
+            model=model,
+            output_path=output_path,
+            sampling=sampling,
+            generation_seed_policy=generation_seed_policy,
+        )
     try:
         try:
             runner = EvaluationRunner(
@@ -606,15 +621,21 @@ def _model_record(model: ModelSpec | None) -> dict[str, Any] | None:
 
 def _sampling_from_config(
     values: Mapping[str, Any],
+    *,
+    resume_manifest: Mapping[str, Any] | None = None,
 ) -> tuple[SamplingConfig, str]:
     """Resolve config sampling into effective settings and a provenance policy."""
 
     temperature = float(values.get("temperature", 0.0))
     configured_seed = values.get("generation_seed")
+    previous_sampling = _resume_sampling(resume_manifest)
     if configured_seed == "record-at-run-time":
         if temperature == 0.0:
             seed = None
             policy = "greedy-decoding-no-seed"
+        elif previous_sampling is not None:
+            seed = _required_resume_seed(previous_sampling)
+            policy = "run-resolved-seed"
         else:
             seed = secrets.randbits(32)
             policy = "run-resolved-seed"
@@ -626,19 +647,122 @@ def _sampling_from_config(
     else:
         seed = int(configured_seed)
         policy = "configured-seed"
-    return (
-        SamplingConfig(
-            max_new_tokens=int(values.get("max_new_tokens", 32)),
-            temperature=temperature,
-            top_p=float(values.get("top_p", 1.0)),
-            top_k=(
-                None
-                if values.get("top_k") is None
-                else int(values["top_k"])
-            ),
-            seed=seed,
+    sampling = SamplingConfig(
+        max_new_tokens=int(values.get("max_new_tokens", 32)),
+        temperature=temperature,
+        top_p=float(values.get("top_p", 1.0)),
+        top_k=(
+            None
+            if values.get("top_k") is None
+            else int(values["top_k"])
         ),
-        policy,
+        seed=seed,
+    )
+    if previous_sampling is not None:
+        expected = dict(sampling.to_record())
+        expected["generation_seed_policy"] = policy
+        _validate_sampling_match(previous_sampling, expected)
+    return sampling, policy
+
+
+def _load_resume_manifest(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"resume requires the existing run manifest with sampling provenance: {path}"
+        )
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError(f"invalid resume manifest JSON: {path}") from error
+    if not isinstance(value, dict) or value.get("schema_version") != 1:
+        raise ValueError("resume manifest must be a schema version 1 object")
+    return value
+
+
+def _resume_sampling(
+    manifest: Mapping[str, Any] | None,
+) -> Mapping[str, Any] | None:
+    if manifest is None:
+        return None
+    value = manifest.get("sampling")
+    if not isinstance(value, Mapping):
+        raise ValueError("resume manifest is missing sampling provenance")
+    return value
+
+
+def _required_resume_seed(sampling: Mapping[str, Any]) -> int:
+    seed = sampling.get("seed")
+    if not isinstance(seed, int) or isinstance(seed, bool):
+        raise ValueError("resume manifest is missing the resolved generation seed")
+    return seed
+
+
+def _validate_sampling_match(
+    recorded: Mapping[str, Any],
+    expected: Mapping[str, Any],
+) -> None:
+    fields = (
+        "max_new_tokens",
+        "temperature",
+        "top_p",
+        "top_k",
+        "seed",
+        "do_sample",
+        "generation_seed_policy",
+    )
+    missing = [field for field in fields if field not in recorded]
+    mismatches = [
+        field
+        for field in fields
+        if field in recorded and recorded.get(field) != expected.get(field)
+    ]
+    if missing or mismatches:
+        raise ValueError(
+            "sampling provenance mismatch on resume: "
+            f"missing={missing}, mismatched={mismatches}"
+        )
+
+
+def _validate_resume_sampling(
+    results: Iterable[TrialResult],
+    sampling: SamplingConfig,
+) -> None:
+    expected = sampling.to_record()
+    for result in results:
+        recorded = result.input.get("sampling")
+        if not isinstance(recorded, Mapping):
+            raise ValueError(
+                f"existing trial {result.trial_id} is missing sampling provenance"
+            )
+        _validate_sampling_match(recorded, expected)
+
+
+def _write_resume_checkpoint(
+    *,
+    manifest_path: Path,
+    phase: str,
+    backend: str,
+    model: ModelSpec,
+    output_path: Path,
+    sampling: SamplingConfig,
+    generation_seed_policy: str,
+) -> None:
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    sampling_record = sampling.to_record()
+    sampling_record["generation_seed_policy"] = generation_seed_policy
+    checkpoint = {
+        "schema_version": 1,
+        "experiment_id": EXPERIMENT_ID,
+        "phase": phase,
+        "backend": backend,
+        "status": "in_progress",
+        "model": _model_record(model),
+        "sampling": sampling_record,
+        "raw_results": _relative_or_absolute(output_path),
+    }
+    manifest_path.write_text(
+        json.dumps(checkpoint, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
     )
 
 

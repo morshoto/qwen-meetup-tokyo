@@ -49,7 +49,8 @@ PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase main --backend transformers
 
-# If a model run is interrupted, continue from its append-only JSONL.
+# If a model run is interrupted, continue from its append-only JSONL and the
+# sampling checkpoint in the existing manifest.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase main --backend transformers --resume
 
@@ -73,7 +74,9 @@ fail closed so append-only trial data cannot be accidentally duplicated.
 The main matrix remains resource-dependent; runtime/OOM/timeout cells are kept
 in raw JSONL and listed as exclusions with reasons in the phase manifest. The
 runner's `--resume` option uses deterministic trial IDs to fill only missing
-attempts.
+attempts. A model run writes its resolved sampling checkpoint before the first
+trial; resume requires that checkpoint and rejects changes to its effective
+settings or to sampling provenance already stored in raw trials.
 
 ## Provenance and outputs
 

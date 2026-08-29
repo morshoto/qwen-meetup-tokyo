@@ -375,7 +375,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--allow-fixture", action="store_true")
     args = parser.parse_args(argv)
     result = regenerate(args.manifest, raw_path=args.raw, allow_fixture=args.allow_fixture)
-    print(json.dumps(result, indent=2, sort_keys=True))
+    print(
+        json.dumps(
+            {key: value for key, value in result.items() if key != "summary_rows"},
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 
