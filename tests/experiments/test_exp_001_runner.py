@@ -229,6 +229,7 @@ phases:
 sampling:
   temperature: 0.0
   max_new_tokens: 32
+  generation_seed: record-at-run-time
 effective_context:
   baseline_length: 8192
   baseline_accuracy_gate: 0.80
@@ -245,11 +246,21 @@ effective_context:
                 manifest_path=root / "manifests" / "smoke.json",
                 config_path=config_path,
             )
+            persisted = load_trial_results(root / "raw" / "trials.jsonl")
 
         self.assertEqual(1, manifest["planned_condition_n"])
         self.assertEqual(30, manifest["planned_trial_n"])
         self.assertEqual([8192], manifest["context_lengths"])
         self.assertEqual([0.05], manifest["evidence_positions"])
+        self.assertIsNone(manifest["sampling"]["seed"])
+        self.assertEqual(
+            "greedy-decoding-no-seed",
+            manifest["sampling"]["generation_seed_policy"],
+        )
+        self.assertEqual(
+            "greedy-decoding-no-seed",
+            persisted[0].input["sampling"]["generation_seed_policy"],
+        )
 
 if __name__ == "__main__":
     unittest.main()

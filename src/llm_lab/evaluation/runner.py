@@ -194,6 +194,8 @@ class EvaluationRunner:
                 else None,
             }
         )
+        if request is not None:
+            input_metadata["sampling"] = request.sampling.to_record()
         score_record = dict(score or {})
         score_record.setdefault("scorer", self.scorer.name)
         return TrialResult(

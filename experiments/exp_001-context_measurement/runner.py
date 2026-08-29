@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import secrets
 import sys
 import tempfile
 from collections import Counter
@@ -347,10 +348,7 @@ def run_experiment(
     sampling_config = config.get("sampling", {})
     if not isinstance(sampling_config, Mapping):
         raise ValueError("sampling config must be an object")
-    sampling = SamplingConfig(
-        max_new_tokens=int(sampling_config.get("max_new_tokens", 32)),
-        temperature=float(sampling_config.get("temperature", 0.0)),
-    )
+    sampling, generation_seed_policy = _sampling_from_config(sampling_config)
     existing_ids = {
         result.trial_id for result in load_trial_results(working_output_path)
     } if resume else set()
@@ -415,6 +413,7 @@ def run_experiment(
         catalog_path=catalog_path,
         config=config,
         sampling=sampling,
+        generation_seed_policy=generation_seed_policy,
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -462,6 +461,7 @@ def _manifest(
     catalog_path: Path | None = None,
     config: Mapping[str, Any] | None = None,
     sampling: SamplingConfig | None = None,
+    generation_seed_policy: str | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     condition_list = list(conditions)
@@ -517,6 +517,13 @@ def _manifest(
         if config is not None and isinstance(config.get("effective_context"), Mapping)
         else {}
     )
+    sampling_record = (
+        sampling.to_record()
+        if sampling is not None
+        else SamplingConfig().to_record()
+    )
+    if generation_seed_policy is not None:
+        sampling_record["generation_seed_policy"] = generation_seed_policy
     return {
         "schema_version": 1,
         "experiment_id": EXPERIMENT_ID,
@@ -534,10 +541,7 @@ def _manifest(
             for task_type in TASK_TYPES
         },
         "effective_context": effective_context,
-        "sampling": {
-            "max_new_tokens": sampling.max_new_tokens if sampling else 32,
-            "temperature": sampling.temperature if sampling else 0.0,
-        },
+        "sampling": sampling_record,
         "repeats": repeats,
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),
@@ -558,6 +562,44 @@ def _manifest(
             else "Results are model/runtime observations under the recorded environment."
         ),
     }
+
+
+def _sampling_from_config(
+    values: Mapping[str, Any],
+) -> tuple[SamplingConfig, str]:
+    """Resolve config sampling into effective settings and a provenance policy."""
+
+    temperature = float(values.get("temperature", 0.0))
+    configured_seed = values.get("generation_seed")
+    if configured_seed == "record-at-run-time":
+        if temperature == 0.0:
+            seed = None
+            policy = "greedy-decoding-no-seed"
+        else:
+            seed = secrets.randbits(32)
+            policy = "run-resolved-seed"
+    elif configured_seed is None:
+        seed = None
+        policy = "greedy-decoding-no-seed" if temperature == 0.0 else "unseeded-sampling"
+    elif isinstance(configured_seed, bool):
+        raise ValueError("sampling generation_seed must be an integer or record-at-run-time")
+    else:
+        seed = int(configured_seed)
+        policy = "configured-seed"
+    return (
+        SamplingConfig(
+            max_new_tokens=int(values.get("max_new_tokens", 32)),
+            temperature=temperature,
+            top_p=float(values.get("top_p", 1.0)),
+            top_k=(
+                None
+                if values.get("top_k") is None
+                else int(values["top_k"])
+            ),
+            seed=seed,
+        ),
+        policy,
+    )
 
 
 def _sha256(path: Path) -> str:

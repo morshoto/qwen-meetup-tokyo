@@ -16,6 +16,7 @@ from llm_lab.generation import (
     GenerationResponse,
     GenerationTiming,
     RuntimeMetadata,
+    SamplingConfig,
     TokenUsage,
 )
 from llm_lab.models import ModelSpec
@@ -170,6 +171,27 @@ class EvaluationRunnerTests(unittest.TestCase):
         )
         self.assertEqual("simulated out of memory", results[0].error["message"])
         self.assertEqual("simulated timeout", results[1].error["message"])
+
+    def test_runner_records_effective_sampling_provenance(self) -> None:
+        runner = EvaluationRunner(
+            runtime=FixtureRuntime(),
+            model=ModelSpec(model_id="fixture/model"),
+            scorer=ExpectedAnswerScorer(),
+            experiment_id="exp_fixture",
+        )
+
+        [result] = runner.run(
+            [task("task.sampling", "question")],
+            sampling=SamplingConfig(max_new_tokens=8, temperature=0.0),
+        )
+
+        self.assertEqual(8, result.input["sampling"]["max_new_tokens"])
+        self.assertEqual(0.0, result.input["sampling"]["temperature"])
+        self.assertIsNone(result.input["sampling"]["seed"])
+        self.assertEqual(
+            "greedy-decoding-no-seed",
+            result.input["sampling"]["generation_seed_policy"],
+        )
 
     def test_runner_preserves_task_metadata_in_trial_input(self) -> None:
         runner = EvaluationRunner(
