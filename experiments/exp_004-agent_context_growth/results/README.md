@@ -15,5 +15,5 @@ Model artifacts and raw results are intentionally not committed. Fixture smoke
 outputs validate plumbing and are never Qwen measurements.
 
 The committed pilot files are historical outputs from the two-task pilot
-catalog. Current runs load the 10-task `agent.v001.jsonl` catalog; repeat counts
+catalog. Current runs load the 10-task `agent.v002.jsonl` catalog; repeat counts
 remain separate from this independent-task count.

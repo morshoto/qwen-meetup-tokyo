@@ -40,7 +40,7 @@ from llm_lab.telemetry import capture_environment  # noqa: E402
 
 EXPERIMENT_ID = "exp_004"
 CONFIG_PATH = ROOT / "experiments/exp_004-agent_context_growth/config.yaml"
-TASK_CATALOG = ROOT / "data/tasks/agent.v001.jsonl"
+TASK_CATALOG = ROOT / "data/tasks/agent.v002.jsonl"
 RuntimeFactory = Callable[[], Runtime]
 
 

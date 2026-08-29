@@ -4,7 +4,7 @@
   "version": "v002",
   "sources": {
     "qa": "core.v002.jsonl",
-    "agent": "agent.v001.jsonl"
+    "agent": "agent.v002.jsonl"
   },
   "family_counts": {
     "literal_retrieval": 10,

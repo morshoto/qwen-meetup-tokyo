@@ -19,7 +19,7 @@ class TaskCatalogTests(unittest.TestCase):
         self.assertEqual(
             {
                 "qa": "core.v002.jsonl",
-                "agent": "agent.v001.jsonl",
+                "agent": "agent.v002.jsonl",
             },
             dict(manifest.sources),
         )
@@ -143,11 +143,11 @@ class TaskCatalogTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             TaskCatalog.from_records([missing_scorer])
 
-    def test_agent_v001_has_ten_independent_machine_checkable_tasks(self) -> None:
+    def test_agent_catalog_versions_preserve_history_and_expand_tasks(self) -> None:
         records = [
             json.loads(line)
             for line in (
-                REPOSITORY_ROOT / "data" / "tasks" / "agent.v001.jsonl"
+                REPOSITORY_ROOT / "data" / "tasks" / "agent.v002.jsonl"
             ).read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
@@ -172,6 +172,15 @@ class TaskCatalogTests(unittest.TestCase):
             self.assertEqual("CC0-1.0", record["metadata"]["license"])
             self.assertTrue(record["metadata"]["independent"])
             self.assertTrue(record["metadata"]["presentation_ready"])
+
+        historical_records = [
+            line
+            for line in (
+                REPOSITORY_ROOT / "data" / "tasks" / "agent.v001.jsonl"
+            ).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        self.assertEqual(2, len(historical_records))
 
     def test_fixture_manifest_points_to_versioned_prompt_and_task_catalog(self) -> None:
         fixture = json.loads(
