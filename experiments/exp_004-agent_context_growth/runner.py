@@ -109,13 +109,26 @@ def load_experiment_config(path: Path = CONFIG_PATH) -> dict[str, Any]:
 
 
 def load_source_manifest(path: Path) -> QuantizationManifest:
-    """Load the resolved exp_003 manifest supplying selected artifacts."""
+    """Load the resolved exp_003 manifest supplying selected artifacts.
+
+    exp_003 records its resolved artifact selection as a run manifest under
+    ``results/manifests`` and points back to the resolved exp_002 manifest for
+    the canonical artifact provenance.  Accept both that recorded format and
+    the canonical ``QuantizationManifest`` format used by the unit tests.
+    """
 
     path = _rooted(path)
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
-        manifest = QuantizationManifest.from_record(record)
-    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid resolved source manifest: {path}") from error
+
+    try:
+        if "variants" in record:
+            manifest = QuantizationManifest.from_record(record)
+        else:
+            manifest = _manifest_from_exp003_run(path, record)
+    except (KeyError, TypeError, ValueError, OSError) as error:
         raise ValueError(f"invalid resolved source manifest: {path}") from error
     if manifest.experiment_id != "exp_003":
         raise ValueError(
@@ -123,6 +136,80 @@ def load_source_manifest(path: Path) -> QuantizationManifest:
             f"{manifest.experiment_id!r}"
         )
     return manifest
+
+
+def _manifest_from_exp003_run(
+    path: Path,
+    record: Mapping[str, Any],
+) -> QuantizationManifest:
+    """Adapt exp003's recorded run manifest to the shared source contract."""
+
+    if record.get("experiment_id") != "exp_003":
+        raise ValueError("source run manifest must describe exp_003")
+    if record.get("backend") != "llama.cpp":
+        raise ValueError("exp_003 source run must use the llama.cpp backend")
+    source_reference = record.get("source_manifest")
+    if not isinstance(source_reference, str) or not source_reference.strip():
+        raise ValueError("exp_003 source run must name its resolved source manifest")
+    source_path = _rooted(Path(source_reference))
+    source_record = json.loads(source_path.read_text(encoding="utf-8"))
+    source_manifest = QuantizationManifest.from_record(source_record)
+    if source_manifest.experiment_id != "exp_002":
+        raise ValueError(
+            "exp_003 source run must point to an exp_002 resolved manifest"
+        )
+    declared_sha256 = record.get("source_manifest_sha256")
+    actual_sha256 = _sha256_file(source_path)
+    if declared_sha256 != actual_sha256:
+        raise ValueError(
+            "exp_003 source manifest digest mismatch: "
+            f"manifest={declared_sha256!r}, actual={actual_sha256!r}"
+        )
+
+    runtime = record.get("runtime")
+    model = record.get("model")
+    if not isinstance(runtime, Mapping) or not isinstance(model, Mapping):
+        raise ValueError("exp_003 source run must contain model and runtime records")
+    variant_records = record.get("quantization_variants")
+    if not isinstance(variant_records, list) or not variant_records:
+        raise ValueError("exp_003 source run must contain quantization variants")
+    variants: list[QuantizationVariant] = []
+    for variant_record in variant_records:
+        if not isinstance(variant_record, Mapping):
+            raise ValueError("exp_003 quantization variants must be mappings")
+        normalized = dict(variant_record)
+        artifact = normalized.get("artifact")
+        if not isinstance(artifact, Mapping):
+            raise ValueError("exp_003 quantization variant must contain an artifact")
+        normalized_artifact = dict(artifact)
+        normalized_artifact["artifact_uri"] = str(
+            _artifact_path(source_path, str(normalized_artifact["artifact_uri"]))
+        )
+        normalized["artifact"] = normalized_artifact
+        variants.append(QuantizationVariant.from_record(normalized))
+
+    task_ids = tuple(str(value) for value in record["task_ids"])
+    context_lengths = tuple(int(value) for value in record["context_lengths"])
+    return QuantizationManifest(
+        experiment_id="exp_003",
+        model_id=str(model["id"]),
+        model_revision=str(model["revision"]),
+        tokenizer_id=str(model["tokenizer_id"]),
+        tokenizer_revision=str(model["tokenizer_revision"]),
+        runtime_name=str(runtime["name"]),
+        runtime_version=str(runtime["version"]),
+        prompt_id=str(record["prompt_id"]),
+        task_ids=task_ids,
+        context_lengths=context_lengths,
+        sampling=dict(source_manifest.sampling),
+        variants=tuple(variants),
+        repeats=int(record.get("repeats", source_manifest.repeats)),
+        context_length_semantics="input_tokens",
+        context_overhead_tokens=source_manifest.context_overhead_tokens,
+        runtime_options=dict(
+            runtime.get("source_options", source_manifest.runtime_options)
+        ),
+    )
 
 
 def load_tasks(path: Path = TASK_CATALOG) -> tuple[AgentTask, ...]:

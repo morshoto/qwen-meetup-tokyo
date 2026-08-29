@@ -134,6 +134,39 @@ def _source_manifest(directory: Path) -> Path:
     return path
 
 
+def _source_run_manifest(directory: Path) -> Path:
+    source = _source_manifest(directory)
+    source_record = json.loads(source.read_text(encoding="utf-8"))
+    source_record["experiment_id"] = "exp_002"
+    resolved_source = directory / "resolved-exp002.json"
+    resolved_source.write_text(json.dumps(source_record), encoding="utf-8")
+    source_sha256 = hashlib.sha256(resolved_source.read_bytes()).hexdigest()
+    run_record = {
+        "experiment_id": "exp_003",
+        "backend": "llama.cpp",
+        "source_manifest": str(resolved_source),
+        "source_manifest_sha256": source_sha256,
+        "model": source_record["model"],
+        "runtime": {
+            "name": "llama.cpp",
+            "version": "llama-cpp-python-fixture",
+            "source_options": {"n_ctx": 33088, "n_batch": 512},
+        },
+        "quantization_variants": source_record["variants"],
+        "task_ids": [
+            "task.literal.000001",
+            "task.semantic.000001",
+            "task.multihop.000001",
+        ],
+        "context_lengths": [8192, 32768],
+        "prompt_id": "prompt.qa.v001",
+        "repeats": 1,
+    }
+    path = directory / "exp003-run-manifest.json"
+    path.write_text(json.dumps(run_record), encoding="utf-8")
+    return path
+
+
 class Exp004RunnerTests(unittest.TestCase):
     def setUp(self) -> None:
         FakeRuntime.instances = []
@@ -194,6 +227,31 @@ class Exp004RunnerTests(unittest.TestCase):
                 "fixture-agent",
                 trials[0].runtime["name"],
             )
+
+    def test_runner_loads_exp003_run_manifest_with_exp002_source(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_manifest = _source_run_manifest(root)
+            result = runner.run_experiment(
+                source_manifest_path=source_manifest,
+                output_path=root / "raw" / "trials.jsonl",
+                manifest_output_path=root / "manifests" / "run.json",
+                processed_path=root / "processed" / "summary.csv",
+                phase="smoke",
+                backend="fixture",
+                condition_ids=("q8_0",),
+                trajectory_lengths=(4,),
+                critical_positions=(0.5,),
+                repeats=1,
+                runtime_factory=FakeRuntime,
+            )
+
+            self.assertEqual(2, result["actual_trial_n"])
+            manifest = json.loads(
+                (root / "manifests" / "run.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual("exp_003", manifest["source_manifest"]["experiment_id"])
+            self.assertTrue(Path(manifest["source_manifest"]["variants"][0]["artifact"]["artifact_uri"]).is_absolute())
 
     def test_runner_resumes_without_duplicate_trial_ids(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
