@@ -594,6 +594,7 @@ def _build_manifest(
             "config": str(CONFIG_PATH.relative_to(ROOT)),
             "task_catalog": str(_section(config, "experiment")["task_catalog"]),
             "task_ids": [task.task_id for task in task_list],
+            "task_types": sorted({task.task_type for task in task_list}),
             "fixture_seed": fixture_seed,
             "repeats": repeats,
             "trajectory_lengths": sorted(

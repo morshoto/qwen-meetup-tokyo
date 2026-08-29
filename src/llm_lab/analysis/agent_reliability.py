@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from pathlib import Path
+from statistics import median
 from typing import Any, Iterable, Mapping
 
 from llm_lab.evaluation import TrialResult, TrialStatus
@@ -55,6 +56,12 @@ def aggregate_agent_trials(
             if isinstance(trial.score.get("correct"), bool)
         ]
         metrics = [_metrics(trial) for trial in group]
+        context_tokens = [
+            int(item["max_input_tokens"])
+            for item in metrics
+            if isinstance(item.get("max_input_tokens"), int)
+            and not isinstance(item.get("max_input_tokens"), bool)
+        ]
         tool_calls = sum(
             _nonnegative_int(item.get("tool_call_n"), "tool_call_n")
             for item in metrics
@@ -105,6 +112,9 @@ def aggregate_agent_trials(
                 "total_input_tokens": sum(
                     _nonnegative_int(item.get("total_input_tokens"), "total_input_tokens")
                     for item in metrics
+                ),
+                "trajectory_context_tokens": (
+                    int(median(context_tokens)) if context_tokens else None
                 ),
                 "failure_category_counts": dict(sorted(categories.items())),
             }
