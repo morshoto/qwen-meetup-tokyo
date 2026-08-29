@@ -168,6 +168,25 @@ class EffectiveContextTests(unittest.TestCase):
         self.assertIsNone(result["crossing_context_tokens"])
         self.assertEqual(65536, result["largest_tested_context_tokens"])
 
+    def test_effective_context_rejects_partial_position_contexts(self) -> None:
+        rows = [
+            summary("literal_retrieval", context_tokens, position, 1.0)
+            for context_tokens in (8192, 32768)
+            for position in (0.05, 0.50, 0.95)
+        ]
+        rows[0]["analysis_status"] = "unavailable"
+
+        [result] = effective_context_by_task(rows)
+
+        self.assertIsNone(result["baseline_accuracy"])
+        self.assertFalse(result["baseline_valid"])
+        self.assertEqual("unavailable", result["status"])
+        baseline = next(
+            point for point in result["points"] if point["context_tokens"] == 8192
+        )
+        self.assertEqual(0, baseline["scored_n"])
+        self.assertIsNone(baseline["accuracy"])
+
     def test_position_sensitive_effective_context_exposes_middle_collapse(self) -> None:
         rows = []
         for position in (0.05, 0.50, 0.95):

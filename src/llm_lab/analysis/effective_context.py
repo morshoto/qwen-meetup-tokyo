@@ -291,8 +291,12 @@ def _effective_context_for_rows(
 
 def _weighted_context_points(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[int, dict[str, float]] = defaultdict(lambda: {"scored_n": 0.0, "successes": 0.0})
+    unavailable_contexts: set[int] = set()
     for row in rows:
         context_tokens = int(row["target_context_tokens"])
+        if not _is_available(row):
+            unavailable_contexts.add(context_tokens)
+            continue
         scored_n = _scored_n(row)
         accuracy = row.get("accuracy")
         if scored_n < 0:
@@ -308,11 +312,19 @@ def _weighted_context_points(rows: Iterable[Mapping[str, Any]]) -> list[dict[str
     return [
         {
             "context_tokens": context_tokens,
-            "scored_n": int(values["scored_n"]),
+            "scored_n": (
+                0
+                if context_tokens in unavailable_contexts
+                else int(values["scored_n"])
+            ),
             "accuracy": (
-                values["successes"] / values["scored_n"]
-                if values["scored_n"]
-                else None
+                None
+                if context_tokens in unavailable_contexts
+                else (
+                    values["successes"] / values["scored_n"]
+                    if values["scored_n"]
+                    else None
+                )
             ),
         }
         for context_tokens, values in sorted(grouped.items())
