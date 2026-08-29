@@ -10,7 +10,7 @@ from llm_lab.models import ModelSpec
 from llm_lab.runtimes import Runtime
 from llm_lab.telemetry import TelemetryCollector, TelemetryRecord
 
-from .contracts import Scorer, Task
+from .contracts import ScoreResult, Scorer, Task
 from .results import TrialResult, TrialStatus, make_trial_id
 from .storage import JsonlResultWriter
 
@@ -141,12 +141,7 @@ class EvaluationRunner:
             status=status,
             request=request,
             response=response,
-            score={
-                "correct": score.correct,
-                "value": score.value,
-                "scorer": score.scorer,
-                "details": dict(score.details),
-            },
+            score=_score_record(score),
             telemetry=telemetry,
         )
 
@@ -199,6 +194,8 @@ class EvaluationRunner:
                 else None,
             }
         )
+        score_record = dict(score or {})
+        score_record.setdefault("scorer", self.scorer.name)
         return TrialResult(
             trial_id=trial_id,
             experiment_id=self.experiment_id,
@@ -208,7 +205,7 @@ class EvaluationRunner:
             runtime=runtime,
             input=input_metadata,
             generation=_generation_record(response),
-            score=score or {},
+            score=score_record,
             timing=timing,
             memory={
                 "peak_bytes": telemetry.peak_memory_bytes,
@@ -227,6 +224,20 @@ def _model_record(model: ModelSpec) -> dict[str, Any]:
         "tokenizer_revision": model.tokenizer_revision,
         "capabilities": asdict(model.capabilities),
     }
+
+
+def _score_record(score: ScoreResult) -> dict[str, Any]:
+    record: dict[str, Any] = {
+        "correct": score.correct,
+        "value": score.value,
+        "scorer": score.scorer,
+        "details": dict(score.details),
+    }
+    for field_name in ("exact_correct", "answer_bearing_correct", "format_valid"):
+        metric = getattr(score, field_name)
+        if metric is not None:
+            record[field_name] = metric
+    return record
 
 
 def _runtime_record(runtime: Runtime, response: GenerationResponse | None) -> dict[str, Any]:
