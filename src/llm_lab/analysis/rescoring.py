@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from llm_lab.evaluation import (
@@ -175,6 +177,113 @@ def comparison_rows(
     return rows
 
 
+def sha256_file(path: str | Path) -> str:
+    """Return the SHA-256 digest for an existing input artifact."""
+
+    source_path = Path(path)
+    if not source_path.is_file():
+        raise FileNotFoundError(source_path)
+    digest = hashlib.sha256()
+    with source_path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def render_report(
+    *,
+    raw_path: str | Path,
+    task_catalog_path: str | Path,
+    raw_trial_n: int,
+    rows: Iterable[Mapping[str, Any]],
+) -> str:
+    """Render a deterministic provenance and interpretation-boundary report."""
+
+    comparison = list(rows)
+    variants: dict[str, list[Mapping[str, Any]]] = {}
+    for row in comparison:
+        variant = str(row.get("variant_condition_id") or "<unknown>")
+        variants.setdefault(variant, []).append(row)
+
+    lines = [
+        "# exp_002 diagnostic re-scoring report",
+        "",
+        "**Status: Diagnostic re-scoring only.** This report reinterprets existing",
+        "generated outputs; it is not a new model run or formal quantization",
+        "measurement.",
+        "",
+        "## Provenance",
+        "",
+        f"- Raw input: `results/raw/{Path(raw_path).name}`",
+        f"- Raw trial count: {raw_trial_n}",
+        f"- Raw SHA-256: `{sha256_file(raw_path)}`",
+        f"- Task catalog: `data/tasks/{Path(task_catalog_path).name}`",
+        "- Legacy scorer: `expected.v1` (preserved in the raw records)",
+        "- Calibrated scorer: `calibrated.v1`",
+        "- Processing entry point: `rescore.py`",
+        "",
+        "## Old/new comparison by quantization variant",
+        "",
+        "The detailed comparison table is `rescored-summary.csv`, with one row",
+        "per task, quantization variant, and context length.",
+        "",
+        "| Variant | Old correct/scored | New exact correct/scored | New answer-bearing correct/scored | New format-valid/scored | Mismatch | Format failure | Runtime failure |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for variant, variant_rows in sorted(variants.items()):
+        label = _common_row_value(variant_rows, "variant_label") or variant
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    str(label),
+                    _count_cell(variant_rows, "old_correct_n", "old_scored_n"),
+                    _count_cell(
+                        variant_rows,
+                        "new_exact_correct_n",
+                        "new_exact_scored_n",
+                    ),
+                    _count_cell(
+                        variant_rows,
+                        "new_answer_bearing_correct_n",
+                        "new_answer_bearing_scored_n",
+                    ),
+                    _count_cell(
+                        variant_rows,
+                        "new_format_valid_n",
+                        "new_format_scored_n",
+                    ),
+                    str(_sum_rows(variant_rows, "mismatch_n")),
+                    str(_sum_rows(variant_rows, "format_failure_n")),
+                    str(_sum_rows(variant_rows, "runtime_failure_n")),
+                )
+            )
+            + " |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Failure classification",
+            "",
+            "- `mismatch`: completed output is not an exact calibrated answer but",
+            "  remains format-valid.",
+            "- `format_failure`: completed output is empty or violates the expected",
+            "  answer shape; this category takes precedence over mismatch.",
+            "- `runtime_failure`: the original trial did not complete; no output is",
+            "  rescored and it remains in the attempted denominator.",
+            "",
+            "## Interpretation boundary",
+            "",
+            "The historical raw JSONL and its `expected.v1` scores are preserved.",
+            "This diagnostic table must not be used for a final quantization claim",
+            "without the required caveat and a formal re-measurement under the",
+            "calibrated policy. The existing formal `summary.csv` is unchanged.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def _category_for(score: ScoreResult) -> str:
     if score.format_valid is False:
         return FORMAT_FAILURE
@@ -228,3 +337,30 @@ def _common_new_score_value(group: Iterable[RescoredTrial]) -> str | None:
 
 def _group_sort_key(item: tuple[tuple[Any, ...], list[RescoredTrial]]) -> tuple[str, ...]:
     return tuple("" if value is None else str(value) for value in item[0])
+
+
+def _sum_rows(rows: Iterable[Mapping[str, Any]], key: str) -> int:
+    return sum(
+        int(row.get(key, 0))
+        for row in rows
+        if isinstance(row.get(key, 0), int)
+    )
+
+
+def _count_cell(
+    rows: Iterable[Mapping[str, Any]],
+    correct_key: str,
+    scored_key: str,
+) -> str:
+    return f"{_sum_rows(rows, correct_key)}/{_sum_rows(rows, scored_key)}"
+
+
+def _common_row_value(
+    rows: Iterable[Mapping[str, Any]],
+    key: str,
+) -> Any:
+    values = [row.get(key) for row in rows]
+    if not values or any(value is None for value in values):
+        return None
+    first = values[0]
+    return first if all(value == first for value in values[1:]) else None

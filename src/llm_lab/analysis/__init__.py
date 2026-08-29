@@ -27,8 +27,10 @@ from .rescoring import (
     RUNTIME_FAILURE,
     RescoredTrial,
     comparison_rows,
+    render_report,
     rescore_trial,
     rescore_trials,
+    sha256_file,
 )
 from .agent_reliability import (
     AgentAnalysisError,
@@ -63,8 +65,10 @@ __all__ = [
     "RUNTIME_FAILURE",
     "RescoredTrial",
     "comparison_rows",
+    "render_report",
     "rescore_trial",
     "rescore_trials",
+    "sha256_file",
     "AgentAnalysisError",
     "aggregate_agent_trials",
     "missing_agent_cells",
