@@ -8,6 +8,7 @@ from llm_lab.analysis.rescoring import (
     render_report,
     rescore_trial,
     rescore_trials,
+    sha256_file,
 )
 from llm_lab.evaluation import EvaluationTask, TrialResult, TrialStatus
 
@@ -243,10 +244,12 @@ class RescoringTests(unittest.TestCase):
             raw_path = Path(directory) / "trials.jsonl"
             raw_path.write_text('{"trial_id":"one"}\n', encoding="utf-8")
             expected_hash = hashlib.sha256(raw_path.read_bytes()).hexdigest()
+            catalog_path = Path("data/tasks/core.v001.jsonl")
+            expected_catalog_hash = sha256_file(catalog_path)
 
             report = render_report(
                 raw_path=raw_path,
-                task_catalog_path=Path("data/tasks/core.v001.jsonl"),
+                task_catalog_path=catalog_path,
                 raw_trial_n=1,
                 rows=[
                     {
@@ -268,6 +271,7 @@ class RescoringTests(unittest.TestCase):
             )
 
             self.assertIn(expected_hash, report)
+            self.assertIn(expected_catalog_hash, report)
             self.assertIn("calibrated.v1", report)
             self.assertIn("Diagnostic re-scoring only", report)
             self.assertIn("must not be used for a final quantization claim", report)
