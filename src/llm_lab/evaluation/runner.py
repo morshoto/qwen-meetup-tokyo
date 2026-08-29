@@ -110,7 +110,7 @@ class EvaluationRunner:
                 task,
                 condition_id,
                 repeat_index,
-                status=TrialStatus.RUNTIME_ERROR,
+                status=_runtime_failure_status(error),
                 request=request,
                 telemetry=telemetry,
                 error=error,
@@ -194,6 +194,8 @@ class EvaluationRunner:
                 else None,
             }
         )
+        if request is not None:
+            input_metadata["sampling"] = request.sampling.to_record()
         score_record = dict(score or {})
         score_record.setdefault("scorer", self.scorer.name)
         return TrialResult(
@@ -272,3 +274,19 @@ def _rate(tokens: int | None, seconds: float | None) -> float | None:
     if tokens is None or seconds is None or seconds <= 0:
         return None
     return tokens / seconds
+
+
+def _runtime_failure_status(error: Exception) -> TrialStatus:
+    """Preserve resource failures as actionable raw-trial statuses."""
+
+    if isinstance(error, MemoryError) or type(error).__name__.lower() in {
+        "outofmemoryerror",
+        "cudaoutofmemoryerror",
+    }:
+        return TrialStatus.OUT_OF_MEMORY
+    if isinstance(error, TimeoutError) or type(error).__name__.lower() in {
+        "timeouterror",
+        "readtimeouterror",
+    }:
+        return TrialStatus.TIMEOUT
+    return TrialStatus.RUNTIME_ERROR

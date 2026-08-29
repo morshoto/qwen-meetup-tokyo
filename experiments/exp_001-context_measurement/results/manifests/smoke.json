@@ -1,9 +1,14 @@
 {
   "actual_trial_n": 180,
   "backend": "fixture",
+  "context_lengths": [
+    8192,
+    32768
+  ],
   "coverage": [
     {
       "condition_id": "baseline:ctx008192:p005",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.05,
@@ -18,6 +23,7 @@
     },
     {
       "condition_id": "baseline:ctx008192:p005",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.05,
@@ -32,6 +38,7 @@
     },
     {
       "condition_id": "baseline:ctx008192:p005",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.05,
@@ -46,6 +53,7 @@
     },
     {
       "condition_id": "baseline:ctx008192:p050",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.5,
@@ -60,6 +68,7 @@
     },
     {
       "condition_id": "baseline:ctx008192:p050",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.5,
@@ -74,6 +83,7 @@
     },
     {
       "condition_id": "baseline:ctx008192:p050",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.5,
@@ -88,6 +98,7 @@
     },
     {
       "condition_id": "baseline:ctx008192:p095",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.95,
@@ -102,6 +113,7 @@
     },
     {
       "condition_id": "baseline:ctx008192:p095",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.95,
@@ -116,6 +128,7 @@
     },
     {
       "condition_id": "baseline:ctx008192:p095",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.95,
@@ -130,6 +143,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p005",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.05,
@@ -144,6 +158,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p005",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.05,
@@ -158,6 +173,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p005",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.05,
@@ -172,6 +188,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p050",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.5,
@@ -186,6 +203,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p050",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.5,
@@ -200,6 +218,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p050",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.5,
@@ -214,6 +233,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p095",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.95,
@@ -228,6 +248,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p095",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.95,
@@ -242,6 +263,7 @@
     },
     {
       "condition_id": "baseline:ctx032768:p095",
+      "exclusion_reason": null,
       "expected_trial_n": 10,
       "independent_task_n": 10,
       "requested_evidence_position": 0.95,
@@ -255,26 +277,62 @@
       "trial_n": 10
     }
   ],
+  "effective_context": {
+    "alpha": 0.9,
+    "baseline_accuracy_gate": 0.8,
+    "baseline_length": 8192,
+    "crossing": "first-sustained-below-threshold",
+    "sensitivity_alphas": [
+      0.85,
+      0.95
+    ]
+  },
   "environment": {
-    "git_sha": "ee167937ddbe5359923ed82eef77320eaf97204f",
+    "git_sha": "0b81f4afc8a0f293cbdf19a2c5e4040c2d3ea5f6",
     "machine": "arm64",
     "os": "Darwin",
     "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
     "python_version": "3.13.7"
   },
+  "evidence_positions": [
+    0.05,
+    0.5,
+    0.95
+  ],
   "excluded_cells": [],
   "experiment_id": "exp_001",
   "fixture_seed": 42,
+  "independent_task_n_by_type": {
+    "literal_retrieval": 10,
+    "multi_hop": 10,
+    "semantic_retrieval": 10
+  },
   "interpretation": "Fixture backend validates task construction, scoring, storage, and coverage only; it is not a Qwen measurement.",
   "manifest_path": "experiments/exp_001-context_measurement/results/manifests/smoke.json",
+  "model": {
+    "id": "Qwen/Qwen3.8-27B",
+    "revision": null,
+    "tokenizer_id": "Qwen/Qwen3.8-27B",
+    "tokenizer_revision": null
+  },
   "phase": "smoke",
   "planned_cell_n": 18,
   "planned_condition_n": 6,
   "planned_trial_n": 180,
   "raw_results": "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl",
-  "raw_results_sha256": "475e449e458ee5735fc25ba43edec594dd81f5886f3f3496d42b5fa94fbf0fda",
+  "raw_results_sha256": "a77d222ee1700a9d298bfc76b011a45b4a76753cded7a3886772bfbc7164a199",
   "repeats": 1,
+  "sampling": {
+    "do_sample": false,
+    "generation_seed_policy": "greedy-decoding-no-seed",
+    "max_new_tokens": 32,
+    "seed": null,
+    "temperature": 0.0,
+    "top_k": null,
+    "top_p": 1.0
+  },
   "schema_version": 1,
+  "scorer_version": "calibrated.v1",
   "task_catalog": "data/tasks/core.v002.jsonl",
   "task_ids": [
     "task.literal.000001",
@@ -307,5 +365,10 @@
     "task.multihop.000008",
     "task.multihop.000009",
     "task.multihop.000010"
+  ],
+  "task_types": [
+    "literal_retrieval",
+    "semantic_retrieval",
+    "multi_hop"
   ]
 }

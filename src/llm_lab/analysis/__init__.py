@@ -6,6 +6,7 @@ from .effective_context import (
     effective_context_by_task,
     effective_context_by_task_and_position,
     missing_context_cells,
+    position_gap_rows,
     position_curve_rows,
 )
 from .interaction import (
@@ -54,6 +55,7 @@ __all__ = [
     "interaction_report",
     "matched_cell_rows",
     "missing_context_cells",
+    "position_gap_rows",
     "position_curve_rows",
     "recommend_baseline",
     "relative_degradation_rows",
