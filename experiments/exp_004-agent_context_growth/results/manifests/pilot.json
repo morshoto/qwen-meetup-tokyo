@@ -1,0 +1,128 @@
+{
+  "actual_trial_n": 300,
+  "backend": "llama.cpp",
+  "effective_runtime": {
+    "name": "llama.cpp",
+    "options": {
+      "flash_attn": true,
+      "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf",
+      "n_batch": 512,
+      "n_ctx": 33088,
+      "n_gpu_layers": -1,
+      "verbose": false
+    },
+    "version": "llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3"
+  },
+  "expected_trial_n": 300,
+  "experiment_id": "exp_004",
+  "fixture_only": false,
+  "phase": "pilot",
+  "protocol": {
+    "condition_ids": [
+      "traj0004:p005",
+      "traj0004:p025",
+      "traj0004:p050",
+      "traj0004:p075",
+      "traj0004:p095",
+      "traj0008:p005",
+      "traj0008:p025",
+      "traj0008:p050",
+      "traj0008:p075",
+      "traj0008:p095",
+      "traj0016:p005",
+      "traj0016:p025",
+      "traj0016:p050",
+      "traj0016:p075",
+      "traj0016:p095"
+    ],
+    "config": "experiments/exp_004-agent_context_growth/config.yaml",
+    "critical_positions": [
+      0.05,
+      0.25,
+      0.5,
+      0.75,
+      0.95
+    ],
+    "fixture_seed": 42,
+    "repeats": 5,
+    "task_catalog": "data/tasks/agent.v001.jsonl",
+    "task_ids": [
+      "task.agent.000001",
+      "task.agent.000002"
+    ],
+    "task_types": [
+      "agent_state_tracking"
+    ],
+    "trajectory_lengths": [
+      4,
+      8,
+      16
+    ]
+  },
+  "raw_result_sha256": "14307483ae9aed4ddd646720551da1fe9372e523915376cd1c1484137b7d70bd",
+  "run_fingerprint": "1668254c336623a92533502b0711a9dfdaf71b3f78e421b7ad118cac08fe5de4",
+  "schema_version": 1,
+  "skipped_trial_n": 10,
+  "source_manifest": {
+    "experiment_id": "exp_003",
+    "model": {
+      "id": "Qwen/Qwen3.8-27B",
+      "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "tokenizer_id": "Qwen/Qwen3.8-27B",
+      "tokenizer_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+    },
+    "path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_003-context_x_quantization/results/manifests/smoke.json",
+    "runtime": {
+      "name": "llama.cpp",
+      "options": {
+        "flash_attn": true,
+        "n_batch": 512,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "verbose": false
+      },
+      "version": "llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3"
+    },
+    "sha256": "0e4d82e0470759b7ee4e3a7e670dde481b13fa8e1f68e0efb1248f11d5b6d37b",
+    "variants": [
+      {
+        "artifact": {
+          "artifact_sha256": "6cb70620c7811dce01e1a622fe0a4f9ac445e31c569640c36ecfac85c4609b6c",
+          "artifact_size_bytes": 29047084256,
+          "artifact_uri": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf",
+          "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf Q8_0 8",
+          "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+          "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+          "source_uri": "hf://Qwen/Qwen3.8-27B"
+        },
+        "bits": 8,
+        "condition_id": "q8_0",
+        "format": "GGUF",
+        "label": "Q8_0",
+        "quantization_type": "Q8_0",
+        "runtime_kernel": "ggml"
+      },
+      {
+        "artifact": {
+          "artifact_sha256": "8b259e30f860c924fa1fd12d459343e8c2520eb12741f943ad5dcea5d1c4d120",
+          "artifact_size_bytes": 16810714336,
+          "artifact_uri": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf",
+          "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf Q4_K_M 8",
+          "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+          "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+          "source_uri": "hf://Qwen/Qwen3.8-27B"
+        },
+        "bits": 4,
+        "condition_id": "q4_k_m",
+        "format": "GGUF",
+        "label": "Q4_K_M",
+        "quantization_type": "Q4_K_M",
+        "runtime_kernel": "ggml"
+      }
+    ]
+  },
+  "status_counts": {
+    "completed": 220,
+    "invalid_output": 80
+  }
+}
