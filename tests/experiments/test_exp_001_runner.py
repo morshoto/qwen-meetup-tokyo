@@ -321,5 +321,57 @@ effective_context:
             checkpoint["sampling"]["generation_seed_policy"],
         )
 
+    def test_resume_checkpoint_requires_matching_in_progress_run_identity(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output_path = root / "main-trials.jsonl"
+            model = runner.qwen38_model_spec(
+                revision="model-commit",
+                tokenizer_revision="tokenizer-commit",
+            )
+            checkpoint = {
+                "schema_version": 1,
+                "experiment_id": "exp_001",
+                "phase": "main",
+                "backend": "transformers",
+                "status": "in_progress",
+                "model": runner._model_record(model),
+                "raw_results": str(output_path),
+            }
+
+            runner._validate_resume_checkpoint(
+                checkpoint,
+                phase="main",
+                backend="transformers",
+                output_path=output_path,
+                model=model,
+            )
+
+            invalid_checkpoints = (
+                ("status", "completed"),
+                ("phase", "smoke"),
+                ("backend", "fixture"),
+                ("raw_results", str(root / "other-trials.jsonl")),
+                (
+                    "model",
+                    {
+                        **runner._model_record(model),
+                        "tokenizer_revision": "other-tokenizer-commit",
+                    },
+                ),
+            )
+            for field, value in invalid_checkpoints:
+                with self.subTest(field=field):
+                    invalid = dict(checkpoint)
+                    invalid[field] = value
+                    with self.assertRaisesRegex(ValueError, "identity mismatch"):
+                        runner._validate_resume_checkpoint(
+                            invalid,
+                            phase="main",
+                            backend="transformers",
+                            output_path=output_path,
+                            model=model,
+                        )
+
 if __name__ == "__main__":
     unittest.main()

@@ -359,6 +359,15 @@ def run_experiment(
     else:
         raise ValueError(f"unsupported backend: {backend!r}")
 
+    if resume:
+        _validate_resume_checkpoint(
+            resume_manifest,
+            phase=phase,
+            backend=backend,
+            output_path=output_path,
+            model=model,
+        )
+
     working_output_path.parent.mkdir(parents=True, exist_ok=True)
     results: list[TrialResult] = []
     conditions = planned_conditions(phase, config=config)
@@ -677,6 +686,49 @@ def _load_resume_manifest(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("schema_version") != 1:
         raise ValueError("resume manifest must be a schema version 1 object")
     return value
+
+
+def _validate_resume_checkpoint(
+    manifest: Mapping[str, Any] | None,
+    *,
+    phase: str,
+    backend: str,
+    output_path: Path,
+    model: ModelSpec,
+) -> None:
+    if manifest is None:
+        raise ValueError("resume requires an existing run checkpoint")
+    identity_fields = {
+        "experiment_id": EXPERIMENT_ID,
+        "phase": phase,
+        "backend": backend,
+        "status": "in_progress",
+    }
+    mismatches = [
+        field
+        for field, expected in identity_fields.items()
+        if manifest.get(field) != expected
+    ]
+    raw_results = manifest.get("raw_results")
+    if not isinstance(raw_results, str) or not raw_results.strip():
+        mismatches.append("raw_results")
+    elif _rooted(Path(raw_results)).resolve() != output_path.resolve():
+        mismatches.append("raw_results")
+
+    recorded_model = manifest.get("model")
+    expected_model = _model_record(model)
+    if not isinstance(recorded_model, Mapping):
+        mismatches.append("model")
+    else:
+        for field in ("id", "revision", "tokenizer_id", "tokenizer_revision"):
+            if recorded_model.get(field) != expected_model[field]:
+                mismatches.append(f"model.{field}")
+
+    if mismatches:
+        raise ValueError(
+            "resume checkpoint identity mismatch: "
+            f"{sorted(set(mismatches))}"
+        )
 
 
 def _resume_sampling(

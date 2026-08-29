@@ -76,7 +76,10 @@ in raw JSONL and listed as exclusions with reasons in the phase manifest. The
 runner's `--resume` option uses deterministic trial IDs to fill only missing
 attempts. A model run writes its resolved sampling checkpoint before the first
 trial; resume requires that checkpoint and rejects changes to its effective
-settings or to sampling provenance already stored in raw trials.
+settings or to sampling provenance already stored in raw trials. It also
+requires an in-progress checkpoint matching the experiment phase, backend,
+raw-results path, and resolved model/tokenizer identity; completed or cross-run
+manifests are rejected.
 
 ## Provenance and outputs
 
