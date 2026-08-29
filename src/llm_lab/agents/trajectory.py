@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 
 _ROLES = frozenset({"system", "user", "assistant", "tool"})
+_THINK_BLOCK_RE = re.compile(r"<think>.*?</think>", re.IGNORECASE | re.DOTALL)
 
 
 class ActionParseError(ValueError):
@@ -45,9 +47,9 @@ class AgentAction:
 
 
 def parse_action(text: str) -> AgentAction:
-    """Parse the strict JSON action format used by the controlled harness."""
+    """Parse canonical actions and Qwen's equivalent thinking/tool aliases."""
 
-    candidate = text.strip()
+    candidate = _THINK_BLOCK_RE.sub("", text.strip()).strip()
     if candidate.startswith("```") and candidate.endswith("```"):
         lines = candidate.splitlines()
         candidate = "\n".join(lines[1:-1]).strip()
@@ -61,12 +63,21 @@ def parse_action(text: str) -> AgentAction:
     if not isinstance(action, str):
         raise ActionParseError("agent response requires a string action")
     if action == "tool":
-        arguments = record.get("arguments", {})
+        if "name" in record and "tool" in record and record["name"] != record["tool"]:
+            raise ActionParseError("tool action name aliases must agree")
+        if (
+            "arguments" in record
+            and "parameters" in record
+            and record["arguments"] != record["parameters"]
+        ):
+            raise ActionParseError("tool action argument aliases must agree")
+        name = record.get("name", record.get("tool"))
+        arguments = record.get("arguments", record.get("parameters", {}))
         if not isinstance(arguments, Mapping):
             raise ActionParseError("tool action arguments must be an object")
         return AgentAction(
             action=action,
-            name=_optional_text(record.get("name")),
+            name=_optional_text(name),
             arguments=dict(arguments),
         )
     if action == "answer":

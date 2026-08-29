@@ -46,6 +46,20 @@ class AgentTrajectoryTests(unittest.TestCase):
         self.assertEqual("answer", answer.action)
         self.assertEqual("middleware/auth.ts", answer.value)
 
+    def test_action_parser_accepts_qwen_thinking_and_tool_aliases(self) -> None:
+        tool = parse_action(
+            '<think>I should call the tool.</think>\n'
+            '{"action":"tool","tool":"discover_fact","parameters":{}}'
+        )
+        answer = parse_action(
+            '<think>The fact is known.</think>\n'
+            '{"action":"answer","value":"middleware/auth.ts"}'
+        )
+
+        self.assertEqual("discover_fact", tool.name)
+        self.assertEqual({}, tool.arguments)
+        self.assertEqual("middleware/auth.ts", answer.value)
+
     def test_action_parser_rejects_non_object_and_unknown_actions(self) -> None:
         with self.assertRaises(ActionParseError):
             parse_action("not json")
