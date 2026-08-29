@@ -54,6 +54,7 @@ from llm_lab.telemetry import capture_environment  # noqa: E402
 
 TASK_CATALOG = ROOT / "data/tasks/core.v001.jsonl"
 EXPERIMENT_ID = "exp_001"
+SCORER_VERSION = CalibratedAnswerScorer.name
 TASK_TYPES = ("literal_retrieval", "semantic_retrieval", "multi_hop")
 SMOKE_CONTEXT_LENGTHS = (8192, 32768)
 PILOT_CONTEXT_LENGTHS = (8192, 32768, 65536)
@@ -398,6 +399,7 @@ def _manifest(
     return {
         "schema_version": 1,
         "experiment_id": EXPERIMENT_ID,
+        "scorer_version": SCORER_VERSION,
         "phase": phase,
         "backend": backend,
         "fixture_seed": fixture_seed,

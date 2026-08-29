@@ -124,5 +124,12 @@ class Exp001RunnerTests(unittest.TestCase):
             self.assertTrue(all(result.score["scorer"] == "calibrated.v1" for result in persisted))
             self.assertTrue(all("answer_bearing_correct" in result.score for result in persisted))
 
+    def test_analysis_notebook_requires_calibrated_scorer(self) -> None:
+        notebook = (ROOT / "experiments/exp_001-context_measurement/analysis.ipynb").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("expected_scorer='calibrated.v1'", notebook)
+
 if __name__ == "__main__":
     unittest.main()

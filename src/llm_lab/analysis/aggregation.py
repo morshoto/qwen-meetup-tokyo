@@ -13,14 +13,21 @@ from llm_lab.evaluation.storage import load_trial_results
 
 def aggregate_trials(
     trials: Iterable[TrialResult | Mapping[str, Any]],
+    *,
+    expected_scorer: str | None = None,
 ) -> list[dict[str, Any]]:
     groups: dict[tuple[str, str, str], list[TrialResult]] = {}
+    parsed_trials: list[TrialResult] = []
     for value in trials:
         trial = value if isinstance(value, TrialResult) else TrialResult.from_record(value)
+        parsed_trials.append(trial)
         task_type = str(trial.input.get("task_type", "unknown"))
         condition_id = str(trial.input.get("condition_id", "default"))
         key = (trial.experiment_id, task_type, condition_id)
         groups.setdefault(key, []).append(trial)
+
+    if expected_scorer is not None:
+        _require_scorer_version(parsed_trials, expected_scorer)
 
     summaries: list[dict[str, Any]] = []
     for (experiment_id, task_type, condition_id), group in sorted(groups.items()):
@@ -125,8 +132,15 @@ def aggregate_trials(
     return summaries
 
 
-def aggregate_jsonl(path: str | Path) -> list[dict[str, Any]]:
-    return aggregate_trials(load_trial_results(path))
+def aggregate_jsonl(
+    path: str | Path,
+    *,
+    expected_scorer: str | None = None,
+) -> list[dict[str, Any]]:
+    return aggregate_trials(
+        load_trial_results(path),
+        expected_scorer=expected_scorer,
+    )
 
 
 def write_summary_csv(path: str | Path, summaries: Iterable[Mapping[str, Any]]) -> None:
@@ -173,6 +187,23 @@ def _metric_values(
 
 def _accuracy(values: list[int]) -> float | None:
     return sum(values) / len(values) if values else None
+
+
+def _require_scorer_version(
+    trials: Iterable[TrialResult],
+    expected_scorer: str,
+) -> None:
+    if not expected_scorer.strip():
+        raise ValueError("expected scorer version must be non-empty")
+    versions = {trial.score.get("scorer") for trial in trials}
+    if versions != {expected_scorer}:
+        actual = sorted(
+            "<missing>" if version is None else str(version)
+            for version in versions
+        )
+        raise ValueError(
+            f"expected scorer version {expected_scorer!r}; found {actual}"
+        )
 
 
 def _median(values: list[float]) -> float | None:

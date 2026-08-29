@@ -186,6 +186,13 @@ class Exp002RunnerTests(unittest.TestCase):
 
             self.assertEqual(120, runner.expected_trial_count(manifest))
 
+    def test_analysis_notebook_rejects_legacy_summaries(self) -> None:
+        notebook = (ROOT / "experiments/exp_002-quantization_llama_cpp_gguf/analysis.ipynb").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("EXPECTED_SCORER = 'calibrated.v1'", notebook)
+
     def test_resume_reuses_completed_pilot_trials_without_duplicates(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -207,6 +214,36 @@ class Exp002RunnerTests(unittest.TestCase):
 
             self.assertEqual(3, result["actual_trial_n"])
             self.assertEqual(3, len(runner.load_trial_results(output_path)))
+
+    def test_resume_rejects_existing_trials_from_another_scorer_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            output_path = root / "raw" / "pilot-trials.jsonl"
+            summary_path = root / "processed" / "pilot-summary.csv"
+            kwargs = {
+                "manifest_path": manifest_path,
+                "output_path": output_path,
+                "processed_path": summary_path,
+                "condition_ids": ("q8_0",),
+                "context_lengths": (8192,),
+                "repeats": 1,
+                "runtime_factory": FakeRuntime,
+            }
+
+            runner.run_experiment(**kwargs)
+            records = [
+                json.loads(line)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+            ]
+            records[0]["score"]["scorer"] = "expected.v1"
+            output_path.write_text(
+                "\n".join(json.dumps(record) for record in records) + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "scorer version"):
+                runner.run_experiment(**kwargs)
 
     def test_full_run_can_resume_from_a_pilot_same_output(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

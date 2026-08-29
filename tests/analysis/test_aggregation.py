@@ -238,6 +238,22 @@ class AggregationTests(unittest.TestCase):
         self.assertEqual(0, summary["scorer_error_n"])
         self.assertEqual(0, summary["invalid_output_n"])
 
+    def test_aggregation_can_require_one_scorer_version(self) -> None:
+        with self.assertRaisesRegex(ValueError, "expected scorer version"):
+            aggregate_trials(
+                [
+                    trial(
+                        "legacy",
+                        task_type="literal_retrieval",
+                        condition_id="legacy",
+                        status=TrialStatus.COMPLETED,
+                        correct=True,
+                        total_s=1.0,
+                    )
+                ],
+                expected_scorer="calibrated.v1",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
