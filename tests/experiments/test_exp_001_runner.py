@@ -58,9 +58,9 @@ class Exp001RunnerTests(unittest.TestCase):
         main = runner.planned_conditions("main")
 
         self.assertEqual(6, len(smoke))
-        self.assertEqual(25, len(main))
+        self.assertEqual(20, len(main))
         self.assertEqual("baseline:ctx008192:p005", smoke[0].condition_id)
-        self.assertEqual("baseline:ctx262144:p095", main[-1].condition_id)
+        self.assertEqual("baseline:ctx131072:p095", main[-1].condition_id)
 
     def test_build_tasks_records_context_provenance_and_evidence_offsets(self) -> None:
         catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")

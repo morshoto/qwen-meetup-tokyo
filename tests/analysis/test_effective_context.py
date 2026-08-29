@@ -4,6 +4,7 @@ from llm_lab.analysis.effective_context import (
     effective_context_by_task,
     effective_context_by_task_and_position,
     missing_context_cells,
+    position_gap_rows,
     position_curve_rows,
 )
 
@@ -32,6 +33,29 @@ def summary(
 
 
 class EffectiveContextTests(unittest.TestCase):
+    def test_position_gap_uses_edge_minus_middle_accuracy(self) -> None:
+        rows = [
+            summary("literal_retrieval", 8192, 0.05, 0.8, scored_n=5),
+            summary("literal_retrieval", 8192, 0.50, 0.4, scored_n=10),
+            summary("literal_retrieval", 8192, 0.95, 0.6, scored_n=15),
+        ]
+
+        [gap] = position_gap_rows(rows)
+
+        self.assertEqual("literal_retrieval", gap["task_type"])
+        self.assertEqual(8192, gap["target_context_tokens"])
+        self.assertAlmostEqual(0.65, gap["edge_accuracy"])
+        self.assertAlmostEqual(0.4, gap["middle_accuracy"])
+        self.assertAlmostEqual(0.25, gap["position_gap"])
+        self.assertEqual(20, gap["edge_scored_n"])
+        self.assertEqual(10, gap["middle_scored_n"])
+
+    def test_position_gap_requires_beginning_middle_and_end_cells(self) -> None:
+        with self.assertRaisesRegex(ValueError, "missing position cells"):
+            position_gap_rows(
+                [summary("literal_retrieval", 8192, 0.50, 1.0)]
+            )
+
     def test_missing_context_cells_reports_task_length_and_position(self) -> None:
         rows = [summary("literal_retrieval", 8192, 0.05, 1.0)]
 

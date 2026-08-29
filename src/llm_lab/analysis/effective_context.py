@@ -51,6 +51,74 @@ def position_curve_rows(
     )
 
 
+def position_gap_rows(
+    summaries: Iterable[Mapping[str, Any]],
+    *,
+    edge_positions: tuple[float, float] = (0.05, 0.95),
+    middle_position: float = 0.50,
+) -> list[dict[str, Any]]:
+    """Calculate the declared edge-minus-middle position gap by context.
+
+    ``A_edge`` is the scored accuracy pooled across the beginning and end
+    positions. The pooling is weighted by scored trial count so a runtime
+    exclusion cannot be mistaken for a zero-accuracy observation. A complete
+    beginning/middle/end triplet is required for every task/context group.
+    """
+
+    if len(edge_positions) != 2 or edge_positions[0] >= edge_positions[1]:
+        raise ValueError("edge_positions must contain two ordered positions")
+    grouped: dict[tuple[str, int], dict[float, Mapping[str, Any]]] = defaultdict(dict)
+    for row in summaries:
+        key = _cell_key(row)
+        cell_key = (key[0], key[1])
+        position = key[2]
+        if position in grouped[cell_key]:
+            raise ContextAnalysisError(
+                f"duplicate position cell for task={key[0]}, context={key[1]}, "
+                f"position={position}"
+            )
+        grouped[cell_key][position] = row
+
+    output: list[dict[str, Any]] = []
+    required_positions = (*edge_positions, middle_position)
+    for (task_type, context_tokens), cells in sorted(grouped.items()):
+        missing = [position for position in required_positions if position not in cells]
+        if missing:
+            raise ContextAnalysisError(
+                "missing position cells for "
+                f"task={task_type}, context={context_tokens}: {missing}"
+            )
+        edge_scored_n = sum(_scored_n(cells[position]) for position in edge_positions)
+        middle_scored_n = _scored_n(cells[middle_position])
+        edge_accuracy = _weighted_accuracy(
+            (cells[position] for position in edge_positions),
+            edge_scored_n,
+        )
+        middle_accuracy = _weighted_accuracy(
+            (cells[middle_position],),
+            middle_scored_n,
+        )
+        if edge_accuracy is None or middle_accuracy is None:
+            raise ContextAnalysisError(
+                "position cell has no scored accuracy for "
+                f"task={task_type}, context={context_tokens}"
+            )
+        output.append(
+            {
+                "task_type": task_type,
+                "target_context_tokens": context_tokens,
+                "edge_positions": list(edge_positions),
+                "middle_position": middle_position,
+                "edge_accuracy": edge_accuracy,
+                "middle_accuracy": middle_accuracy,
+                "position_gap": edge_accuracy - middle_accuracy,
+                "edge_scored_n": edge_scored_n,
+                "middle_scored_n": middle_scored_n,
+            }
+        )
+    return output
+
+
 def effective_context_by_task(
     summaries: Iterable[Mapping[str, Any]],
     *,
@@ -235,6 +303,30 @@ def _weighted_context_points(rows: Iterable[Mapping[str, Any]]) -> list[dict[str
         }
         for context_tokens, values in sorted(grouped.items())
     ]
+
+
+def _scored_n(row: Mapping[str, Any]) -> int:
+    value = row.get("scored_n", 0)
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ContextAnalysisError("scored_n must be a non-negative integer")
+    return value
+
+
+def _weighted_accuracy(
+    rows: Iterable[Mapping[str, Any]],
+    scored_n: int,
+) -> float | None:
+    if scored_n == 0:
+        return None
+    successes = 0.0
+    for row in rows:
+        row_n = _scored_n(row)
+        accuracy = row.get("accuracy")
+        if row_n and accuracy is None:
+            raise ContextAnalysisError("accuracy is required when scored_n is positive")
+        if row_n:
+            successes += float(accuracy) * row_n
+    return successes / scored_n
 
 
 def _cell_key(row: Mapping[str, Any]) -> tuple[str, int, float]:
