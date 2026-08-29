@@ -69,6 +69,21 @@ class ScoringCalibrationTests(unittest.TestCase):
         self.assertFalse(result.format_valid)
         self.assertEqual("invalid_output", result.details["reason"])
 
+    def test_scoring_contract_documents_policy_dimensions_and_semantic_range(self) -> None:
+        contract = Path("docs/data-and-result-contracts.md").read_text(encoding="utf-8")
+
+        for term in (
+            "calibrated.v1",
+            "exact_correct",
+            "answer_bearing_correct",
+            "format_valid",
+            "expected.accepted",
+            "scorer_error",
+            "runtime_error",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, contract)
+
 
 if __name__ == "__main__":
     unittest.main()

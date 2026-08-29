@@ -59,12 +59,12 @@ the analysis helpers:
 
 ```python
 from llm_lab.analysis import aggregate_jsonl, write_summary_csv
-from llm_lab.evaluation import EvaluationRunner, ExpectedAnswerScorer
+from llm_lab.evaluation import CalibratedAnswerScorer, EvaluationRunner
 
 runner = EvaluationRunner(
     runtime=runtime,
     model=model,
-    scorer=ExpectedAnswerScorer(),
+    scorer=CalibratedAnswerScorer(),
     experiment_id="exp_001",
     output_path="results/raw/trials.jsonl",
 )
