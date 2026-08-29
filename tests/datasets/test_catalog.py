@@ -27,6 +27,15 @@ class TaskCatalogTests(unittest.TestCase):
             "repeat_count is separate from independent task count",
             manifest.independence_policy,
         )
+        self.assertEqual(
+            {
+                "literal_retrieval": 10,
+                "semantic_retrieval": 10,
+                "multi_hop": 10,
+                "agent_state_tracking": 10,
+            },
+            dict(manifest.family_counts),
+        )
 
     def test_core_catalog_contains_machine_checkable_core_task_types(self) -> None:
         catalog = TaskCatalog.from_jsonl(
@@ -46,6 +55,55 @@ class TaskCatalogTests(unittest.TestCase):
             {"task.literal.000001", "task.semantic.000001", "task.multihop.000001"},
             set(catalog.ids),
         )
+
+    def test_core_v002_has_ten_independent_presentation_tasks_per_family(self) -> None:
+        catalog = TaskCatalog.from_jsonl(
+            REPOSITORY_ROOT / "data" / "tasks" / "core.v002.jsonl"
+        )
+
+        self.assertEqual(30, len(catalog.tasks))
+        self.assertEqual(
+            {
+                "literal_retrieval": 10,
+                "semantic_retrieval": 10,
+                "multi_hop": 10,
+            },
+            {
+                task_type: sum(task.task_type == task_type for task in catalog.tasks)
+                for task_type in {
+                    "literal_retrieval",
+                    "semantic_retrieval",
+                    "multi_hop",
+                }
+            },
+        )
+        self.assertEqual(30, len({task.metadata["seed"] for task in catalog.tasks}))
+        self.assertTrue(all(task.metadata["independent"] for task in catalog.tasks))
+        self.assertTrue(
+            all(task.metadata["presentation_ready"] for task in catalog.tasks)
+        )
+        self.assertTrue(
+            all(task.metadata["license"] == "CC0-1.0" for task in catalog.tasks)
+        )
+        self.assertTrue(
+            all(
+                task.expected.get("type") in {"exact", "normalized_exact"}
+                for task in catalog.tasks
+            )
+        )
+        self.assertTrue(
+            all(
+                task.expected.get("value")
+                and task.evidence
+                and all(item.get("text") for item in task.evidence)
+                for task in catalog.tasks
+            )
+        )
+        for task in catalog.tasks:
+            if task.expected["type"] == "normalized_exact":
+                accepted = task.expected.get("accepted")
+                self.assertIsInstance(accepted, list)
+                self.assertIn(task.expected["value"], accepted)
 
     def test_catalog_rejects_duplicate_ids_and_missing_scorer_metadata(self) -> None:
         invalid_records = [

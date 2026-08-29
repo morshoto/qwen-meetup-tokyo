@@ -6,5 +6,11 @@
     "qa": "tasks/core.v002.jsonl",
     "agent": "tasks/agent.v001.jsonl"
   },
+  "family_counts": {
+    "literal_retrieval": 10,
+    "semantic_retrieval": 10,
+    "multi_hop": 10,
+    "agent_state_tracking": 10
+  },
   "independence_policy": "repeat_count is separate from independent task count"
 }

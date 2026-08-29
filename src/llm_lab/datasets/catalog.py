@@ -16,6 +16,7 @@ class TaskCatalogManifest:
     version: str
     sources: Mapping[str, str]
     independence_policy: str
+    family_counts: Mapping[str, int]
 
     @classmethod
     def from_json(cls, path: str | Path) -> "TaskCatalogManifest":
@@ -33,6 +34,7 @@ class TaskCatalogManifest:
         version = record.get("version")
         sources = record.get("sources")
         independence_policy = record.get("independence_policy")
+        family_counts = record.get("family_counts")
         if not isinstance(catalog_id, str) or not catalog_id.strip():
             raise ValueError("task catalog manifest id must be non-empty")
         if not isinstance(version, str) or not version.strip():
@@ -49,12 +51,24 @@ class TaskCatalogManifest:
             raise ValueError("task catalog manifest sources must map names to paths")
         if not isinstance(independence_policy, str) or not independence_policy.strip():
             raise ValueError("task catalog manifest independence policy must be non-empty")
+        if not isinstance(family_counts, dict) or not family_counts:
+            raise ValueError("task catalog manifest family counts must be a non-empty object")
+        if any(
+            not isinstance(key, str)
+            or not key.strip()
+            or not isinstance(value, int)
+            or isinstance(value, bool)
+            or value < 1
+            for key, value in family_counts.items()
+        ):
+            raise ValueError("task catalog manifest family counts must be positive integers")
 
         return cls(
             catalog_id=catalog_id,
             version=version,
             sources=dict(sources),
             independence_policy=independence_policy,
+            family_counts=dict(family_counts),
         )
 
 
