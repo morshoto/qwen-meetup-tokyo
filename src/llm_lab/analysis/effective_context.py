@@ -88,6 +88,9 @@ def position_gap_rows(
                 "missing position cells for "
                 f"task={task_type}, context={context_tokens}: {missing}"
             )
+        required_available = all(
+            _is_available(cells[position]) for position in required_positions
+        )
         edge_scored_n = sum(_scored_n(cells[position]) for position in edge_positions)
         middle_scored_n = _scored_n(cells[middle_position])
         edge_accuracy = _weighted_accuracy(
@@ -108,14 +111,18 @@ def position_gap_rows(
                 "middle_accuracy": middle_accuracy,
                 "position_gap": (
                     edge_accuracy - middle_accuracy
-                    if edge_accuracy is not None and middle_accuracy is not None
+                    if required_available
+                    and edge_accuracy is not None
+                    and middle_accuracy is not None
                     else None
                 ),
                 "edge_scored_n": edge_scored_n,
                 "middle_scored_n": middle_scored_n,
                 "status": (
                     "valid"
-                    if edge_accuracy is not None and middle_accuracy is not None
+                    if required_available
+                    and edge_accuracy is not None
+                    and middle_accuracy is not None
                     else "insufficient_data"
                 ),
             }
@@ -319,6 +326,10 @@ def _scored_n(row: Mapping[str, Any]) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         raise ContextAnalysisError("scored_n must be a non-negative integer")
     return value
+
+
+def _is_available(row: Mapping[str, Any]) -> bool:
+    return row.get("analysis_status", "available") == "available"
 
 
 def _weighted_accuracy(

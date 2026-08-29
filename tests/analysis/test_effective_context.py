@@ -70,6 +70,21 @@ class EffectiveContextTests(unittest.TestCase):
         self.assertEqual(20, gap["edge_scored_n"])
         self.assertEqual(0, gap["middle_scored_n"])
 
+    def test_position_gap_requires_all_required_cells_to_be_available(self) -> None:
+        rows = [
+            summary("literal_retrieval", 8192, 0.05, 1.0),
+            summary("literal_retrieval", 8192, 0.50, 0.0),
+            summary("literal_retrieval", 8192, 0.95, 1.0),
+        ]
+        rows[0]["analysis_status"] = "unavailable"
+
+        [gap] = position_gap_rows(rows)
+
+        self.assertEqual("insufficient_data", gap["status"])
+        self.assertIsNone(gap["position_gap"])
+        self.assertEqual(10, gap["edge_scored_n"])
+        self.assertEqual(10, gap["middle_scored_n"])
+
     def test_missing_context_cells_reports_task_length_and_position(self) -> None:
         rows = [summary("literal_retrieval", 8192, 0.05, 1.0)]
 
