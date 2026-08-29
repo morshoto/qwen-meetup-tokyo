@@ -17,7 +17,7 @@ class QuantizationExperimentContractTests(unittest.TestCase):
         self.assertIn("format: GGUF", config)
         self.assertIn("binding: llama-cpp-python", config)
         self.assertIn("prompt.qa.v001", config)
-        self.assertIn("data/tasks/core.v001.jsonl", config)
+        self.assertIn("data/tasks/core.v002.jsonl", config)
         self.assertIn("context_lengths: [8192, 32768]", config)
         self.assertIn("context_length_semantics: input_tokens", config)
         self.assertIn("context_overhead_tokens: 256", config)

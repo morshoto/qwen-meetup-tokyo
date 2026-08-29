@@ -33,7 +33,7 @@ from llm_lab.quantization import QuantizationManifest, QuantizationVariant  # no
 from llm_lab.runtimes import LlamaCppRuntime, RuntimeConfig  # noqa: E402
 
 
-TASK_CATALOG = ROOT / "data/tasks/core.v001.jsonl"
+TASK_CATALOG = ROOT / "data/tasks/core.v002.jsonl"
 PLACEHOLDER_MARKERS = ("REPLACE_WITH", "SET_TO_")
 RuntimeFactory = Callable[[], LlamaCppRuntime]
 
@@ -90,8 +90,12 @@ def run_experiment(
     fingerprint = _run_fingerprint(manifest)
     artifact_paths = _verify_artifacts(manifest_path, variants)
     catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
-    if tuple(manifest.task_ids) != catalog.ids:
-        raise ValueError("manifest task_ids must exactly match the shared task catalog")
+    unknown_task_ids = set(manifest.task_ids) - set(catalog.ids)
+    if unknown_task_ids:
+        raise ValueError(
+            "manifest task_ids must exist in the shared task catalog: "
+            f"{sorted(unknown_task_ids)}"
+        )
     model = ModelSpec(
         model_id=manifest.model_id,
         revision=manifest.model_revision,

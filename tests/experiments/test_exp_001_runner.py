@@ -28,7 +28,7 @@ class Exp001RunnerTests(unittest.TestCase):
         self.assertEqual("baseline:ctx262144:p095", main[-1].condition_id)
 
     def test_build_tasks_records_context_provenance_and_evidence_offsets(self) -> None:
-        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v001.jsonl")
+        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")
         condition = runner.planned_conditions("smoke")[0]
 
         tasks = runner.build_tasks(
@@ -37,7 +37,7 @@ class Exp001RunnerTests(unittest.TestCase):
             fixture_seed=42,
         )
 
-        self.assertEqual(3, len(tasks))
+        self.assertEqual(30, len(tasks))
         self.assertEqual("literal_retrieval", tasks[0].task_type)
         request = tasks[0].build_request(
             runner.qwen38_model_spec(),
@@ -66,7 +66,7 @@ class Exp001RunnerTests(unittest.TestCase):
             def decode(self, tokens: list[int]) -> str:
                 return bytes(tokens).decode("utf-8")
 
-        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v001.jsonl")
+        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")
         condition = runner.planned_conditions("smoke")[0]
 
         tasks = runner.build_tasks(
@@ -116,11 +116,11 @@ class Exp001RunnerTests(unittest.TestCase):
                 overwrite_smoke=True,
             )
 
-            self.assertEqual(18, first["actual_trial_n"])
-            self.assertEqual(18, second["actual_trial_n"])
+            self.assertEqual(180, first["actual_trial_n"])
+            self.assertEqual(180, second["actual_trial_n"])
             persisted = load_trial_results(output_path)
-            self.assertEqual(18, len(persisted))
-            self.assertEqual(18, len({result.trial_id for result in persisted}))
+            self.assertEqual(180, len(persisted))
+            self.assertEqual(180, len({result.trial_id for result in persisted}))
 
 if __name__ == "__main__":
     unittest.main()

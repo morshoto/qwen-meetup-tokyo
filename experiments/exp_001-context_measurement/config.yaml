@@ -3,7 +3,7 @@ experiment:
   name: context_measurement
   description: Baseline long-context measurement before quantization
   fixture_seed: 42
-  task_catalog: data/tasks/core.v001.jsonl
+  task_catalog: data/tasks/core.v002.jsonl
   prompt_template: data/prompts/prompt.qa.v001.txt
   corpus_manifest: data/corpora/synthetic.v001.json
 

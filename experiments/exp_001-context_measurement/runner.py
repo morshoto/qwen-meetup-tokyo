@@ -16,7 +16,7 @@ import tempfile
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,7 +52,7 @@ from llm_lab.runtimes.transformers import QwenTransformersRuntime  # noqa: E402
 from llm_lab.telemetry import capture_environment  # noqa: E402
 
 
-TASK_CATALOG = ROOT / "data/tasks/core.v001.jsonl"
+TASK_CATALOG = ROOT / "data/tasks/core.v002.jsonl"
 EXPERIMENT_ID = "exp_001"
 TASK_TYPES = ("literal_retrieval", "semantic_retrieval", "multi_hop")
 SMOKE_CONTEXT_LENGTHS = (8192, 32768)
@@ -187,11 +187,9 @@ class FixtureRuntime:
     """Deterministic backend for smoke validation; it is not model evidence."""
 
     name = "fixture"
-    _answers = {
-        "task.literal.000001": "ZX-4817",
-        "task.semantic.000001": "Reliability Engineering",
-        "task.multihop.000001": "8392",
-    }
+
+    def __init__(self, answers: Mapping[str, str] | None = None) -> None:
+        self._answers = dict(answers or {})
 
     def load(self, model: ModelSpec, config: RuntimeConfig) -> None:
         del model, config
@@ -220,6 +218,20 @@ class FixtureRuntime:
 
     def close(self) -> None:
         return None
+
+
+def _fixture_answers(catalog: TaskCatalog) -> dict[str, str]:
+    """Return canonical answers for the deterministic smoke backend."""
+
+    answers: dict[str, str] = {}
+    for task in catalog.tasks:
+        value = task.expected.get("value")
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(
+                f"fixture smoke requires a string expected value: {task.task_id}"
+            )
+        answers[task.task_id] = value
+    return answers
 
 
 def run_experiment(
@@ -252,7 +264,7 @@ def run_experiment(
     model = qwen38_model_spec()
     context_tokenizer: ContextTokenizer | None = None
     if backend == "fixture":
-        runtime: Any = FixtureRuntime()
+        runtime: Any = FixtureRuntime(_fixture_answers(catalog))
     elif backend == "transformers":
         runtime = QwenTransformersRuntime()
         runtime.load(
