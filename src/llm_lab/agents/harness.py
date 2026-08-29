@@ -169,7 +169,10 @@ class AgentHarness:
         )
         trajectory.add_message("user", task.objective)
         for index in range(control.pre_discovery_steps):
-            result = environment.execute("inspect_noise", {"index": index})
+            result = environment.execute(
+                "inspect_noise",
+                {"index": index % len(task.distractor_outputs)},
+            )
             trajectory.add_tool_result(
                 result.tool_name,
                 _tool_content(result.output, result.error),
@@ -233,7 +236,10 @@ class AgentHarness:
 
         for offset in range(control.post_discovery_steps):
             index = control.pre_discovery_steps + offset
-            result = environment.execute("inspect_noise", {"index": index})
+            result = environment.execute(
+                "inspect_noise",
+                {"index": index % len(task.distractor_outputs)},
+            )
             trajectory.add_tool_result(
                 result.tool_name,
                 _tool_content(result.output, result.error),

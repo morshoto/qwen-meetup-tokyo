@@ -119,7 +119,11 @@ def _source_manifest(directory: Path) -> Path:
         runtime_version="llama-cpp-python-fixture",
         runtime_options={"n_ctx": 33088, "n_batch": 512},
         prompt_id="prompt.agent.v001",
-        task_ids=("task.agent.000001", "task.agent.000002"),
+        task_ids=(
+            "task.literal.000001",
+            "task.semantic.000001",
+            "task.multihop.000001",
+        ),
         context_lengths=(8192,),
         sampling={"max_new_tokens": 64, "temperature": 0.0, "seed": 42},
         variants=tuple(variants),
@@ -215,6 +219,28 @@ class Exp004RunnerTests(unittest.TestCase):
             self.assertEqual(2, second["expected_trial_n"])
             self.assertEqual(2, second["skipped_trial_n"])
             self.assertEqual(2, len(runner.load_trial_results(paths["output_path"])))
+            manifest = json.loads(paths["manifest_output_path"].read_text(encoding="utf-8"))
+            self.assertEqual("fixture-agent", manifest["effective_runtime"]["name"])
+
+    def test_real_backend_rejects_changed_selected_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_manifest = _source_manifest(root)
+            (root / "q8_0.gguf").write_bytes(b"changed-after-manifest")
+
+            with self.assertRaisesRegex(ValueError, "artifact digest mismatch"):
+                runner.run_experiment(
+                    source_manifest_path=source_manifest,
+                    output_path=root / "raw" / "trials.jsonl",
+                    manifest_output_path=root / "manifests" / "run.json",
+                    processed_path=root / "processed" / "summary.csv",
+                    phase="pilot",
+                    backend="llama.cpp",
+                    condition_ids=("q8_0",),
+                    trajectory_lengths=(4,),
+                    critical_positions=(0.5,),
+                    repeats=1,
+                )
 
 
 if __name__ == "__main__":

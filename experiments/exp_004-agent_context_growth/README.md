@@ -34,7 +34,9 @@ recovery is retained in the raw trial record.
 YAML so the runner can load it with the Python standard library in a clean
 checkout. The default selected variants are `q8_0` and `q4_k_m`; their complete
 artifact provenance is inherited from a resolved `exp_003` manifest rather than
-re-running `exp_002`.
+re-running `exp_002`. The source manifest's task IDs describe the upstream
+context/quantization study; exp_004's agent task IDs come from its own committed
+agent catalog.
 
 Real pilot/main runs require that source manifest, local artifacts, and a
 compatible `llama-cpp-python` runtime. The runner verifies artifact paths for
@@ -70,3 +72,15 @@ actions, recoveries, input-token totals, and observable failure categories:
 Results are descriptive. The notebook does not claim that a failure category is
 causal or statistically significant without a predeclared repeated measurement
 design and sufficient observations.
+
+## Findings handoff
+
+After a real measured run, record these conclusions in `docs/findings.md` only
+with the manifest, sample counts, processed summary, and figures attached:
+
+- Long-horizon degradation: observed, not observed, or insufficient evidence;
+- **Lost in the Agent**: observed, not observed, or insufficient evidence; and
+- the exact model/runtime/quantization, task family, trajectory-length range,
+  critical-position conditions, and failure categories supporting the statement.
+
+Until then, `docs/findings.md` remains `exp_004: not yet measured`.

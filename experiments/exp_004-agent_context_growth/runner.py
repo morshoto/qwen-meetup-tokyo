@@ -246,8 +246,6 @@ def run_experiment(
     tasks = load_tasks(
         ROOT / str(_section(config, "experiment")["task_catalog"])
     )
-    if tuple(source_manifest.task_ids) != tuple(task.task_id for task in tasks):
-        raise ValueError("source manifest task_ids must exactly match the agent task catalog")
     controls = planned_conditions(
         phase,
         config=config,
@@ -293,6 +291,12 @@ def run_experiment(
         "version": None,
         "options": {},
     }
+    if existing:
+        observed_runtime = {
+            "name": existing[0].runtime.get("name"),
+            "version": existing[0].runtime.get("version"),
+            "options": dict(existing[0].runtime.get("config", {})),
+        }
     try:
         for variant in variants:
             missing = [
@@ -551,6 +555,18 @@ def _make_runtime(
     if not artifact_path.is_file():
         raise FileNotFoundError(
             f"selected artifact for {variant.condition_id} is unavailable: {artifact_path}"
+        )
+    actual_sha256 = _sha256_file(artifact_path)
+    if actual_sha256 != variant.artifact.artifact_sha256:
+        raise ValueError(
+            f"artifact digest mismatch for {variant.condition_id}: "
+            f"manifest={variant.artifact.artifact_sha256}, actual={actual_sha256}"
+        )
+    actual_size = artifact_path.stat().st_size
+    if actual_size != variant.artifact.artifact_size_bytes:
+        raise ValueError(
+            f"artifact size mismatch for {variant.condition_id}: "
+            f"manifest={variant.artifact.artifact_size_bytes}, actual={actual_size}"
         )
     options = dict(source_manifest.runtime_options)
     options["model_path"] = str(artifact_path)

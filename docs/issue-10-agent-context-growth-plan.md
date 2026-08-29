@@ -1,8 +1,8 @@
 # TDD Plan: Measure agent reliability as trajectory context grows (#10)
 
-**Type**: Feature / Experiment  
-**Issue**: https://github.com/morshoto/qwen-meetup-tokyo/issues/10  
-**Complexity**: High  
+**Type**: Feature / Experiment
+**Issue**: https://github.com/morshoto/qwen-meetup-tokyo/issues/10
+**Complexity**: High
 **TDD Entry Point**: `AgentTrajectoryTests.test_trajectory_round_trips_ordered_tool_events`
 
 ## Issue Summary
