@@ -170,6 +170,7 @@ class TaskCatalogTests(unittest.TestCase):
             self.assertTrue(record["critical_observation"]["content"].strip())
             self.assertGreaterEqual(len(record["distractor_outputs"]), 8)
             self.assertEqual("CC0-1.0", record["metadata"]["license"])
+            self.assertEqual("v002", record["metadata"]["catalog_version"])
             self.assertTrue(record["metadata"]["independent"])
             self.assertTrue(record["metadata"]["presentation_ready"])
 
