@@ -37,6 +37,7 @@ from llm_lab.evaluation import (  # noqa: E402
     CalibratedAnswerScorer,
     TrialResult,
     TrialStatus,
+    load_trial_results,
 )
 from llm_lab.generation import (  # noqa: E402
     GenerationRequest,
@@ -52,6 +53,7 @@ from llm_lab.runtimes.transformers import QwenTransformersRuntime  # noqa: E402
 from llm_lab.telemetry import capture_environment  # noqa: E402
 
 
+CONFIG_PATH = ROOT / "experiments/exp_001-context_measurement/config.yaml"
 TASK_CATALOG = ROOT / "data/tasks/core.v002.jsonl"
 EXPERIMENT_ID = "exp_001"
 SCORER_VERSION = CalibratedAnswerScorer.name
@@ -107,17 +109,41 @@ class Condition:
         )
 
 
-def planned_conditions(phase: str) -> list[Condition]:
-    """Return the deterministic condition grid for a named run phase."""
+def load_config(config_path: Path = CONFIG_PATH) -> dict[str, Any]:
+    """Load the committed YAML experiment contract."""
 
-    if phase == "smoke":
-        lengths, positions = SMOKE_CONTEXT_LENGTHS, SMOKE_POSITIONS
-    elif phase == "pilot":
-        lengths, positions = PILOT_CONTEXT_LENGTHS, FULL_POSITIONS
-    elif phase == "main":
-        lengths, positions = MAIN_CONTEXT_LENGTHS, FULL_POSITIONS
-    else:
+    try:
+        import yaml
+    except ImportError as error:
+        raise RuntimeError("exp_001 requires the PyYAML dependency") from error
+    try:
+        value = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise
+    except yaml.YAMLError as error:
+        raise ValueError(f"invalid experiment config: {config_path}") from error
+    if not isinstance(value, dict) or not isinstance(value.get("phases"), dict):
+        raise ValueError("experiment config must declare phases")
+    return value
+
+
+def planned_conditions(
+    phase: str,
+    *,
+    config: Mapping[str, Any] | None = None,
+) -> list[Condition]:
+    """Return the deterministic condition grid from the phase contract."""
+
+    phase_config = (config or load_config()).get("phases", {}).get(phase)
+    if not isinstance(phase_config, Mapping):
         raise ValueError(f"unsupported phase: {phase!r}")
+    try:
+        lengths = tuple(int(value) for value in phase_config["lengths"])
+        positions = tuple(float(value) for value in phase_config["evidence_positions"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError(f"phase {phase!r} must declare lengths and evidence_positions") from error
+    if not lengths or not positions:
+        raise ValueError(f"phase {phase!r} must declare non-empty dimensions")
     return [
         Condition(length, position)
         for length in lengths
@@ -173,6 +199,10 @@ def build_tasks(
                 if tokenizer is not None
                 else "whitespace-fixture-tokens"
             ),
+            "context_instance_id": (
+                f"{definition.task_id}:{condition.condition_id}:seed{task_seed}"
+            ),
+            "context_sha256": hashlib.sha256(generated.text.encode("utf-8")).hexdigest(),
         }
         tasks.append(
             EvaluationTask.from_definition(
@@ -241,28 +271,50 @@ def run_experiment(
     backend: str,
     output_path: Path,
     manifest_path: Path,
-    fixture_seed: int = 42,
+    fixture_seed: int | None = None,
     overwrite_smoke: bool = False,
+    resume: bool = False,
+    config_path: Path = CONFIG_PATH,
 ) -> dict[str, Any]:
     """Execute one phase and write raw JSONL plus a coverage manifest."""
 
+    config = load_config(config_path)
+    experiment_config = config.get("experiment")
+    if not isinstance(experiment_config, Mapping):
+        raise ValueError("experiment config must declare experiment settings")
+    configured_catalog = experiment_config.get("task_catalog")
+    if not isinstance(configured_catalog, str) or not configured_catalog.strip():
+        raise ValueError("experiment config must declare task_catalog")
+    catalog_path = _rooted(Path(configured_catalog))
+    configured_model = config.get("model", {}).get("model") if isinstance(config.get("model"), Mapping) else None
+    model = qwen38_model_spec()
+    if configured_model != model.model_id:
+        raise ValueError(
+            f"config model {configured_model!r} does not match {model.model_id!r}"
+        )
+    if fixture_seed is None:
+        fixture_seed = int(experiment_config.get("fixture_seed", 42))
     output_path = _rooted(output_path)
     manifest_path = _rooted(manifest_path)
     if overwrite_smoke and (phase != "smoke" or backend != "fixture"):
         raise ValueError("overwrite_smoke is only supported for the fixture smoke phase")
+    if overwrite_smoke and resume:
+        raise ValueError("overwrite_smoke and resume cannot be combined")
     if output_path == manifest_path:
         raise ValueError("output and manifest paths must be different")
-    if not overwrite_smoke and (output_path.exists() or manifest_path.exists()):
+    if not overwrite_smoke and not resume and (output_path.exists() or manifest_path.exists()):
         raise FileExistsError(
             "output or manifest already exists; choose new paths or pass "
-            "--overwrite-smoke for an explicit fixture regeneration"
+            "--resume for an interrupted model run or --overwrite-smoke for an "
+            "explicit fixture regeneration"
         )
+    if resume and backend == "fixture":
+        raise ValueError("resume is reserved for model-backed runs; use overwrite_smoke for fixture data")
 
     temporary_output = _temporary_sibling(output_path) if overwrite_smoke else None
     temporary_manifest = _temporary_sibling(manifest_path) if overwrite_smoke else None
     working_output_path = temporary_output or output_path
-    catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
-    model = qwen38_model_spec()
+    catalog = TaskCatalog.from_jsonl(catalog_path)
     context_tokenizer: ContextTokenizer | None = None
     if backend == "fixture":
         runtime: Any = FixtureRuntime(_fixture_answers(catalog))
@@ -289,8 +341,19 @@ def run_experiment(
 
     working_output_path.parent.mkdir(parents=True, exist_ok=True)
     results: list[TrialResult] = []
-    conditions = planned_conditions(phase)
-    repeats = REPEATS[phase]
+    conditions = planned_conditions(phase, config=config)
+    phase_config = config["phases"][phase]
+    repeats = int(phase_config["repeats"])
+    sampling_config = config.get("sampling", {})
+    if not isinstance(sampling_config, Mapping):
+        raise ValueError("sampling config must be an object")
+    sampling = SamplingConfig(
+        max_new_tokens=int(sampling_config.get("max_new_tokens", 32)),
+        temperature=float(sampling_config.get("temperature", 0.0)),
+    )
+    existing_ids = {
+        result.trial_id for result in load_trial_results(working_output_path)
+    } if resume else set()
     try:
         try:
             runner = EvaluationRunner(
@@ -301,19 +364,34 @@ def run_experiment(
                 output_path=working_output_path,
             )
             for condition in conditions:
-                results.extend(
-                    runner.run(
-                        build_tasks(
-                            catalog,
-                            condition,
-                            fixture_seed=fixture_seed,
-                            tokenizer=context_tokenizer,
-                        ),
-                        repeats=repeats,
-                        condition_id=condition.condition_id,
-                        sampling=SamplingConfig(max_new_tokens=32, temperature=0.0),
+                for task in build_tasks(
+                    catalog,
+                    condition,
+                    fixture_seed=fixture_seed,
+                    tokenizer=context_tokenizer,
+                ):
+                    repeat_indices = tuple(
+                        index
+                        for index in range(1, repeats + 1)
+                        if not resume
+                        or runner_trial_id(
+                            EXPERIMENT_ID,
+                            task.task_id,
+                            condition.condition_id,
+                            index,
+                        ) not in existing_ids
                     )
-                )
+                    if not repeat_indices:
+                        continue
+                    new_results = runner.run(
+                        [task],
+                        repeats=repeats,
+                        repeat_indices=repeat_indices,
+                        condition_id=condition.condition_id,
+                        sampling=sampling,
+                    )
+                    results.extend(new_results)
+                    existing_ids.update(result.trial_id for result in new_results)
         finally:
             runtime.close()
     except BaseException:
@@ -323,6 +401,7 @@ def run_experiment(
 
     if temporary_output is not None:
         os.replace(temporary_output, output_path)
+    persisted_results = load_trial_results(output_path)
     manifest = _manifest(
         phase=phase,
         backend=backend,
@@ -331,8 +410,11 @@ def run_experiment(
         conditions=conditions,
         catalog=catalog,
         repeats=repeats,
-        results=results,
+        results=persisted_results,
         fixture_seed=fixture_seed,
+        catalog_path=catalog_path,
+        config=config,
+        sampling=sampling,
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -377,6 +459,9 @@ def _manifest(
     repeats: int,
     results: Iterable[TrialResult],
     fixture_seed: int,
+    catalog_path: Path | None = None,
+    config: Mapping[str, Any] | None = None,
+    sampling: SamplingConfig | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     condition_list = list(conditions)
@@ -415,10 +500,23 @@ def _manifest(
                         and scored_n == expected_trial_n
                         else "excluded"
                     ),
+                    "exclusion_reason": _exclusion_reason(
+                        expected_trial_n=expected_trial_n,
+                        trial_n=len(cell_results),
+                        scored_n=scored_n,
+                        statuses=statuses,
+                    ),
                 }
             )
 
     raw_sha256 = _sha256(output_path)
+    context_lengths = sorted({condition.target_context_tokens for condition in condition_list})
+    evidence_positions = sorted({condition.evidence_position for condition in condition_list})
+    effective_context = (
+        dict(config.get("effective_context", {}))
+        if config is not None and isinstance(config.get("effective_context"), Mapping)
+        else {}
+    )
     return {
         "schema_version": 1,
         "experiment_id": EXPERIMENT_ID,
@@ -426,16 +524,28 @@ def _manifest(
         "phase": phase,
         "backend": backend,
         "fixture_seed": fixture_seed,
-        "task_catalog": str(TASK_CATALOG.relative_to(ROOT)),
+        "task_catalog": _relative_or_absolute(catalog_path or TASK_CATALOG),
         "task_ids": list(catalog.ids),
+        "context_lengths": context_lengths,
+        "evidence_positions": evidence_positions,
+        "task_types": list(TASK_TYPES),
+        "independent_task_n_by_type": {
+            task_type: sum(task.task_type == task_type for task in catalog.tasks)
+            for task_type in TASK_TYPES
+        },
+        "effective_context": effective_context,
+        "sampling": {
+            "max_new_tokens": sampling.max_new_tokens if sampling else 32,
+            "temperature": sampling.temperature if sampling else 0.0,
+        },
         "repeats": repeats,
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),
         "planned_trial_n": len(condition_list) * len(catalog.tasks) * repeats,
         "actual_trial_n": len(result_list),
-        "raw_results": str(output_path.relative_to(ROOT)),
+        "raw_results": _relative_or_absolute(output_path),
         "raw_results_sha256": raw_sha256,
-        "manifest_path": str(manifest_path.relative_to(ROOT)),
+        "manifest_path": _relative_or_absolute(manifest_path),
         "environment": capture_environment(ROOT),
         "coverage": coverage,
         "excluded_cells": [
@@ -462,13 +572,59 @@ def _rooted(path: Path) -> Path:
     return path if path.is_absolute() else ROOT / path
 
 
+def _relative_or_absolute(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _exclusion_reason(
+    *,
+    expected_trial_n: int,
+    trial_n: int,
+    scored_n: int,
+    statuses: Mapping[str, int],
+) -> str | None:
+    if trial_n == expected_trial_n and scored_n == expected_trial_n:
+        return None
+    reasons: list[str] = []
+    if trial_n != expected_trial_n:
+        reasons.append(f"expected {expected_trial_n} trials, recorded {trial_n}")
+    if scored_n != expected_trial_n:
+        status_text = ", ".join(
+            f"{status}={count}"
+            for status, count in sorted(statuses.items())
+            if status != TrialStatus.COMPLETED.value or scored_n != expected_trial_n
+        )
+        reasons.append(f"scored {scored_n}/{expected_trial_n}; statuses: {status_text or 'none'}")
+    return "; ".join(reasons)
+
+
+def runner_trial_id(
+    experiment_id: str,
+    task_id: str,
+    condition_id: str,
+    repeat_index: int,
+) -> str:
+    """Build the same ID as EvaluationRunner without coupling to its internals."""
+
+    return f"{experiment_id}:{task_id}:{condition_id}:run{repeat_index:02d}"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--phase", choices=tuple(REPEATS), default="smoke")
     parser.add_argument("--backend", choices=("fixture", "transformers"), default="fixture")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--manifest", type=Path)
-    parser.add_argument("--fixture-seed", type=int, default=42)
+    parser.add_argument("--fixture-seed", type=int)
+    parser.add_argument("--config", type=Path, default=CONFIG_PATH)
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="resume an interrupted model-backed raw JSONL run",
+    )
     parser.add_argument(
         "--overwrite-smoke",
         action="store_true",
@@ -484,6 +640,8 @@ def main(argv: list[str] | None = None) -> int:
         manifest_path=manifest_path,
         fixture_seed=args.fixture_seed,
         overwrite_smoke=args.overwrite_smoke,
+        resume=args.resume,
+        config_path=args.config,
     )
     print(json.dumps({key: manifest[key] for key in (
         "phase", "backend", "actual_trial_n", "raw_results", "manifest_path"

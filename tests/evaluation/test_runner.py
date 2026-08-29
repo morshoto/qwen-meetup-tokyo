@@ -47,6 +47,15 @@ class FixtureRuntime:
         )
 
 
+class ResourceFailureRuntime:
+    name = "resource-failure-fixture"
+
+    def generate(self, request: GenerationRequest) -> GenerationResponse:
+        if "out of memory" in request.prompt:
+            raise MemoryError("simulated out of memory")
+        raise TimeoutError("simulated timeout")
+
+
 class FailingScorer:
     name = "failing"
 
@@ -139,6 +148,28 @@ class EvaluationRunnerTests(unittest.TestCase):
         self.assertEqual("expected.v1", results[0].score["scorer"])
         self.assertEqual("invalid_output", results[1].score["details"]["reason"])
         self.assertIsNone(results[1].score["correct"])
+
+    def test_runner_classifies_resource_failures_without_dropping_records(self) -> None:
+        runner = EvaluationRunner(
+            runtime=ResourceFailureRuntime(),
+            model=ModelSpec(model_id="fixture/model"),
+            scorer=ExpectedAnswerScorer(),
+            experiment_id="exp_fixture",
+        )
+
+        results = runner.run(
+            [
+                task("task.oom", "out of memory"),
+                task("task.timeout", "will time out"),
+            ]
+        )
+
+        self.assertEqual(
+            [TrialStatus.OUT_OF_MEMORY, TrialStatus.TIMEOUT],
+            [item.status for item in results],
+        )
+        self.assertEqual("simulated out of memory", results[0].error["message"])
+        self.assertEqual("simulated timeout", results[1].error["message"])
 
     def test_runner_preserves_task_metadata_in_trial_input(self) -> None:
         runner = EvaluationRunner(

@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 from llm_lab.datasets import TaskCatalog
-from llm_lab.evaluation import load_trial_results
+from llm_lab.evaluation import TrialResult, TrialStatus, load_trial_results
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -86,6 +86,11 @@ class Exp001RunnerTests(unittest.TestCase):
             "aurora-access",
             request.metadata["evidence_spans"][0]["id"],
         )
+        self.assertEqual(
+            "task.literal.000001:baseline:ctx008192:p005:seed1043",
+            request.metadata["context_instance_id"],
+        )
+        self.assertEqual(64, len(request.metadata["context_sha256"]))
         self.assertLess(
             request.metadata["evidence_spans"][0]["token_start"],
             request.metadata["evidence_spans"][0]["token_end"],
@@ -165,6 +170,86 @@ class Exp001RunnerTests(unittest.TestCase):
         )
 
         self.assertIn("expected_scorer='calibrated.v1'", notebook)
+
+    def test_manifest_records_dimensions_and_exclusion_reason(self) -> None:
+        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")
+        condition = runner.Condition(8192, 0.05)
+        result = TrialResult(
+            trial_id="exp_001:task.literal.000001:test:run01",
+            experiment_id="exp_001",
+            task_id="task.literal.000001",
+            status=TrialStatus.OUT_OF_MEMORY,
+            input={
+                "task_type": "literal_retrieval",
+                "condition_id": condition.condition_id,
+                "target_context_tokens": condition.target_context_tokens,
+                "requested_evidence_position": condition.evidence_position,
+            },
+            score={"scorer": "calibrated.v1"},
+            error={"type": "MemoryError", "message": "simulated"},
+        )
+
+        with TemporaryDirectory() as directory:
+            output_path = Path(directory) / "raw.jsonl"
+            output_path.write_text("{}\n", encoding="utf-8")
+            manifest = runner._manifest(
+                phase="main",
+                backend="transformers",
+                output_path=output_path,
+                manifest_path=Path(directory) / "main.json",
+                conditions=(condition,),
+                catalog=catalog,
+                repeats=1,
+                results=(result,),
+                fixture_seed=42,
+            )
+
+        self.assertEqual([8192], manifest["context_lengths"])
+        self.assertEqual([0.05], manifest["evidence_positions"])
+        self.assertEqual(["literal_retrieval", "semantic_retrieval", "multi_hop"], manifest["task_types"])
+        literal = next(
+            row for row in manifest["coverage"] if row["task_type"] == "literal_retrieval"
+        )
+        self.assertEqual("excluded", literal["status"])
+        self.assertIn("scored", literal["exclusion_reason"])
+
+    def test_runner_uses_phase_dimensions_and_repeats_from_config(self) -> None:
+        config_text = """
+experiment:
+  id: exp_001
+  fixture_seed: 42
+  task_catalog: data/tasks/core.v002.jsonl
+model:
+  model: Qwen/Qwen3.8-27B
+phases:
+  smoke:
+    lengths: [8192]
+    evidence_positions: [0.05]
+    repeats: 1
+sampling:
+  temperature: 0.0
+  max_new_tokens: 32
+effective_context:
+  baseline_length: 8192
+  baseline_accuracy_gate: 0.80
+  alpha: 0.90
+"""
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            config_path = root / "config.yaml"
+            config_path.write_text(config_text, encoding="utf-8")
+            manifest = runner.run_experiment(
+                phase="smoke",
+                backend="fixture",
+                output_path=root / "raw" / "trials.jsonl",
+                manifest_path=root / "manifests" / "smoke.json",
+                config_path=config_path,
+            )
+
+        self.assertEqual(1, manifest["planned_condition_n"])
+        self.assertEqual(30, manifest["planned_trial_n"])
+        self.assertEqual([8192], manifest["context_lengths"])
+        self.assertEqual([0.05], manifest["evidence_positions"])
 
 if __name__ == "__main__":
     unittest.main()
