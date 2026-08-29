@@ -633,7 +633,14 @@ def _context_provenance(
     repeats: int,
     fixture_seed: int,
 ) -> dict[str, Any]:
+    environment = capture_environment(ROOT)
+    source_revision = environment.get("git_sha")
+    if not isinstance(source_revision, str) or not source_revision.strip():
+        raise RuntimeError(
+            "exp_001 requires a resolvable repository revision for resume provenance"
+        )
     return {
+        "source_revision": source_revision,
         "fixture_seed": fixture_seed,
         "config_path": _relative_or_absolute(config_path),
         "config_sha256": _sha256(config_path),
@@ -774,6 +781,7 @@ def _validate_resume_checkpoint(
         mismatches.append("context_provenance")
     else:
         for field in (
+            "source_revision",
             "fixture_seed",
             "config_path",
             "config_sha256",

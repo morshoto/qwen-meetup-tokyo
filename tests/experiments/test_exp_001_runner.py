@@ -5,6 +5,7 @@ import sys
 from tempfile import TemporaryDirectory
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from llm_lab.datasets import TaskCatalog
 from llm_lab.evaluation import TrialResult, TrialStatus, load_trial_results
@@ -256,6 +257,7 @@ effective_context:
         self.assertIsNone(manifest["model"]["revision"])
         self.assertIsNone(manifest["sampling"]["seed"])
         self.assertEqual(42, manifest["context_provenance"]["fixture_seed"])
+        self.assertTrue(manifest["context_provenance"]["source_revision"])
         self.assertEqual(
             [
                 {
@@ -299,6 +301,22 @@ effective_context:
         mismatched_config = {**config, "max_new_tokens": 64}
         with self.assertRaisesRegex(ValueError, "sampling provenance mismatch"):
             runner._sampling_from_config(mismatched_config, resume_manifest=manifest)
+
+    def test_context_provenance_requires_source_revision(self) -> None:
+        config_path = ROOT / "experiments/exp_001-context_measurement/config.yaml"
+        catalog_path = ROOT / "data/tasks/core.v002.jsonl"
+        catalog = TaskCatalog.from_jsonl(catalog_path)
+
+        with patch.object(runner, "capture_environment", return_value={"git_sha": None}):
+            with self.assertRaisesRegex(RuntimeError, "repository revision"):
+                runner._context_provenance(
+                    config_path=config_path,
+                    catalog_path=catalog_path,
+                    catalog=catalog,
+                    conditions=runner.planned_conditions("smoke"),
+                    repeats=1,
+                    fixture_seed=42,
+                )
 
     def test_resume_checkpoint_persists_resolved_sampling(self) -> None:
         with TemporaryDirectory() as directory:
@@ -352,6 +370,7 @@ effective_context:
                 "raw_results": str(output_path),
                 "context_provenance": {
                     "fixture_seed": 42,
+                    "source_revision": "source-commit",
                     "config_path": "config.yaml",
                     "config_sha256": "config-hash",
                     "task_catalog": "tasks.jsonl",
@@ -397,11 +416,21 @@ effective_context:
                         "fixture_seed": 43,
                     },
                 ),
+                (
+                    "context_provenance.source_revision",
+                    {
+                        **checkpoint["context_provenance"],
+                        "source_revision": "other-source-commit",
+                    },
+                ),
             )
             for field, value in invalid_checkpoints:
                 with self.subTest(field=field):
                     invalid = dict(checkpoint)
-                    invalid[field] = value
+                    if field.startswith("context_provenance."):
+                        invalid["context_provenance"] = value
+                    else:
+                        invalid[field] = value
                     with self.assertRaisesRegex(ValueError, "identity mismatch"):
                         runner._validate_resume_checkpoint(
                             invalid,
