@@ -232,6 +232,23 @@ class QuantizationAnalysisTests(unittest.TestCase):
         )
         self.assertNotIn("SUMMARY_PATH = Path('results/processed/summary.csv')", source)
 
+    def test_notebook_separates_capability_and_systems_metrics(self) -> None:
+        notebook_path = Path(
+            "experiments/exp_002-quantization_llama_cpp_gguf/analysis.ipynb"
+        )
+        notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
+        source = "\n".join(
+            "".join(cell.get("source", [])) for cell in notebook["cells"]
+        )
+
+        for required in (
+            "capability_frame",
+            "systems_cost_frame",
+            "stream-derived proxies",
+            "native prefill/decode counters are unavailable",
+        ):
+            self.assertIn(required, source)
+
 
 if __name__ == "__main__":
     unittest.main()
