@@ -315,4 +315,3 @@ hardware. Fixture smoke is harness validation only.
 - [ ] Real measured outputs, if provisioned, have verified source/raw/artifact provenance.
 - [ ] Every production change is justified by a prior failing test.
 - [ ] Focused and final verification commands pass.
-
