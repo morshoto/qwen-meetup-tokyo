@@ -1,12 +1,20 @@
 """Task runners, scorers, and repeated-trial evaluation."""
 
-from .contracts import EvaluationTask, ExpectedAnswerScorer, ScoreResult, Scorer, Task
+from .contracts import (
+    CalibratedAnswerScorer,
+    EvaluationTask,
+    ExpectedAnswerScorer,
+    ScoreResult,
+    Scorer,
+    Task,
+)
 from .results import TrialResult, TrialStatus, make_trial_id
 from .runner import EvaluationRunner
 from .storage import JsonlResultWriter, load_trial_results
 
 __all__ = [
     "EvaluationTask",
+    "CalibratedAnswerScorer",
     "ExpectedAnswerScorer",
     "ScoreResult",
     "Scorer",

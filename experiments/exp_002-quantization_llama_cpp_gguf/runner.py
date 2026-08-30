@@ -22,7 +22,7 @@ from llm_lab.datasets import TaskCatalog  # noqa: E402
 from llm_lab.evaluation import (  # noqa: E402
     EvaluationRunner,
     EvaluationTask,
-    ExpectedAnswerScorer,
+    CalibratedAnswerScorer,
     TrialResult,
     load_trial_results,
     make_trial_id,
@@ -33,7 +33,8 @@ from llm_lab.quantization import QuantizationManifest, QuantizationVariant  # no
 from llm_lab.runtimes import LlamaCppRuntime, RuntimeConfig  # noqa: E402
 
 
-TASK_CATALOG = ROOT / "data/tasks/core.v001.jsonl"
+TASK_CATALOG = ROOT / "data/tasks/core.v002.jsonl"
+SCORER_VERSION = CalibratedAnswerScorer.name
 PLACEHOLDER_MARKERS = ("REPLACE_WITH", "SET_TO_")
 RuntimeFactory = Callable[[], LlamaCppRuntime]
 
@@ -90,8 +91,12 @@ def run_experiment(
     fingerprint = _run_fingerprint(manifest)
     artifact_paths = _verify_artifacts(manifest_path, variants)
     catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
-    if tuple(manifest.task_ids) != catalog.ids:
-        raise ValueError("manifest task_ids must exactly match the shared task catalog")
+    unknown_task_ids = set(manifest.task_ids) - set(catalog.ids)
+    if unknown_task_ids:
+        raise ValueError(
+            "manifest task_ids must exist in the shared task catalog: "
+            f"{sorted(unknown_task_ids)}"
+        )
     model = ModelSpec(
         model_id=manifest.model_id,
         revision=manifest.model_revision,
@@ -112,7 +117,12 @@ def run_experiment(
         for task_id in manifest.task_ids
         for repeat_index in range(1, run_repeats + 1)
     }
-    _validate_existing(existing, expected_ids, fingerprint)
+    _validate_existing(
+        existing,
+        expected_ids,
+        fingerprint,
+        expected_scorer=SCORER_VERSION,
+    )
     existing_ids = {result.trial_id for result in existing}
     output_path.parent.mkdir(parents=True, exist_ok=True)
     base_tasks_by_length: dict[int, tuple[EvaluationTask, ...]] = {}
@@ -144,7 +154,7 @@ def run_experiment(
             evaluator = EvaluationRunner(
                 runtime=runtime,
                 model=model,
-                scorer=ExpectedAnswerScorer(),
+                scorer=CalibratedAnswerScorer(),
                 experiment_id=manifest.experiment_id,
                 output_path=output_path,
             )
@@ -192,7 +202,7 @@ def run_experiment(
         finally:
             runtime.close()
 
-    summaries = aggregate_jsonl(output_path)
+    summaries = aggregate_jsonl(output_path, expected_scorer=SCORER_VERSION)
     write_summary_csv(processed_path, summaries)
     return {
         "experiment_id": manifest.experiment_id,
@@ -200,6 +210,7 @@ def run_experiment(
         "actual_trial_n": total_results,
         "skipped_trial_n": len(existing),
         "summary_row_n": len(summaries),
+        "scorer_version": SCORER_VERSION,
         "output_path": str(output_path),
         "processed_path": str(processed_path),
         "run_fingerprint": fingerprint,
@@ -338,12 +349,20 @@ def _validate_existing(
     existing: Iterable[TrialResult],
     expected_ids: set[str],
     fingerprint: str,
+    *,
+    expected_scorer: str,
 ) -> None:
     for result in existing:
         if result.trial_id not in expected_ids:
             raise ValueError(f"existing trial is outside selected run: {result.trial_id}")
         if result.input.get("run_fingerprint") != fingerprint:
             raise ValueError("existing raw results do not match the selected manifest run")
+        if result.score.get("scorer") != expected_scorer:
+            actual = result.score.get("scorer", "<missing>")
+            raise ValueError(
+                f"existing raw results use scorer version {actual!r}; "
+                f"expected scorer version {expected_scorer!r}"
+            )
 
 
 def _verify_artifacts(

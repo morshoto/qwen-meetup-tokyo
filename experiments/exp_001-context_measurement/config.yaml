@@ -3,7 +3,7 @@ experiment:
   name: context_measurement
   description: Baseline long-context measurement before quantization
   fixture_seed: 42
-  task_catalog: data/tasks/core.v001.jsonl
+  task_catalog: data/tasks/core.v002.jsonl
   prompt_template: data/prompts/prompt.qa.v001.txt
   corpus_manifest: data/corpora/synthetic.v001.json
 
@@ -14,7 +14,7 @@ model:
   quantization: null
 
 context:
-  lengths: [8192, 32768, 65536, 131072, 262144]
+  lengths: [8192, 32768, 65536, 131072]
   evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
   tasks: [literal_retrieval, semantic_retrieval, multi_hop]
   target_unit: inference-tokenizer-tokens
@@ -33,7 +33,7 @@ phases:
     repeats: 5
     purpose: Estimate runtime, variance, and resource exclusions.
   main:
-    lengths: [8192, 32768, 65536, 131072, 262144]
+    lengths: [8192, 32768, 65536, 131072]
     evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
     repeats: 20
     purpose: Produce the baseline Qwen measurement when resources permit.
@@ -59,3 +59,9 @@ output:
   raw_directory: results/raw
   processed_directory: results/processed
   manifest_directory: results/manifests
+  summary: results/processed/summary.csv
+  position_gap: results/processed/position-gap.csv
+  effective_context: results/processed/effective-context.json
+  effective_context_by_position: results/processed/effective-context-by-position.json
+  position_gap_figure: results/figures/position-gap-vs-context.png
+  effective_context_figure: results/figures/effective-context-vs-context.png

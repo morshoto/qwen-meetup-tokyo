@@ -1,0 +1,77 @@
+[
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 1.0,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": true,
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 1.0,
+        "context_tokens": 8192,
+        "scored_n": 30
+      },
+      {
+        "accuracy": 1.0,
+        "context_tokens": 32768,
+        "scored_n": 30
+      }
+    ],
+    "status": "right_censored",
+    "task_type": "literal_retrieval",
+    "threshold_accuracy": 0.9
+  },
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 1.0,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": true,
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 1.0,
+        "context_tokens": 8192,
+        "scored_n": 30
+      },
+      {
+        "accuracy": 1.0,
+        "context_tokens": 32768,
+        "scored_n": 30
+      }
+    ],
+    "status": "right_censored",
+    "task_type": "multi_hop",
+    "threshold_accuracy": 0.9
+  },
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 1.0,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": true,
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 1.0,
+        "context_tokens": 8192,
+        "scored_n": 30
+      },
+      {
+        "accuracy": 1.0,
+        "context_tokens": 32768,
+        "scored_n": 30
+      }
+    ],
+    "status": "right_censored",
+    "task_type": "semantic_retrieval",
+    "threshold_accuracy": 0.9
+  }
+]

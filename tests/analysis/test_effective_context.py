@@ -4,6 +4,7 @@ from llm_lab.analysis.effective_context import (
     effective_context_by_task,
     effective_context_by_task_and_position,
     missing_context_cells,
+    position_gap_rows,
     position_curve_rows,
 )
 
@@ -32,6 +33,58 @@ def summary(
 
 
 class EffectiveContextTests(unittest.TestCase):
+    def test_position_gap_uses_edge_minus_middle_accuracy(self) -> None:
+        rows = [
+            summary("literal_retrieval", 8192, 0.05, 0.8, scored_n=5),
+            summary("literal_retrieval", 8192, 0.50, 0.4, scored_n=10),
+            summary("literal_retrieval", 8192, 0.95, 0.6, scored_n=15),
+        ]
+
+        [gap] = position_gap_rows(rows)
+
+        self.assertEqual("literal_retrieval", gap["task_type"])
+        self.assertEqual(8192, gap["target_context_tokens"])
+        self.assertAlmostEqual(0.65, gap["edge_accuracy"])
+        self.assertAlmostEqual(0.4, gap["middle_accuracy"])
+        self.assertAlmostEqual(0.25, gap["position_gap"])
+        self.assertEqual(20, gap["edge_scored_n"])
+        self.assertEqual(10, gap["middle_scored_n"])
+
+    def test_position_gap_requires_beginning_middle_and_end_cells(self) -> None:
+        with self.assertRaisesRegex(ValueError, "missing position cells"):
+            position_gap_rows(
+                [summary("literal_retrieval", 8192, 0.50, 1.0)]
+            )
+
+    def test_position_gap_keeps_runtime_exclusion_as_unavailable(self) -> None:
+        rows = [
+            summary("literal_retrieval", 8192, 0.05, 1.0),
+            summary("literal_retrieval", 8192, 0.50, 0.0, scored_n=0),
+            summary("literal_retrieval", 8192, 0.95, 1.0),
+        ]
+
+        [gap] = position_gap_rows(rows)
+
+        self.assertEqual("insufficient_data", gap["status"])
+        self.assertIsNone(gap["position_gap"])
+        self.assertEqual(20, gap["edge_scored_n"])
+        self.assertEqual(0, gap["middle_scored_n"])
+
+    def test_position_gap_requires_all_required_cells_to_be_available(self) -> None:
+        rows = [
+            summary("literal_retrieval", 8192, 0.05, 1.0),
+            summary("literal_retrieval", 8192, 0.50, 0.0),
+            summary("literal_retrieval", 8192, 0.95, 1.0),
+        ]
+        rows[0]["analysis_status"] = "unavailable"
+
+        [gap] = position_gap_rows(rows)
+
+        self.assertEqual("insufficient_data", gap["status"])
+        self.assertIsNone(gap["position_gap"])
+        self.assertEqual(10, gap["edge_scored_n"])
+        self.assertEqual(10, gap["middle_scored_n"])
+
     def test_missing_context_cells_reports_task_length_and_position(self) -> None:
         rows = [summary("literal_retrieval", 8192, 0.05, 1.0)]
 
@@ -114,6 +167,25 @@ class EffectiveContextTests(unittest.TestCase):
         self.assertEqual("right_censored", result["status"])
         self.assertIsNone(result["crossing_context_tokens"])
         self.assertEqual(65536, result["largest_tested_context_tokens"])
+
+    def test_effective_context_rejects_partial_position_contexts(self) -> None:
+        rows = [
+            summary("literal_retrieval", context_tokens, position, 1.0)
+            for context_tokens in (8192, 32768)
+            for position in (0.05, 0.50, 0.95)
+        ]
+        rows[0]["analysis_status"] = "unavailable"
+
+        [result] = effective_context_by_task(rows)
+
+        self.assertIsNone(result["baseline_accuracy"])
+        self.assertFalse(result["baseline_valid"])
+        self.assertEqual("unavailable", result["status"])
+        baseline = next(
+            point for point in result["points"] if point["context_tokens"] == 8192
+        )
+        self.assertEqual(0, baseline["scored_n"])
+        self.assertIsNone(baseline["accuracy"])
 
     def test_position_sensitive_effective_context_exposes_middle_collapse(self) -> None:
         rows = []

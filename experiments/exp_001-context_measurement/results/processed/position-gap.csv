@@ -1,0 +1,7 @@
+edge_accuracy,edge_positions,edge_scored_n,middle_accuracy,middle_position,middle_scored_n,position_gap,status,target_context_tokens,task_type
+1.0,"[0.05, 0.95]",20,1.0,0.5,10,0.0,valid,8192,literal_retrieval
+1.0,"[0.05, 0.95]",20,1.0,0.5,10,0.0,valid,32768,literal_retrieval
+1.0,"[0.05, 0.95]",20,1.0,0.5,10,0.0,valid,8192,multi_hop
+1.0,"[0.05, 0.95]",20,1.0,0.5,10,0.0,valid,32768,multi_hop
+1.0,"[0.05, 0.95]",20,1.0,0.5,10,0.0,valid,8192,semantic_retrieval
+1.0,"[0.05, 0.95]",20,1.0,0.5,10,0.0,valid,32768,semantic_retrieval

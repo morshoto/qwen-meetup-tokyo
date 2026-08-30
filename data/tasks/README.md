@@ -2,7 +2,16 @@
 
 Shared benchmark and agent task definitions, including expected answers or machine-checkable success conditions where possible.
 
-`core.v001.jsonl` is the first reproducible task catalog. The loader requires
-unique IDs, a declared scorer under `expected.type`, at least one evidence item,
-and provenance metadata including a seed and license. Additive revisions should
-use a new catalog version rather than silently changing existing records.
+`catalog.v002.json` is the registry for the current shared task sources. It
+declares the catalog version, source files, minimum independent task counts, and
+the policy that experiment repeat counts are separate from independent task
+counts.
+
+`core.v002.jsonl` contains ten independent presentation-ready tasks in each QA
+family: literal retrieval, semantic retrieval, and multi-hop reasoning.
+`agent.v002.jsonl` contains ten independent presentation-ready agent
+state-tracking tasks. Each record has a stable ID, machine-checkable expected
+answer, evidence or critical observation, and provenance metadata including a
+seed and license. Additive revisions use a new catalog version rather than
+silently changing existing records; the original `core.v001.jsonl` and
+`agent.v001.jsonl` remain available for reproducing historical runs.

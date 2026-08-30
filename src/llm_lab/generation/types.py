@@ -39,6 +39,25 @@ class SamplingConfig:
             values["seed"] = self.seed
         return values
 
+    def to_record(self) -> dict[str, Any]:
+        """Return the effective sampling settings for trial provenance."""
+
+        return {
+            "max_new_tokens": self.max_new_tokens,
+            "temperature": self.temperature,
+            "top_p": self.top_p,
+            "top_k": self.top_k,
+            "seed": self.seed,
+            "do_sample": self.temperature > 0,
+            "generation_seed_policy": (
+                "configured-seed"
+                if self.seed is not None
+                else "greedy-decoding-no-seed"
+                if self.temperature == 0
+                else "unseeded-sampling"
+            ),
+        }
+
 
 @dataclass(frozen=True)
 class GenerationRequest:

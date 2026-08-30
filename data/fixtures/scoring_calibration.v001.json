@@ -1,0 +1,110 @@
+[
+  {
+    "id": "literal",
+    "task": {
+      "task_id": "task.literal.calibration",
+      "task_type": "literal_retrieval",
+      "question": "What is the access code?",
+      "context": "The access code is ZX-4817.",
+      "expected": {
+        "type": "exact",
+        "value": "ZX-4817",
+        "format": "identifier"
+      }
+    },
+    "cases": [
+      {
+        "name": "exact_identifier",
+        "output": "ZX-4817",
+        "exact_correct": true,
+        "answer_bearing_correct": true,
+        "format_valid": true
+      },
+      {
+        "name": "answer_bearing_decimal_suffix",
+        "output": "ZX-4817.659",
+        "exact_correct": false,
+        "answer_bearing_correct": true,
+        "format_valid": false
+      },
+      {
+        "name": "wrong_but_well_formed_identifier",
+        "output": "ZX-4818",
+        "exact_correct": false,
+        "answer_bearing_correct": false,
+        "format_valid": true
+      }
+    ]
+  },
+  {
+    "id": "semantic",
+    "task": {
+      "task_id": "task.semantic.calibration",
+      "task_type": "semantic_retrieval",
+      "question": "Which team owns the build?",
+      "context": "Reliability Engineering owns the build.",
+      "expected": {
+        "type": "normalized_exact",
+        "value": "Reliability Engineering",
+        "accepted": [
+          "Reliability Engineering",
+          "Reliability Team"
+        ],
+        "format": "phrase"
+      }
+    },
+    "cases": [
+      {
+        "name": "canonical_semantic_answer",
+        "output": "Reliability Engineering",
+        "exact_correct": true,
+        "answer_bearing_correct": true,
+        "format_valid": true
+      },
+      {
+        "name": "accepted_semantic_answer",
+        "output": "Reliability Team",
+        "exact_correct": false,
+        "answer_bearing_correct": true,
+        "format_valid": true
+      },
+      {
+        "name": "unaccepted_semantic_phrase",
+        "output": "Platform Engineering",
+        "exact_correct": false,
+        "answer_bearing_correct": false,
+        "format_valid": true
+      }
+    ]
+  },
+  {
+    "id": "multi_hop",
+    "task": {
+      "task_id": "task.multihop.calibration",
+      "task_type": "multi_hop",
+      "question": "What is the access code for Building Seven?",
+      "context": "Clara manages Orion. Clara's office is in Building Seven. Building Seven uses access code 8392.",
+      "expected": {
+        "type": "exact",
+        "value": "8392",
+        "format": "identifier"
+      }
+    },
+    "cases": [
+      {
+        "name": "exact_multi_hop_answer",
+        "output": "8392",
+        "exact_correct": true,
+        "answer_bearing_correct": true,
+        "format_valid": true
+      },
+      {
+        "name": "answer_bearing_with_explanation",
+        "output": "The answer is 8392.",
+        "exact_correct": false,
+        "answer_bearing_correct": true,
+        "format_valid": false
+      }
+    ]
+  }
+]

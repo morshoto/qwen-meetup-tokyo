@@ -1,4 +1,5 @@
 import unittest
+from types import SimpleNamespace
 from typing import Any
 
 from llm_lab.generation import GenerationRequest, SamplingConfig
@@ -39,6 +40,14 @@ class FakeModel:
     def generate(self, **kwargs: Any) -> list[list[int]]:
         self.generation_kwargs = kwargs
         return [[101, 102, 103, 201, 202]]
+
+
+class RevisionProcessor(FakeProcessor):
+    init_kwargs = {"_commit_hash": "tokenizer-commit"}
+
+
+class RevisionModel(FakeModel):
+    config = SimpleNamespace(_commit_hash="model-commit")
 
 
 class TransformersRuntimeTests(unittest.TestCase):
@@ -98,6 +107,21 @@ class TransformersRuntimeTests(unittest.TestCase):
             processor.messages,
         )
         self.assertEqual(8, model.generation_kwargs["max_new_tokens"])
+        runtime.close()
+
+    def test_runtime_captures_loaded_model_and_tokenizer_revisions(self) -> None:
+        runtime = QwenTransformersRuntime(
+            loader=lambda model, config: (RevisionProcessor(), RevisionModel())
+        )
+        runtime.load(
+            qwen38_model_spec(),
+            RuntimeConfig(name="transformers", options={"device": "cpu"}),
+        )
+
+        resolved = runtime.resolved_model_spec()
+
+        self.assertEqual("model-commit", resolved.revision)
+        self.assertEqual("tokenizer-commit", resolved.tokenizer_revision)
         runtime.close()
 
 

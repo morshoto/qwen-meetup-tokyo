@@ -1,0 +1,73 @@
+experiment:
+  id: exp_003
+  name: context_x_quantization
+  description: Measure whether quantization loss changes with context length and evidence position.
+  default_phase: smoke
+  source_manifest: ../exp_002-quantization_llama_cpp_gguf/results/manifest.json
+  task_catalog: data/tasks/core.v002.jsonl
+  prompt_id: prompt.qa.v001
+  fixture_seed: 42
+
+model:
+  inherited_from: source_manifest
+
+runtime:
+  inherited_from: source_manifest
+  name: llama.cpp
+  binding: llama-cpp-python
+  kernel: ggml
+  n_ctx: 262464
+  n_batch: 512
+  max_new_tokens: 64
+
+quantization:
+  variants: [q8_0, q6_k, q5_k_m, q4_k_m]
+  source: exp_002-resolved-manifest
+
+context:
+  lengths: [8192, 32768, 65536, 131072, 262144]
+  evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
+  task_types: [literal_retrieval, semantic_retrieval, multi_hop]
+  target_unit: input-tokenizer-tokens
+  context_length_semantics: input_tokens
+  evidence_offsets: record-start-end-token-offsets
+  matching: same-task-seed-context-length-position
+
+phases:
+  smoke:
+    lengths: [8192, 32768]
+    evidence_positions: [0.05, 0.50]
+    repeats: 1
+    backend: fixture
+    purpose: Validate matching, scoring, storage, and coverage only.
+  pilot:
+    lengths: [8192, 32768, 65536]
+    evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
+    repeats: 5
+    backend: llama.cpp
+    purpose: Estimate interaction effect and resource exclusions.
+  main:
+    lengths: [8192, 32768, 65536, 131072, 262144]
+    evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
+    repeats: 20
+    backend: llama.cpp
+    purpose: Produce the matched interaction measurements when resources permit.
+
+analysis:
+  baseline_context_tokens: 8192
+  baseline_accuracy_gate: 0.80
+  alpha: 0.90
+  sensitivity_alphas: [0.85, 0.95]
+  approx_constant_gap_tolerance: 0.10
+  primary_gap_reference: q8_0
+
+resource_policy:
+  highest_practical_length: record-at-run-time
+  excluded_cells: retain-in-manifest-with-reason
+  runtime_failures: remain-in-raw-results-and-denominator
+
+output:
+  raw_directory: results/raw
+  processed_directory: results/processed
+  manifest_directory: results/manifests
+  figures_directory: results/figures

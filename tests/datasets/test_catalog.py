@@ -2,13 +2,47 @@ import json
 import unittest
 from pathlib import Path
 
-from llm_lab.datasets.catalog import TaskCatalog
+from llm_lab.datasets.catalog import TaskCatalog, TaskCatalogManifest
 
 
 REPOSITORY_ROOT = Path(__file__).parents[2]
 
 
 class TaskCatalogTests(unittest.TestCase):
+    def test_catalog_manifest_declares_versioned_shared_sources(self) -> None:
+        manifest = TaskCatalogManifest.from_json(
+            REPOSITORY_ROOT / "data" / "tasks" / "catalog.v002.json"
+        )
+
+        self.assertEqual("catalog.tasks", manifest.catalog_id)
+        self.assertEqual("v002", manifest.version)
+        self.assertEqual(
+            {
+                "qa": "core.v002.jsonl",
+                "agent": "agent.v002.jsonl",
+            },
+            dict(manifest.sources),
+        )
+        self.assertEqual(
+            "repeat_count is separate from independent task count",
+            manifest.independence_policy,
+        )
+        self.assertEqual(
+            {
+                "literal_retrieval": 10,
+                "semantic_retrieval": 10,
+                "multi_hop": 10,
+                "agent_state_tracking": 10,
+            },
+            dict(manifest.family_counts),
+        )
+        self.assertTrue(
+            all(
+                (REPOSITORY_ROOT / "data" / "tasks" / source).is_file()
+                for source in manifest.sources.values()
+            )
+        )
+
     def test_core_catalog_contains_machine_checkable_core_task_types(self) -> None:
         catalog = TaskCatalog.from_jsonl(
             REPOSITORY_ROOT / "data" / "tasks" / "core.v001.jsonl"
@@ -50,9 +84,7 @@ class TaskCatalogTests(unittest.TestCase):
             },
         )
         self.assertEqual(30, len({task.metadata["seed"] for task in catalog.tasks}))
-        self.assertTrue(
-            all(task.metadata["independent"] for task in catalog.tasks)
-        )
+        self.assertTrue(all(task.metadata["independent"] for task in catalog.tasks))
         self.assertTrue(
             all(task.metadata["presentation_ready"] for task in catalog.tasks)
         )
@@ -60,8 +92,10 @@ class TaskCatalogTests(unittest.TestCase):
             all(task.metadata["license"] == "CC0-1.0" for task in catalog.tasks)
         )
         self.assertTrue(
-            all(task.expected.get("type") in {"exact", "normalized_exact"}
-                for task in catalog.tasks)
+            all(
+                task.expected.get("type") in {"exact", "normalized_exact"}
+                for task in catalog.tasks
+            )
         )
         self.assertTrue(
             all(
@@ -71,6 +105,11 @@ class TaskCatalogTests(unittest.TestCase):
                 for task in catalog.tasks
             )
         )
+        for task in catalog.tasks:
+            if task.expected["type"] == "normalized_exact":
+                accepted = task.expected.get("accepted")
+                self.assertIsInstance(accepted, list)
+                self.assertIn(task.expected["value"], accepted)
 
     def test_catalog_rejects_duplicate_ids_and_missing_scorer_metadata(self) -> None:
         invalid_records = [
@@ -103,6 +142,46 @@ class TaskCatalogTests(unittest.TestCase):
         missing_scorer["expected"] = {"value": "one"}
         with self.assertRaises(ValueError):
             TaskCatalog.from_records([missing_scorer])
+
+    def test_agent_catalog_versions_preserve_history_and_expand_tasks(self) -> None:
+        records = [
+            json.loads(line)
+            for line in (
+                REPOSITORY_ROOT / "data" / "tasks" / "agent.v002.jsonl"
+            ).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+        self.assertEqual(10, len(records))
+        self.assertEqual(
+            10,
+            len({record["id"] for record in records}),
+        )
+        self.assertEqual(
+            10,
+            len({record["metadata"]["seed"] for record in records}),
+        )
+        for record in records:
+            self.assertEqual("agent_state_tracking", record["type"])
+            self.assertTrue(record["objective"].strip())
+            self.assertEqual("exact", record["expected"]["type"])
+            self.assertTrue(record["expected"]["value"].strip())
+            self.assertTrue(record["critical_observation"]["id"].strip())
+            self.assertTrue(record["critical_observation"]["content"].strip())
+            self.assertGreaterEqual(len(record["distractor_outputs"]), 8)
+            self.assertEqual("CC0-1.0", record["metadata"]["license"])
+            self.assertEqual("v002", record["metadata"]["catalog_version"])
+            self.assertTrue(record["metadata"]["independent"])
+            self.assertTrue(record["metadata"]["presentation_ready"])
+
+        historical_records = [
+            line
+            for line in (
+                REPOSITORY_ROOT / "data" / "tasks" / "agent.v001.jsonl"
+            ).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        self.assertEqual(2, len(historical_records))
 
     def test_fixture_manifest_points_to_versioned_prompt_and_task_catalog(self) -> None:
         fixture = json.loads(

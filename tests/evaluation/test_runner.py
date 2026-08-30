@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from llm_lab.evaluation import (
+    CalibratedAnswerScorer,
     EvaluationTask,
     ExpectedAnswerScorer,
     ScoreResult,
@@ -15,6 +16,7 @@ from llm_lab.generation import (
     GenerationResponse,
     GenerationTiming,
     RuntimeMetadata,
+    SamplingConfig,
     TokenUsage,
 )
 from llm_lab.models import ModelSpec
@@ -46,6 +48,15 @@ class FixtureRuntime:
         )
 
 
+class ResourceFailureRuntime:
+    name = "resource-failure-fixture"
+
+    def generate(self, request: GenerationRequest) -> GenerationResponse:
+        if "out of memory" in request.prompt:
+            raise MemoryError("simulated out of memory")
+        raise TimeoutError("simulated timeout")
+
+
 class FailingScorer:
     name = "failing"
 
@@ -70,6 +81,21 @@ def task(
 
 
 class EvaluationRunnerTests(unittest.TestCase):
+    def test_runner_persists_calibrated_metrics_and_policy_version(self) -> None:
+        runner = EvaluationRunner(
+            runtime=FixtureRuntime(),
+            model=ModelSpec(model_id="fixture/model"),
+            scorer=CalibratedAnswerScorer(),
+            experiment_id="exp_fixture",
+        )
+
+        [result] = runner.run([task("task.calibrated", "The code is ZX-4817.")])
+
+        self.assertEqual("calibrated.v1", result.score["scorer"])
+        self.assertEqual(True, result.score["exact_correct"])
+        self.assertEqual(True, result.score["answer_bearing_correct"])
+        self.assertEqual(True, result.score["format_valid"])
+
     def test_runner_repeats_tasks_writes_results_and_preserves_metadata(self) -> None:
         model = ModelSpec(model_id="fixture/model", tokenizer_id="fixture/tokenizer")
         with tempfile.TemporaryDirectory() as directory:
@@ -120,8 +146,52 @@ class EvaluationRunnerTests(unittest.TestCase):
 
         self.assertEqual([TrialStatus.RUNTIME_ERROR, TrialStatus.INVALID_OUTPUT], [item.status for item in results])
         self.assertEqual("fixture backend unavailable", results[0].error["message"])
+        self.assertEqual("expected.v1", results[0].score["scorer"])
         self.assertEqual("invalid_output", results[1].score["details"]["reason"])
         self.assertIsNone(results[1].score["correct"])
+
+    def test_runner_classifies_resource_failures_without_dropping_records(self) -> None:
+        runner = EvaluationRunner(
+            runtime=ResourceFailureRuntime(),
+            model=ModelSpec(model_id="fixture/model"),
+            scorer=ExpectedAnswerScorer(),
+            experiment_id="exp_fixture",
+        )
+
+        results = runner.run(
+            [
+                task("task.oom", "out of memory"),
+                task("task.timeout", "will time out"),
+            ]
+        )
+
+        self.assertEqual(
+            [TrialStatus.OUT_OF_MEMORY, TrialStatus.TIMEOUT],
+            [item.status for item in results],
+        )
+        self.assertEqual("simulated out of memory", results[0].error["message"])
+        self.assertEqual("simulated timeout", results[1].error["message"])
+
+    def test_runner_records_effective_sampling_provenance(self) -> None:
+        runner = EvaluationRunner(
+            runtime=FixtureRuntime(),
+            model=ModelSpec(model_id="fixture/model"),
+            scorer=ExpectedAnswerScorer(),
+            experiment_id="exp_fixture",
+        )
+
+        [result] = runner.run(
+            [task("task.sampling", "question")],
+            sampling=SamplingConfig(max_new_tokens=8, temperature=0.0),
+        )
+
+        self.assertEqual(8, result.input["sampling"]["max_new_tokens"])
+        self.assertEqual(0.0, result.input["sampling"]["temperature"])
+        self.assertIsNone(result.input["sampling"]["seed"])
+        self.assertEqual(
+            "greedy-decoding-no-seed",
+            result.input["sampling"]["generation_seed_policy"],
+        )
 
     def test_runner_preserves_task_metadata_in_trial_input(self) -> None:
         runner = EvaluationRunner(
@@ -169,6 +239,7 @@ class EvaluationRunnerTests(unittest.TestCase):
         [result] = runner.run([task("task.scorer", "The code is ZX-4817.")])
 
         self.assertEqual(TrialStatus.SCORER_ERROR, result.status)
+        self.assertEqual("failing", result.score["scorer"])
         self.assertEqual("fixture scorer failed", result.error["message"])
         self.assertEqual("ZX-4817", result.generation["output_text"])
 
