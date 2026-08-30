@@ -76,6 +76,18 @@ class UncertaintyTests(unittest.TestCase):
         self.assertEqual(1, summary["correct_success_n"])
         self.assertEqual(0.5, summary["correct_rate"])
 
+    def test_pandas_numeric_scalars_are_accepted(self) -> None:
+        [summary] = task_level_wilson(
+            [
+                {"group": "g", "task_id": "task-1", "attempted_n": 1.0, "correct": 1.0},
+                {"group": "g", "task_id": "task-2", "attempted_n": 1.0, "correct": 0.0},
+            ],
+            group_keys=("group",),
+            metric_fields={"correct": "correct"},
+        )
+        self.assertEqual(2, summary["task_n"])
+        self.assertEqual(1, summary["correct_success_n"])
+
 
 if __name__ == "__main__":
     unittest.main()

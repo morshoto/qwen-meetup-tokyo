@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from math import isfinite, sqrt
+from numbers import Real
 from typing import Any, Iterable, Mapping
 
 
@@ -84,7 +85,12 @@ def task_level_wilson(
                 f"not independent: group={group}, task_id={task_id}"
             )
         attempted = row.get(attempted_key, 1)
-        if isinstance(attempted, bool) or not isinstance(attempted, int) or attempted != 1:
+        if (
+            isinstance(attempted, bool)
+            or not isinstance(attempted, Real)
+            or not isfinite(float(attempted))
+            or float(attempted) != 1.0
+        ):
             raise UncertaintyAnalysisError(
                 "task-level uncertainty requires exactly one capability observation "
                 f"per task; task_id={task_id}, attempted_n={attempted!r}"
@@ -102,8 +108,14 @@ def task_level_wilson(
                 value = row.get(field_name)
                 if isinstance(value, bool):
                     successes += int(value)
-                elif isinstance(value, int) and value in (0, 1):
-                    successes += value
+                elif (
+                    isinstance(value, Real)
+                    and not isinstance(value, bool)
+                    and isfinite(float(value))
+                    and float(value).is_integer()
+                    and int(value) in (0, 1)
+                ):
+                    successes += int(value)
                 elif value is not None:
                     raise UncertaintyAnalysisError(
                         f"metric {field_name!r} must be boolean or 0/1, found {value!r}"
