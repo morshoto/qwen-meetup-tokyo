@@ -51,11 +51,12 @@ separate raw output and summary, with the manifest-declared 3–5 repeats; those
 repeated prompts never enter the capability denominator. The historical
 checked-in manifest predates these explicit controls and intentionally fails
 closed for timing; first resolve a fresh `manifest.json` with
-`capability_repeats: 1` and `timing_repeats: 5`:
+`capability_repeats: 1` and `timing_repeats: 5` (write the resolved manifest to
+`results/manifest.json` before running this command):
 
 ```bash
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
-  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.v002-timing.json \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
   --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
   --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
   --timing-output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/timing-v002.jsonl \

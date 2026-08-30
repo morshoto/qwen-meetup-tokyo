@@ -42,6 +42,7 @@ from .agent_reliability import (
     require_measured_trials,
     validate_complete_matrix,
 )
+from .uncertainty import UncertaintyAnalysisError, task_level_wilson, wilson_interval
 
 __all__ = [
     "ContextAnalysisError",
@@ -78,4 +79,7 @@ __all__ = [
     "plot_reliability_by_position",
     "require_measured_trials",
     "validate_complete_matrix",
+    "UncertaintyAnalysisError",
+    "task_level_wilson",
+    "wilson_interval",
 ]
