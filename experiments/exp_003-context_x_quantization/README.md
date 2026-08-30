@@ -40,7 +40,7 @@ not relabel or reuse those historical scores as calibrated measurements.
 
 The committed config is the protocol. Artifact identity, model/tokenizer
 revisions, runtime settings, and conversion provenance come from
-`../exp_002-quantization_llama_cpp_gguf/results/manifest.json`; the output run
+`../exp_002-quantization_llama_cpp_gguf/results/manifest.full.json`; the output run
 manifest records its SHA-256 so later source-manifest changes cannot silently
 alter the interpretation of a run.
 
@@ -61,7 +61,7 @@ From the repository root, the fixture smoke run needs no model weights:
 
 ```bash
 PYTHONPATH=src python3 experiments/exp_003-context_x_quantization/runner.py \
-  --source-manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
+  --source-manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json \
   --phase smoke --backend fixture
 ```
 
@@ -70,7 +70,7 @@ by the resolved exp_002 manifest and suitable hardware:
 
 ```bash
 PYTHONPATH=src python3 experiments/exp_003-context_x_quantization/runner.py \
-  --source-manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
+  --source-manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json \
   --phase pilot --backend llama.cpp
 ```
 
