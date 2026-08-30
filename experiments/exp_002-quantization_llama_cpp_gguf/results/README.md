@@ -9,10 +9,12 @@ results/
 ├── manifest.v001.json         # preserved historical v001 manifest
 ├── raw/
 │   ├── trials-v002.jsonl      # ignored by Git; append-only v002 evidence
+│   ├── full-capability.jsonl  # ignored by Git; complete capability evidence
 │   ├── timing-v002.jsonl      # ignored by Git; separate repeated timing probes
 │   └── trials.jsonl           # ignored historical v001 evidence
 ├── processed/
 │   ├── pilot-v002-summary.csv  # measured 30-trial v002 pilot summary
+│   ├── summary.csv             # complete capability summary after full run
 │   ├── timing-summary.csv      # task-level summary of separate timing probes
 │   ├── pilot-v002-report.md    # pilot hash, observations, and completion boundary
 │   ├── summary.v001.csv        # preserved historical v001 summary
