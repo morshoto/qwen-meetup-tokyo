@@ -206,8 +206,8 @@ phases:
                 config_path=config_path,
             )
 
-            self.assertEqual(3, result["expected_trial_n"])
-            self.assertEqual(3, result["actual_trial_n"])
+            self.assertEqual(6, result["expected_trial_n"])
+            self.assertEqual(6, result["actual_trial_n"])
             self.assertEqual(
                 8192,
                 json.loads(
@@ -314,7 +314,7 @@ phases:
                 runner._sha256(source_manifest), manifest["source_manifest_sha256"]
             )
 
-    def test_manifest_trial_count_uses_catalog_task_ids(self) -> None:
+    def test_manifest_trial_count_uses_selected_manifest_task_ids(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source_manifest = _manifest_file(root)
@@ -345,7 +345,7 @@ phases:
                 },
             )
 
-            self.assertEqual(4, run_manifest["planned_trial_n"])
+            self.assertEqual(3, run_manifest["planned_trial_n"])
 
     def test_runner_resumes_without_duplicate_trial_ids(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -411,6 +411,7 @@ phases:
                 backend="fixture",
                 condition_ids=("q8_0",),
                 context_lengths=(8192,),
+                evidence_positions=(0.05,),
                 repeats=1,
                 runtime_factory=FakeRuntime,
             )

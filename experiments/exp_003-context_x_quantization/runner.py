@@ -10,6 +10,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
+from urllib.parse import unquote, urlparse
 
 import yaml
 
@@ -24,7 +25,7 @@ from llm_lab.datasets import TaskCatalog  # noqa: E402
 from llm_lab.evaluation import (  # noqa: E402
     EvaluationRunner,
     EvaluationTask,
-    ExpectedAnswerScorer,
+    CalibratedAnswerScorer,
     TrialResult,
     TrialStatus,
     load_trial_results,
@@ -48,6 +49,17 @@ TASK_CATALOG = ROOT / "data/tasks/core.v002.jsonl"
 EXPERIMENT_ID = "exp_003"
 CONFIG_PATH = ROOT / "experiments/exp_003-context_x_quantization/config.yaml"
 TASK_TYPES = ("literal_retrieval", "semantic_retrieval", "multi_hop")
+SCORER_VERSION = CalibratedAnswerScorer.name
+SOURCE_REVISION_PATHS = {
+    "runner.py": Path(__file__),
+    "context/synthetic.py": ROOT / "src/llm_lab/context/synthetic.py",
+    "datasets/catalog.py": ROOT / "src/llm_lab/datasets/catalog.py",
+    "evaluation/contracts.py": ROOT / "src/llm_lab/evaluation/contracts.py",
+    "evaluation/runner.py": ROOT / "src/llm_lab/evaluation/runner.py",
+    "generation/types.py": ROOT / "src/llm_lab/generation/types.py",
+    "runtimes/base.py": ROOT / "src/llm_lab/runtimes/base.py",
+    "runtimes/llama_cpp.py": ROOT / "src/llm_lab/runtimes/llama_cpp.py",
+}
 RuntimeFactory = Callable[[], Any]
 
 
@@ -159,6 +171,13 @@ def load_manifest(path: Path) -> QuantizationManifest:
         raise ValueError(f"unsupported source experiment: {manifest.experiment_id!r}")
     if manifest.runtime_name != "llama.cpp":
         raise ValueError(f"unsupported source runtime: {manifest.runtime_name!r}")
+    if manifest.task_catalog is None or manifest.task_catalog_sha256 is None:
+        raise ValueError("resolved source manifest must declare task catalog provenance")
+    if manifest.scorer_version != SCORER_VERSION:
+        raise ValueError(
+            f"unsupported source scorer version {manifest.scorer_version!r}; "
+            f"expected {SCORER_VERSION!r}"
+        )
     return manifest
 
 
@@ -209,8 +228,9 @@ def expected_trial_count(
         config=config,
     )
     run_repeats = _select_repeats(phase, repeats, config)
-    catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
-    return len(variants) * len(conditions) * len(catalog.ids) * run_repeats
+    catalog_path = _task_catalog_path(ROOT, manifest)
+    catalog = TaskCatalog.from_jsonl(catalog_path)
+    return len(variants) * len(conditions) * len(manifest.task_ids) * run_repeats
 
 
 def run_experiment(
@@ -243,6 +263,10 @@ def run_experiment(
     if selected_backend not in ("fixture", "llama.cpp"):
         raise ValueError(f"unsupported backend: {selected_backend!r}")
     source_manifest = load_manifest(source_manifest_path)
+    catalog_path = _task_catalog_path(source_manifest_path, source_manifest)
+    actual_catalog_sha256 = _sha256(catalog_path)
+    if actual_catalog_sha256.lower() != str(source_manifest.task_catalog_sha256).lower():
+        raise ValueError("task catalog SHA-256 mismatch")
     variants = _select_variants(source_manifest, condition_ids, config)
     conditions = planned_conditions(
         phase,
@@ -251,7 +275,7 @@ def run_experiment(
         config=config,
     )
     run_repeats = _select_repeats(phase, repeats, config)
-    catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
+    catalog = TaskCatalog.from_jsonl(catalog_path)
     unknown_task_ids = set(source_manifest.task_ids) - set(catalog.ids)
     if unknown_task_ids:
         raise ValueError(
@@ -259,6 +283,7 @@ def run_experiment(
             f"{sorted(unknown_task_ids)}"
         )
     sampling = _sampling_config(source_manifest.sampling)
+    source_revisions = _source_revisions()
     fingerprint = _run_fingerprint(
         source_manifest,
         phase=phase,
@@ -267,6 +292,7 @@ def run_experiment(
         conditions=conditions,
         repeats=run_repeats,
         fixture_seed=fixture_seed,
+        source_revisions=source_revisions,
     )
     artifact_paths = (
         _verify_artifacts(source_manifest_path, variants)
@@ -289,10 +315,16 @@ def run_experiment(
         )
         for variant in variants
         for condition in conditions
-        for task_id in catalog.ids
+        for task_id in source_manifest.task_ids
         for repeat_index in range(1, run_repeats + 1)
     }
-    _validate_existing(existing, expected_ids, fingerprint)
+    _validate_existing(
+        existing,
+        expected_ids,
+        fingerprint,
+        expected_scorer=SCORER_VERSION,
+        source_revisions=source_revisions,
+    )
     existing_ids = {result.trial_id for result in existing}
     output_path.parent.mkdir(parents=True, exist_ok=True)
     base_tasks_by_condition: dict[str, tuple[EvaluationTask, ...]] = {}
@@ -333,11 +365,15 @@ def run_experiment(
                     condition.condition_id: tuple(
                         build_tasks(
                             catalog,
-                            catalog.ids,
+                            source_manifest.task_ids,
                             condition,
                             tokenizer=tokenizer,
                             prompt_id=source_manifest.prompt_id,
                             fixture_seed=fixture_seed,
+                            task_catalog=source_manifest.task_catalog,
+                            task_catalog_sha256=source_manifest.task_catalog_sha256,
+                            scorer_version=SCORER_VERSION,
+                            source_revisions=source_revisions,
                         )
                     )
                     for condition in conditions
@@ -345,7 +381,7 @@ def run_experiment(
             evaluator = EvaluationRunner(
                 runtime=runtime,
                 model=model,
-                scorer=ExpectedAnswerScorer(),
+                scorer=CalibratedAnswerScorer(),
                 experiment_id=EXPERIMENT_ID,
                 output_path=output_path,
             )
@@ -393,7 +429,11 @@ def run_experiment(
         finally:
             runtime.close()
 
-    summaries = aggregate_jsonl(output_path)
+    summaries = aggregate_jsonl(
+        output_path,
+        expected_scorer=SCORER_VERSION,
+        group_by_task=True,
+    )
     write_summary_csv(processed_path, summaries)
     manifest = _run_manifest(
         source_manifest_path=source_manifest_path,
@@ -408,7 +448,9 @@ def run_experiment(
         results=load_trial_results(output_path),
         fixture_seed=fixture_seed,
         catalog=catalog,
+        catalog_path=catalog_path,
         fingerprint=fingerprint,
+        source_revisions=source_revisions,
         effective_runtime_options_by_variant={
             condition_id: dict(runtime_config.options)
             for condition_id, runtime_config in runtime_configs.items()
@@ -440,6 +482,10 @@ def build_tasks(
     tokenizer: ContextTokenizer,
     prompt_id: str,
     fixture_seed: int,
+    task_catalog: str | None = None,
+    task_catalog_sha256: str | None = None,
+    scorer_version: str = SCORER_VERSION,
+    source_revisions: Mapping[str, str] | None = None,
 ) -> list[EvaluationTask]:
     """Build one matched task set for a context/position condition."""
 
@@ -500,6 +546,10 @@ def build_tasks(
                     ),
                     "target_unit": "input-tokenizer-tokens",
                     "matched_cell_key": f"{task_id}:{condition.condition_id}",
+                    "task_catalog": task_catalog,
+                    "task_catalog_sha256": task_catalog_sha256,
+                    "scorer_version": scorer_version,
+                    "source_revisions": dict(source_revisions or {}),
                 },
             )
         )
@@ -664,6 +714,7 @@ def _run_fingerprint(
     conditions: Iterable[Condition],
     repeats: int,
     fixture_seed: int,
+    source_revisions: Mapping[str, str] | None = None,
 ) -> str:
     payload = {
         "source_manifest": manifest.to_record(),
@@ -679,6 +730,9 @@ def _run_fingerprint(
         ],
         "repeats": repeats,
         "fixture_seed": fixture_seed,
+        "source_revisions": dict(
+            _source_revisions() if source_revisions is None else source_revisions
+        ),
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -688,12 +742,25 @@ def _validate_existing(
     existing: Iterable[TrialResult],
     expected_ids: set[str],
     fingerprint: str,
+    *,
+    expected_scorer: str = SCORER_VERSION,
+    source_revisions: Mapping[str, str] | None = None,
 ) -> None:
     for result in existing:
         if result.trial_id not in expected_ids:
             raise ValueError(f"existing trial is outside selected run: {result.trial_id}")
         if result.input.get("run_fingerprint") != fingerprint:
             raise ValueError("existing raw results do not match the selected run")
+        if result.score.get("scorer") != expected_scorer:
+            raise ValueError(
+                f"existing raw results use scorer version "
+                f"{result.score.get('scorer', '<missing>')!r}; "
+                f"expected scorer version {expected_scorer!r}"
+            )
+        if source_revisions is not None and result.input.get("source_revisions") != dict(
+            source_revisions
+        ):
+            raise ValueError("existing raw results do not match source revisions")
 
 
 def _verify_artifacts(
@@ -713,6 +780,34 @@ def _verify_artifacts(
     return paths
 
 
+def _source_revisions() -> dict[str, str]:
+    return {
+        name: _sha256(path)
+        for name, path in SOURCE_REVISION_PATHS.items()
+    }
+
+
+def _task_catalog_path(
+    manifest_path: Path,
+    manifest: QuantizationManifest,
+) -> Path:
+    if manifest.task_catalog is None:
+        raise ValueError("resolved source manifest must declare task_catalog")
+    parsed = urlparse(manifest.task_catalog)
+    if parsed.scheme == "file":
+        if parsed.netloc not in ("", "localhost"):
+            raise ValueError(
+                f"unsupported task catalog URI host: {parsed.netloc}"
+            )
+        return Path(unquote(parsed.path))
+    if parsed.scheme:
+        raise ValueError(
+            f"task catalog must be a local path or file URI: {manifest.task_catalog}"
+        )
+    path = Path(unquote(manifest.task_catalog))
+    return path if path.is_absolute() else _rooted(path)
+
+
 def _run_manifest(
     *,
     source_manifest_path: Path,
@@ -729,6 +824,8 @@ def _run_manifest(
     catalog: TaskCatalog,
     fingerprint: str,
     effective_runtime_options_by_variant: Mapping[str, Mapping[str, Any]],
+    catalog_path: Path | None = None,
+    source_revisions: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     variant_list = list(variants)
@@ -745,7 +842,7 @@ def _run_manifest(
         ).append(result)
 
     catalog_tasks = getattr(catalog, "tasks", ())
-    selected_task_ids = set(catalog.ids)
+    selected_task_ids = set(source_manifest.task_ids)
     independent_task_n_by_type = {
         task_type: sum(
             task.task_type == task_type and task.task_id in selected_task_ids
@@ -794,6 +891,7 @@ def _run_manifest(
         "phase": phase,
         "backend": backend,
         "fixture_seed": fixture_seed,
+        "scorer_version": SCORER_VERSION,
         "source_manifest": _display_path(source_manifest_path),
         "source_manifest_sha256": _sha256(source_manifest_path),
         "source_experiment_id": source_manifest.experiment_id,
@@ -812,9 +910,10 @@ def _run_manifest(
                 for condition_id, options in effective_runtime_options_by_variant.items()
             },
         },
-        "task_catalog": _display_path(TASK_CATALOG),
+        "task_catalog": _display_path(catalog_path or TASK_CATALOG),
+        "task_catalog_sha256": _sha256(catalog_path or TASK_CATALOG),
         "prompt_id": source_manifest.prompt_id,
-        "task_ids": list(catalog.ids),
+        "task_ids": list(source_manifest.task_ids),
         "task_types": list(TASK_TYPES),
         "quantization_variants": [variant.to_record() for variant in variant_list],
         "context_lengths": _ordered_unique(
@@ -828,7 +927,7 @@ def _run_manifest(
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),
         "planned_trial_n": len(condition_list)
-        * len(catalog.ids)
+        * len(source_manifest.task_ids)
         * len(variant_list)
         * repeats,
         "actual_trial_n": len(result_list),
@@ -836,6 +935,7 @@ def _run_manifest(
         "raw_results_sha256": _sha256(output_path),
         "manifest_path": _display_path(manifest_output_path),
         "run_fingerprint": fingerprint,
+        "source_revisions": dict(source_revisions or {}),
         "environment": capture_environment(ROOT),
         "coverage": coverage,
         "excluded_cells": [row for row in coverage if row["status"] == "excluded"],
