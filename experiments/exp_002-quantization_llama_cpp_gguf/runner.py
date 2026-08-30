@@ -90,7 +90,17 @@ def run_experiment(
         raise ValueError("repeats must be between 1 and the manifest repeat count")
     fingerprint = _run_fingerprint(manifest)
     artifact_paths = _verify_artifacts(manifest_path, variants)
-    catalog = TaskCatalog.from_jsonl(TASK_CATALOG)
+    catalog_path = _task_catalog_path(manifest)
+    if manifest.task_catalog_sha256 is not None:
+        actual_catalog_sha256 = _sha256(catalog_path)
+        if actual_catalog_sha256.lower() != manifest.task_catalog_sha256.lower():
+            raise ValueError("task catalog SHA-256 mismatch")
+    catalog = TaskCatalog.from_jsonl(catalog_path)
+    if manifest.scorer_version != SCORER_VERSION:
+        raise ValueError(
+            f"unsupported scorer version {manifest.scorer_version!r}; "
+            f"expected {SCORER_VERSION!r}"
+        )
     unknown_task_ids = set(manifest.task_ids) - set(catalog.ids)
     if unknown_task_ids:
         raise ValueError(
@@ -147,6 +157,9 @@ def run_experiment(
                             tokenizer=tokenizer,
                             prompt_id=manifest.prompt_id,
                             seed=sampling.seed or 0,
+                            task_catalog=manifest.task_catalog,
+                            task_catalog_sha256=manifest.task_catalog_sha256,
+                            scorer_version=manifest.scorer_version,
                         )
                     )
                     for length in lengths
@@ -225,6 +238,9 @@ def _build_tasks(
     tokenizer: ContextTokenizer,
     prompt_id: str,
     seed: int,
+    task_catalog: str | None,
+    task_catalog_sha256: str | None,
+    scorer_version: str,
 ) -> list[EvaluationTask]:
     generator = SyntheticContextGenerator(tokenizer=tokenizer)
     tasks: list[EvaluationTask] = []
@@ -271,6 +287,9 @@ def _build_tasks(
                         "tokenization_mode", "tokenizer"
                     ),
                     "target_unit": "input-tokenizer-tokens",
+                    "task_catalog": task_catalog,
+                    "task_catalog_sha256": task_catalog_sha256,
+                    "scorer_version": scorer_version,
                 },
             )
         )
@@ -343,6 +362,22 @@ def _run_fingerprint(
     payload = {"manifest": manifest.to_record()}
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _task_catalog_path(manifest: QuantizationManifest) -> Path:
+    if manifest.task_catalog is None:
+        return TASK_CATALOG
+    parsed = urlparse(manifest.task_catalog)
+    if parsed.scheme == "file":
+        if parsed.netloc not in ("", "localhost"):
+            raise ValueError(f"unsupported task catalog URI host: {parsed.netloc}")
+        return Path(unquote(parsed.path))
+    if parsed.scheme:
+        raise ValueError(
+            f"task catalog must be a local path or file URI: {manifest.task_catalog}"
+        )
+    path = Path(unquote(manifest.task_catalog))
+    return path if path.is_absolute() else _rooted(path)
 
 
 def _validate_existing(

@@ -154,6 +154,50 @@ class Exp002RunnerTests(unittest.TestCase):
     def setUp(self) -> None:
         FakeRuntime.instances = []
 
+    def test_runner_uses_manifest_task_catalog_and_records_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            catalog_path = root / "tasks.jsonl"
+            catalog_path.write_text(
+                '{"schema_version": 1, "id": "task.fixture", '
+                '"type": "literal_retrieval", "version": 1, '
+                '"question": "What is the code?", '
+                '"expected": {"type": "exact", "value": "A-1"}, '
+                '"evidence": [{"id": "evidence", "text": "The code is A-1."}], '
+                '"metadata": {"seed": 1, "source": "fixture", "license": "CC0"}}\n',
+                encoding="utf-8",
+            )
+            record = json.loads(manifest_path.read_text(encoding="utf-8"))
+            record["controls"]["task_ids"] = ["task.fixture"]
+            record["controls"]["task_catalog"] = str(catalog_path)
+            record["controls"]["task_catalog_sha256"] = hashlib.sha256(
+                catalog_path.read_bytes()
+            ).hexdigest()
+            record["controls"]["scorer_version"] = "calibrated.v1"
+            manifest_path.write_text(json.dumps(record), encoding="utf-8")
+            output_path = root / "raw" / "trials.jsonl"
+            summary_path = root / "processed" / "summary.csv"
+
+            result = runner.run_experiment(
+                manifest_path=manifest_path,
+                output_path=output_path,
+                processed_path=summary_path,
+                condition_ids=("q8_0",),
+                context_lengths=(8192,),
+                repeats=1,
+                runtime_factory=FakeRuntime,
+            )
+
+            self.assertEqual(1, result["actual_trial_n"])
+            [trial] = runner.load_trial_results(output_path)
+            self.assertEqual(str(catalog_path), trial.input["task_catalog"])
+            self.assertEqual(
+                record["controls"]["task_catalog_sha256"],
+                trial.input["task_catalog_sha256"],
+            )
+            self.assertEqual("calibrated.v1", trial.input["scorer_version"])
+
     def test_pilot_runs_q8_at_8k_for_all_tasks_and_writes_summary(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

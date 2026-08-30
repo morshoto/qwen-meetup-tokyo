@@ -48,7 +48,7 @@ class ArtifactProvenance:
             raise ValueError("artifact_size_bytes must be positive")
 
     def to_record(self) -> dict[str, Any]:
-        return {
+        record: dict[str, Any] = {
             "source_uri": self.source_uri,
             "source_revision": self.source_revision,
             "conversion_command": self.conversion_command,
@@ -57,6 +57,7 @@ class ArtifactProvenance:
             "artifact_sha256": self.artifact_sha256,
             "artifact_size_bytes": self.artifact_size_bytes,
         }
+        return record
 
     @classmethod
     def from_record(cls, record: Mapping[str, Any]) -> "ArtifactProvenance":
@@ -100,7 +101,7 @@ class QuantizationVariant:
         _require_text("runtime_kernel", self.runtime_kernel)
 
     def to_record(self) -> dict[str, Any]:
-        return {
+        record: dict[str, Any] = {
             "condition_id": self.condition_id,
             "label": self.label,
             "format": self.format,
@@ -109,6 +110,7 @@ class QuantizationVariant:
             "artifact": self.artifact.to_record(),
             "runtime_kernel": self.runtime_kernel,
         }
+        return record
 
     @classmethod
     def from_record(cls, record: Mapping[str, Any]) -> "QuantizationVariant":
@@ -143,6 +145,9 @@ class QuantizationManifest:
     context_length_semantics: str = "input_tokens"
     context_overhead_tokens: int = 0
     runtime_options: Mapping[str, Any] = field(default_factory=dict)
+    task_catalog: str | None = None
+    task_catalog_sha256: str | None = None
+    scorer_version: str = "calibrated.v1"
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -175,13 +180,24 @@ class QuantizationManifest:
             raise ValueError("context_length_semantics must be input_tokens")
         if self.context_overhead_tokens < 0:
             raise ValueError("context_overhead_tokens cannot be negative")
+        if self.task_catalog is None and self.task_catalog_sha256 is not None:
+            raise ValueError("task_catalog is required when task_catalog_sha256 is set")
+        if self.task_catalog is not None:
+            _require_text("task_catalog", self.task_catalog)
+            if self.task_catalog_sha256 is None:
+                raise ValueError("task_catalog_sha256 is required for a task_catalog")
+            if not _SHA256_RE.fullmatch(self.task_catalog_sha256):
+                raise ValueError(
+                    "task_catalog_sha256 must be a 64 hexadecimal character string"
+                )
+        _require_text("scorer_version", self.scorer_version)
 
     @property
     def condition_ids(self) -> tuple[str, ...]:
         return tuple(variant.condition_id for variant in self.variants)
 
     def to_record(self) -> dict[str, Any]:
-        return {
+        record: dict[str, Any] = {
             "schema_version": 1,
             "experiment_id": self.experiment_id,
             "model": {
@@ -203,9 +219,14 @@ class QuantizationManifest:
                 "repeats": self.repeats,
                 "context_length_semantics": self.context_length_semantics,
                 "context_overhead_tokens": self.context_overhead_tokens,
+                "scorer_version": self.scorer_version,
             },
             "variants": [variant.to_record() for variant in self.variants],
         }
+        if self.task_catalog is not None:
+            record["controls"]["task_catalog"] = self.task_catalog
+            record["controls"]["task_catalog_sha256"] = self.task_catalog_sha256
+        return record
 
     @classmethod
     def from_record(cls, record: Mapping[str, Any]) -> "QuantizationManifest":
@@ -235,6 +256,17 @@ class QuantizationManifest:
             ),
             context_overhead_tokens=int(controls.get("context_overhead_tokens", 0)),
             runtime_options=dict(runtime.get("options", {})),
+            task_catalog=(
+                None
+                if controls.get("task_catalog") is None
+                else str(controls["task_catalog"])
+            ),
+            task_catalog_sha256=(
+                None
+                if controls.get("task_catalog_sha256") is None
+                else str(controls["task_catalog_sha256"])
+            ),
+            scorer_version=str(controls.get("scorer_version", "calibrated.v1")),
         )
 
 
