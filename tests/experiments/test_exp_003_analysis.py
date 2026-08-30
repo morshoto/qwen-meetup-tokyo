@@ -178,6 +178,19 @@ class Exp003AnalysisTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "fixture results are harness-only"):
                 analysis.regenerate(manifest_path)
 
+    def test_regeneration_keeps_outputs_in_manifest_results_root(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw_path = self._write_raw(root)
+            nested_manifest = write_manifest(root, raw_path)
+            manifest_path = root / "main.json"
+            nested_manifest.replace(manifest_path)
+
+            result = analysis.regenerate(manifest_path)
+
+            self.assertEqual(root / "processed/summary.csv", Path(result["outputs"]["summary"]))
+            self.assertTrue((root / "processed/summary.csv").is_file())
+
 
 if __name__ == "__main__":
     unittest.main()
