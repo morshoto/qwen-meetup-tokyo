@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 
@@ -101,6 +102,25 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             "insufficient_data",
         ):
             self.assertIn(required, notebook)
+
+    def test_notebook_is_portable_measured_artifact(self) -> None:
+        notebook_path = EXPERIMENT / "analysis.ipynb"
+        notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
+        notebook_text = notebook_path.read_text(encoding="utf-8")
+        code_cells = [
+            cell for cell in notebook["cells"] if cell["cell_type"] == "code"
+        ]
+
+        self.assertIn("PHASE = 'main'", notebook_text)
+        self.assertIn("RESULTS_DIR = ROOT /", notebook_text)
+        self.assertIn("runpy.run_path", notebook_text)
+        self.assertIn("allow_fixture=False", notebook_text)
+        self.assertNotIn("allow_fixture=True", notebook_text)
+        self.assertNotIn("/var/folders/", notebook_text)
+        self.assertNotIn("exec(compile", notebook_text)
+        for cell in code_cells:
+            self.assertIsNone(cell["execution_count"])
+            self.assertEqual([], cell["outputs"])
 
 
 if __name__ == "__main__":
