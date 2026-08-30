@@ -17,6 +17,8 @@ Q8/Q6/Q5/Q4 recommendation.
 - Artifact condition: `q8_0` / `Q8_0`
 - Context condition: 8,192 input tokens
 - Repeats: one per each of the 30 independent tasks
+- Source-revision note: this pilot predates the current resume guard; its raw
+  JSONL must be regenerated before extending the run under the current code.
 
 ## Measured pilot observations
 

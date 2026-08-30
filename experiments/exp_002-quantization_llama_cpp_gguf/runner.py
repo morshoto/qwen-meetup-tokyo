@@ -36,6 +36,13 @@ from llm_lab.runtimes import LlamaCppRuntime, RuntimeConfig  # noqa: E402
 TASK_CATALOG = ROOT / "data/tasks/core.v002.jsonl"
 SCORER_VERSION = CalibratedAnswerScorer.name
 PLACEHOLDER_MARKERS = ("REPLACE_WITH", "SET_TO_")
+SOURCE_REVISION_PATHS = {
+    "runner.py": Path(__file__),
+    "context/synthetic.py": ROOT / "src/llm_lab/context/synthetic.py",
+    "datasets/catalog.py": ROOT / "src/llm_lab/datasets/catalog.py",
+    "evaluation/contracts.py": ROOT / "src/llm_lab/evaluation/contracts.py",
+    "evaluation/runner.py": ROOT / "src/llm_lab/evaluation/runner.py",
+}
 RuntimeFactory = Callable[[], LlamaCppRuntime]
 
 
@@ -88,7 +95,10 @@ def run_experiment(
     run_repeats = manifest.repeats if repeats is None else repeats
     if run_repeats < 1 or run_repeats > manifest.repeats:
         raise ValueError("repeats must be between 1 and the manifest repeat count")
-    fingerprint = _run_fingerprint(manifest)
+    source_revisions = _source_revisions()
+    fingerprint = _run_fingerprint(
+        manifest, source_revisions=source_revisions
+    )
     artifact_paths = _verify_artifacts(manifest_path, variants)
     catalog_path = _task_catalog_path(manifest)
     if manifest.task_catalog_sha256 is not None:
@@ -132,6 +142,7 @@ def run_experiment(
         expected_ids,
         fingerprint,
         expected_scorer=SCORER_VERSION,
+        source_revisions=source_revisions,
     )
     existing_ids = {result.trial_id for result in existing}
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -160,6 +171,7 @@ def run_experiment(
                             task_catalog=manifest.task_catalog,
                             task_catalog_sha256=manifest.task_catalog_sha256,
                             scorer_version=manifest.scorer_version,
+                            source_revisions=source_revisions,
                         )
                     )
                     for length in lengths
@@ -245,6 +257,7 @@ def _build_tasks(
     task_catalog: str | None,
     task_catalog_sha256: str | None,
     scorer_version: str,
+    source_revisions: Mapping[str, str],
 ) -> list[EvaluationTask]:
     generator = SyntheticContextGenerator(tokenizer=tokenizer)
     tasks: list[EvaluationTask] = []
@@ -285,6 +298,9 @@ def _build_tasks(
                     )
                     / len(spans),
                     "evidence_spans": spans,
+                    "context_sha256": hashlib.sha256(
+                        generated.text.encode("utf-8")
+                    ).hexdigest(),
                     "context_generator": generated.metadata["generator"],
                     "context_tokenization": generated.metadata["tokenization"],
                     "context_tokenization_mode": generated.metadata.get(
@@ -294,6 +310,7 @@ def _build_tasks(
                     "task_catalog": task_catalog,
                     "task_catalog_sha256": task_catalog_sha256,
                     "scorer_version": scorer_version,
+                    "source_revisions": dict(source_revisions),
                 },
             )
         )
@@ -360,12 +377,26 @@ def _execution_condition_id(variant: QuantizationVariant, length: int) -> str:
 
 def _run_fingerprint(
     manifest: QuantizationManifest,
+    *,
+    source_revisions: Mapping[str, str] | None = None,
 ) -> str:
     """Fingerprint immutable controls so a pilot can safely grow to full."""
 
-    payload = {"manifest": manifest.to_record()}
+    payload = {
+        "manifest": manifest.to_record(),
+        "source_revisions": dict(
+            _source_revisions() if source_revisions is None else source_revisions
+        ),
+    }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _source_revisions() -> dict[str, str]:
+    return {
+        name: _sha256(path)
+        for name, path in SOURCE_REVISION_PATHS.items()
+    }
 
 
 def _task_catalog_path(manifest: QuantizationManifest) -> Path:
@@ -390,12 +421,15 @@ def _validate_existing(
     fingerprint: str,
     *,
     expected_scorer: str,
+    source_revisions: Mapping[str, str],
 ) -> None:
     for result in existing:
         if result.trial_id not in expected_ids:
             raise ValueError(f"existing trial is outside selected run: {result.trial_id}")
         if result.input.get("run_fingerprint") != fingerprint:
             raise ValueError("existing raw results do not match the selected manifest run")
+        if result.input.get("source_revisions") != dict(source_revisions):
+            raise ValueError("existing raw results do not match the selected source revisions")
         if result.score.get("scorer") != expected_scorer:
             actual = result.score.get("scorer", "<missing>")
             raise ValueError(

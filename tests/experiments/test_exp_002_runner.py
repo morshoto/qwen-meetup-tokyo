@@ -197,6 +197,23 @@ class Exp002RunnerTests(unittest.TestCase):
                 trial.input["task_catalog_sha256"],
             )
             self.assertEqual("calibrated.v1", trial.input["scorer_version"])
+            self.assertEqual(64, len(trial.input["context_sha256"]))
+            self.assertIn("context/synthetic.py", trial.input["source_revisions"])
+            self.assertIn("evaluation/contracts.py", trial.input["source_revisions"])
+
+    def test_run_fingerprint_binds_source_revisions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            manifest_path = _manifest_file(Path(directory))
+            manifest = runner.load_manifest(manifest_path)
+
+            first = runner._run_fingerprint(
+                manifest, source_revisions={"context/synthetic.py": "revision-a"}
+            )
+            second = runner._run_fingerprint(
+                manifest, source_revisions={"context/synthetic.py": "revision-b"}
+            )
+
+            self.assertNotEqual(first, second)
 
     def test_runner_rejects_a_task_catalog_hash_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -374,6 +391,34 @@ class Exp002RunnerTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "scorer version"):
                 runner.run_experiment(**kwargs)
+
+    def test_resume_rejects_changed_source_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            output_path = root / "raw" / "pilot-trials.jsonl"
+            summary_path = root / "processed" / "pilot-summary.csv"
+            kwargs = {
+                "manifest_path": manifest_path,
+                "output_path": output_path,
+                "processed_path": summary_path,
+                "condition_ids": ("q8_0",),
+                "context_lengths": (8192,),
+                "repeats": 1,
+                "runtime_factory": FakeRuntime,
+            }
+
+            runner.run_experiment(**kwargs)
+            original_source_revisions = runner._source_revisions
+            runner._source_revisions = lambda: {
+                **original_source_revisions(),
+                "context/synthetic.py": "changed-source",
+            }
+            try:
+                with self.assertRaisesRegex(ValueError, "selected manifest run"):
+                    runner.run_experiment(**kwargs)
+            finally:
+                runner._source_revisions = original_source_revisions
 
     def test_full_run_can_resume_from_a_pilot_same_output(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

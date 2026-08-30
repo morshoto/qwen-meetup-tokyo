@@ -71,6 +71,10 @@ task. Historical v001 evidence remains separate as
 `results/processed/pilot-v001-summary.csv`. The remaining 1,170 v002 trials
 must be measured before a cross-variant conclusion is reported.
 
+The committed pilot predates the source-revision resume guard added in this
+patch. Its raw JSONL is therefore terminal pilot evidence; regenerate the
+pilot with the current runner before extending the same output file.
+
 ```bash
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
   --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
