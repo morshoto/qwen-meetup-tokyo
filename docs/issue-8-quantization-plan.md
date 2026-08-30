@@ -30,7 +30,8 @@ F16 reference when available.
   tasks, short/medium context lengths, greedy sampling, and Q8/Q6/Q5/Q4
   conditions.
 - Notebook-ready end-to-end-success-vs-memory and explicit stream-proxy
-  speed-vs-memory tables/figures and a data-driven recommendation rule.
+  separate artifact-size, sampled-RSS, TTFT, and throughput-proxy figures plus
+  a data-driven recommendation rule.
 
 **Out of scope**
 
@@ -58,7 +59,7 @@ F16 reference when available.
 | All compared artifacts are traceable to reproducible sources/procedures. | B1, B4 | `test_manifest_preserves_variant_provenance_and_controls` |
 | Short/medium runs use fixed prompts, tasks, runtime, and sampling. | B4 | `test_experiment_config_names_llama_cpp_gguf_and_fixed_conditions` |
 | End-to-end success, failure rate, memory, and explicit stream timing proxies are available to analysis. | B3, B5 | `test_streamed_generation_records_measurement_fields` and `test_tradeoff_rows_join_required_metrics` |
-| Notebook analysis contains end-to-end-success-vs-memory and explicit stream-proxy speed-vs-memory comparisons. | B5 | `test_notebook_contains_required_analysis_sections` |
+| Notebook analysis contains separate capability-vs-artifact-size, capability-vs-sampled-RSS, TTFT, and stream-throughput-proxy figures. | B5 | `test_notebook_contains_required_analysis_sections` |
 | A recommended baseline is justified by measured data. | B6 | `test_recommendation_prefers_smallest_artifact_within_accuracy_tolerance` |
 
 ### Test-First Implementation Cycles
