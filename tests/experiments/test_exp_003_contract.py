@@ -112,7 +112,9 @@ class Exp003ExperimentContractTests(unittest.TestCase):
         ]
 
         self.assertIn("PHASE = 'main'", notebook_text)
-        self.assertIn("RESULTS_DIR = ROOT /", notebook_text)
+        self.assertIn("os.environ.get('EXP003_PHASE', 'main')", notebook_text)
+        self.assertIn("os.environ.get('EXP003_RESULTS_DIR'", notebook_text)
+        self.assertIn("RESULTS_DIR = Path(", notebook_text)
         self.assertIn("EXPERIMENT_ROOT = ROOT /", notebook_text)
         self.assertIn("spec_path = EXPERIMENT_ROOT / 'analyze.py'", notebook_text)
         self.assertIn("runpy.run_path", notebook_text)
