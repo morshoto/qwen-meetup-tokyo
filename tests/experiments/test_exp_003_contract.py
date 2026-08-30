@@ -1,6 +1,8 @@
 import unittest
 from pathlib import Path
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = ROOT / "experiments/exp_003-context_x_quantization"
@@ -23,7 +25,7 @@ class Exp003ExperimentContractTests(unittest.TestCase):
         self.assertIn("task_catalog: data/tasks/core.v002.jsonl", config)
         self.assertIn("prompt_id: prompt.qa.v001", config)
         self.assertIn(
-            "lengths: [8192, 32768, 65536, 131072, 262144]",
+            "lengths: [8192, 32768, 65536, 131072]",
             config,
         )
         self.assertIn(
@@ -50,6 +52,22 @@ class Exp003ExperimentContractTests(unittest.TestCase):
         self.assertIn("execution source of truth", readme)
         self.assertIn("explicit legacy exception", readme)
         self.assertIn("not directly comparable", readme)
+
+    def test_main_declares_issue_21_matrix(self) -> None:
+        protocol = yaml.safe_load(
+            (EXPERIMENT / "config.yaml").read_text(encoding="utf-8")
+        )
+        main = protocol["phases"]["main"]
+
+        self.assertEqual([8192, 32768, 65536, 131072], main["lengths"])
+        self.assertEqual(
+            [0.05, 0.25, 0.50, 0.75, 0.95],
+            main["evidence_positions"],
+        )
+        self.assertGreater(main["repeats"], 1)
+        self.assertTrue({"q8_0", "q4_k_m"}.issubset(protocol["quantization"]["variants"]))
+        self.assertEqual("data/tasks/core.v002.jsonl", protocol["experiment"]["task_catalog"])
+        self.assertEqual("calibrated.v1", protocol["analysis"]["scorer_version"])
 
     def test_notebook_contains_required_interaction_sections(self) -> None:
         notebook = (EXPERIMENT / "analysis.ipynb").read_text(encoding="utf-8")
