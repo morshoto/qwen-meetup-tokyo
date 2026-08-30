@@ -68,6 +68,9 @@ and systems-cost figures: `success-vs-artifact-size.png`,
 `accuracy-vs-rss.png`, `ttft-vs-context.png`, and
 `throughput-vs-context.png`. Pilot figures are explicitly pilot-only; a full
 comparison requires the complete v002 summary and the separate timing summary.
+The older `accuracy-vs-memory.png` and `speed-vs-memory.png` files are
+historical outputs and are not presentation figures for the calibrated v002
+analysis.
 The committed pilot was regenerated under the source-revision resume guard;
 extend its raw JSONL only when the manifest and recorded source revisions still
 match.
