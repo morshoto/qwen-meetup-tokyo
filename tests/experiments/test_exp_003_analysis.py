@@ -194,6 +194,21 @@ class Exp003AnalysisTests(unittest.TestCase):
             )
             self.assertTrue((root / "processed/summary.csv").is_file())
 
+    def test_regeneration_rejects_raw_hash_mismatch_before_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw_path = self._write_raw(root)
+            manifest_path = write_manifest(root, raw_path)
+            raw_path.write_text(
+                raw_path.read_text(encoding="utf-8") + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "raw results SHA-256"):
+                analysis.regenerate(manifest_path)
+
+            self.assertFalse((root / "processed/summary.csv").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
