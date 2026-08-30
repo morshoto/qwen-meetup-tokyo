@@ -101,6 +101,8 @@ def complete_matrix_summaries() -> list[dict[str, object]]:
                     "task_id": "task.literal.000001",
                     "target_context_tokens": context_length,
                     "variant_condition_id": condition_id,
+                    "context_instance_id": f"task.literal.000001:ctx{context_length}",
+                    "context_sha256": "a" * 64,
                 }
             )
             rows.append(row)
@@ -236,6 +238,13 @@ class QuantizationAnalysisTests(unittest.TestCase):
         with self.assertRaisesRegex(
             QuantizationAnalysisError, "expected manifest repeats=5"
         ):
+            validate_complete_quantization_matrix(summaries, manifest())
+
+    def test_complete_quantization_matrix_requires_matched_context_identity(self) -> None:
+        summaries = complete_matrix_summaries()
+        summaries[2]["context_sha256"] = "b" * 64
+
+        with self.assertRaisesRegex(QuantizationAnalysisError, "do not share one context"):
             validate_complete_quantization_matrix(summaries, manifest())
 
     def test_notebook_contains_required_analysis_sections(self) -> None:

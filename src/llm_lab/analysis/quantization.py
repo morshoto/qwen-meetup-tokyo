@@ -132,6 +132,7 @@ def validate_complete_quantization_matrix(
         for task_id in resolved_manifest.task_ids
     }
     observed: set[tuple[str, int, str]] = set()
+    context_identity: dict[tuple[int, str], tuple[str, str]] = {}
     for row in summaries:
         variant_id = row.get("variant_condition_id")
         task_id = row.get("task_id")
@@ -159,6 +160,24 @@ def validate_complete_quantization_matrix(
         if key in observed:
             raise QuantizationAnalysisError(
                 f"summary contains duplicate quantization matrix cell: {key}"
+            )
+        context_instance_id = row.get("context_instance_id")
+        context_sha256 = row.get("context_sha256")
+        if not isinstance(context_instance_id, str) or not context_instance_id.strip():
+            raise QuantizationAnalysisError(
+                f"{key} is missing context_instance_id for matched comparison"
+            )
+        if not isinstance(context_sha256, str) or not context_sha256.strip():
+            raise QuantizationAnalysisError(
+                f"{key} is missing context_sha256 for matched comparison"
+            )
+        identity_key = (context_length, task_id)
+        identity = (context_instance_id, context_sha256)
+        previous = context_identity.setdefault(identity_key, identity)
+        if previous != identity:
+            raise QuantizationAnalysisError(
+                "quantization variants do not share one context instance: "
+                f"context={context_length}, task_id={task_id}"
             )
         expected_repeats = (
             resolved_manifest.capability_repeats or resolved_manifest.repeats
