@@ -13,6 +13,7 @@ VARIANTS = ("q8_0", "q4_k_m")
 CONTEXT_LENGTHS = (8192, 32768, 65536)
 POSITIONS = (0.05, 0.50)
 TASK_TYPES = ("literal_retrieval",)
+TASK_IDS = ("task.literal.000001", "task.literal.000002")
 
 
 def summary(
@@ -63,6 +64,32 @@ def complete_rows(
                     summary("q4_k_m", context_tokens, position, q4_accuracies[context_tokens]),
                 )
             )
+    return rows
+
+
+def independent_rows(
+    q8_accuracies: dict[str, dict[int, float]],
+    q4_accuracies: dict[str, dict[int, float]],
+) -> list[dict[str, object]]:
+    rows = []
+    for task_id in TASK_IDS:
+        for context_tokens in q8_accuracies[task_id]:
+            for position in (0.50,):
+                for variant, accuracies in (
+                    ("q8_0", q8_accuracies),
+                    ("q4_k_m", q4_accuracies),
+                ):
+                    row = summary(
+                        variant,
+                        context_tokens,
+                        position,
+                        accuracies[task_id][context_tokens],
+                    )
+                    row["task_id"] = task_id
+                    row["context_instance_id"] = (
+                        f"{task_id}:seed1234:ctx{context_tokens}:p050"
+                    )
+                    rows.append(row)
     return rows
 
 
@@ -175,6 +202,83 @@ class InteractionAnalysisTests(unittest.TestCase):
         self.assertEqual("estimated", q4["status"])
         self.assertEqual(8192, q4["effective_context_tokens"])
         self.assertEqual("right_censored", q8["status"])
+
+    def test_task_aware_matching_preserves_independent_tasks(self) -> None:
+        rows = independent_rows(
+            {
+                TASK_IDS[0]: {8192: 1.0, 32768: 1.0, 65536: 1.0},
+                TASK_IDS[1]: {8192: 1.0, 32768: 1.0, 65536: 1.0},
+            },
+            {
+                TASK_IDS[0]: {8192: 0.9, 32768: 0.8, 65536: 0.2},
+                TASK_IDS[1]: {8192: 0.8, 32768: 0.7, 65536: 0.0},
+            },
+        )
+
+        matched = matched_cell_rows(
+            rows,
+            variant_ids=VARIANTS,
+            context_lengths=CONTEXT_LENGTHS,
+            evidence_positions=(0.50,),
+            task_types=TASK_TYPES,
+            task_ids=TASK_IDS,
+        )
+
+        self.assertEqual(12, len(matched))
+        degradation = relative_degradation_rows(
+            matched,
+            baseline_context_tokens=8192,
+        )
+        q4_task_two_long = next(
+            row
+            for row in degradation
+            if row["task_id"] == TASK_IDS[1]
+            and row["variant_condition_id"] == "q4_k_m"
+            and row["target_context_tokens"] == 65536
+        )
+        self.assertAlmostEqual(0.8, q4_task_two_long["accuracy_degradation"])
+
+        [report] = interaction_report(matched, reference_variant="q8_0")
+        self.assertEqual("context_dependent", report["classification"])
+        self.assertAlmostEqual(0.15, report["shortest_context_gap"])
+        self.assertAlmostEqual(0.90, report["largest_context_gap"])
+        self.assertEqual(20, report["context_points"][-1]["matched_n"])
+
+    def test_task_aware_matching_rejects_missing_independent_task_cell(self) -> None:
+        rows = independent_rows(
+            {task_id: {8192: 1.0, 32768: 1.0, 65536: 1.0} for task_id in TASK_IDS},
+            {task_id: {8192: 1.0, 32768: 1.0, 65536: 1.0} for task_id in TASK_IDS},
+        )
+
+        with self.assertRaisesRegex(InteractionAnalysisError, "missing matched cells"):
+            matched_cell_rows(
+                rows[:-1],
+                variant_ids=VARIANTS,
+                context_lengths=CONTEXT_LENGTHS,
+                evidence_positions=(0.50,),
+                task_types=TASK_TYPES,
+                task_ids=TASK_IDS,
+            )
+
+    def test_interaction_report_classifies_insufficient_data(self) -> None:
+        rows = complete_rows(
+            {8192: 1.0},
+            {8192: 0.9},
+            positions=(0.50,),
+        )
+
+        [report] = interaction_report(
+            matched_cell_rows(
+                rows,
+                variant_ids=VARIANTS,
+                context_lengths=(8192,),
+                evidence_positions=(0.50,),
+                task_types=TASK_TYPES,
+            ),
+            reference_variant="q8_0",
+        )
+
+        self.assertEqual("insufficient_data", report["classification"])
 
 
 if __name__ == "__main__":
