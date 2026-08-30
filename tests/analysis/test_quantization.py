@@ -265,6 +265,10 @@ class QuantizationAnalysisTests(unittest.TestCase):
             "end_to_end_success",
             "prompt_throughput_proxy_tok_s",
             "post_first_chunk_output_tok_s",
+            "success-vs-artifact-size.png",
+            "accuracy-vs-rss.png",
+            "ttft-vs-context.png",
+            "throughput-vs-context.png",
             "recommend_baseline",
         ):
             self.assertIn(required, source)
@@ -288,6 +292,7 @@ class QuantizationAnalysisTests(unittest.TestCase):
         for required in (
             "capability_frame",
             "systems_cost_frame",
+            "median_peak_memory_bytes",
             "stream-derived proxies",
             "native prefill/decode counters are unavailable",
         ):
