@@ -82,9 +82,12 @@ def run_experiment(
     manifest_path: Path,
     output_path: Path,
     processed_path: Path,
+    timing_output_path: Path | None = None,
+    timing_processed_path: Path | None = None,
     condition_ids: Iterable[str] | None = None,
     context_lengths: Iterable[int] | None = None,
     repeats: int | None = None,
+    timing_repeats: int | None = None,
     runtime_factory: RuntimeFactory = LlamaCppRuntime,
 ) -> dict[str, Any]:
     """Run a selected manifest matrix, safely resuming an existing JSONL file."""
@@ -92,6 +95,16 @@ def run_experiment(
     manifest_path = _rooted(manifest_path)
     output_path = _rooted(output_path)
     processed_path = _rooted(processed_path)
+    if timing_output_path is not None:
+        timing_output_path = _rooted(timing_output_path)
+        if timing_output_path == output_path:
+            raise ValueError("timing output must be separate from capability output")
+        timing_processed_path = _rooted(
+            timing_processed_path
+            or processed_path.with_name("timing-summary.csv")
+        )
+    elif timing_processed_path is not None:
+        raise ValueError("timing_processed_path requires timing_output_path")
     manifest = load_manifest(manifest_path)
     variants = _select_variants(manifest, condition_ids)
     lengths = _select_lengths(manifest, context_lengths)
@@ -101,6 +114,23 @@ def run_experiment(
         raise ValueError(
             "repeats must be between 1 and the manifest capability repeat count"
         )
+    timing_run_repeats: int | None = None
+    if timing_output_path is not None:
+        timing_ceiling = manifest.timing_repeats
+        if timing_ceiling is None:
+            raise ValueError(
+                "a resolved manifest with explicit timing_repeats is required "
+                "for separate timing probes"
+            )
+        timing_run_repeats = (
+            timing_ceiling if timing_repeats is None else int(timing_repeats)
+        )
+        if timing_run_repeats < 3 or timing_run_repeats > 5:
+            raise ValueError("timing_repeats must be between 3 and 5")
+        if timing_run_repeats > timing_ceiling:
+            raise ValueError(
+                "timing_repeats cannot exceed the manifest timing repeat count"
+            )
     source_revisions = _source_revisions()
     fingerprint = _run_fingerprint(
         manifest, source_revisions=source_revisions
@@ -143,6 +173,22 @@ def run_experiment(
         for task_id in manifest.task_ids
         for repeat_index in range(1, run_repeats + 1)
     }
+    expected_timing_ids = (
+        {
+            make_trial_id(
+                manifest.experiment_id,
+                task_id,
+                condition_id=_execution_condition_id(variant, length),
+                repeat_index=repeat_index,
+            )
+            for variant in variants
+            for length in lengths
+            for task_id in manifest.task_ids
+            for repeat_index in range(1, timing_run_repeats + 1)
+        }
+        if timing_run_repeats is not None
+        else set()
+    )
     _validate_existing(
         existing,
         expected_ids,
@@ -150,10 +196,27 @@ def run_experiment(
         expected_scorer=SCORER_VERSION,
         source_revisions=source_revisions,
     )
+    timing_existing = (
+        load_trial_results(timing_output_path)
+        if timing_output_path is not None
+        else []
+    )
+    if timing_output_path is not None:
+        _validate_existing(
+            timing_existing,
+            expected_timing_ids,
+            fingerprint,
+            expected_scorer=SCORER_VERSION,
+            source_revisions=source_revisions,
+        )
     existing_ids = {result.trial_id for result in existing}
+    existing_timing_ids = {result.trial_id for result in timing_existing}
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    if timing_output_path is not None:
+        timing_output_path.parent.mkdir(parents=True, exist_ok=True)
     base_tasks_by_length: dict[int, tuple[EvaluationTask, ...]] = {}
     total_results = len(existing)
+    total_timing_results = len(timing_existing)
     tokenizer: ContextTokenizer | None = None
 
     for variant_index, variant in enumerate(variants):
@@ -188,6 +251,17 @@ def run_experiment(
                 scorer=CalibratedAnswerScorer(),
                 experiment_id=manifest.experiment_id,
                 output_path=output_path,
+            )
+            timing_evaluator = (
+                EvaluationRunner(
+                    runtime=runtime,
+                    model=model,
+                    scorer=CalibratedAnswerScorer(),
+                    experiment_id=manifest.experiment_id,
+                    output_path=timing_output_path,
+                )
+                if timing_output_path is not None
+                else None
             )
             for length in lengths:
                 variant_tasks = tuple(
@@ -230,6 +304,42 @@ def run_experiment(
                     )
                     total_results += len(new_results)
                     existing_ids.update(result.trial_id for result in new_results)
+                if timing_evaluator is not None and timing_run_repeats is not None:
+                    timing_tasks = tuple(
+                        replace(
+                            task,
+                            metadata={
+                                **dict(task.metadata),
+                                "sample_role": "timing",
+                            },
+                        )
+                        for task in variant_tasks
+                    )
+                    for repeat_index in range(1, timing_run_repeats + 1):
+                        missing_tasks = [
+                            task
+                            for task in timing_tasks
+                            if make_trial_id(
+                                manifest.experiment_id,
+                                task.task_id,
+                                condition_id=execution_condition_id,
+                                repeat_index=repeat_index,
+                            )
+                            not in existing_timing_ids
+                        ]
+                        if not missing_tasks:
+                            continue
+                        new_timing_results = timing_evaluator.run(
+                            missing_tasks,
+                            repeats=1,
+                            repeat_indices=(repeat_index,),
+                            condition_id=execution_condition_id,
+                            sampling=sampling,
+                        )
+                        total_timing_results += len(new_timing_results)
+                        existing_timing_ids.update(
+                            result.trial_id for result in new_timing_results
+                        )
         finally:
             runtime.close()
 
@@ -239,15 +349,34 @@ def run_experiment(
         group_by_task=True,
     )
     write_summary_csv(processed_path, summaries)
+    timing_summary_row_n: int | None = None
+    if timing_output_path is not None and timing_processed_path is not None:
+        timing_summaries = aggregate_jsonl(
+            timing_output_path,
+            expected_scorer=SCORER_VERSION,
+            group_by_task=True,
+        )
+        write_summary_csv(timing_processed_path, timing_summaries)
+        timing_summary_row_n = len(timing_summaries)
     return {
         "experiment_id": manifest.experiment_id,
         "expected_trial_n": len(expected_ids),
         "actual_trial_n": total_results,
+        "expected_timing_trial_n": len(expected_timing_ids),
+        "actual_timing_trial_n": total_timing_results,
         "skipped_trial_n": len(existing),
+        "skipped_timing_trial_n": len(timing_existing),
         "summary_row_n": len(summaries),
+        "timing_summary_row_n": timing_summary_row_n,
         "scorer_version": SCORER_VERSION,
         "output_path": str(output_path),
         "processed_path": str(processed_path),
+        "timing_output_path": (
+            str(timing_output_path) if timing_output_path is not None else None
+        ),
+        "timing_processed_path": (
+            str(timing_processed_path) if timing_processed_path is not None else None
+        ),
         "run_fingerprint": fingerprint,
     }
 
@@ -505,9 +634,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--processed", type=Path)
+    parser.add_argument(
+        "--timing-output",
+        type=Path,
+        help="separate JSONL output for repeated timing probes",
+    )
+    parser.add_argument(
+        "--timing-processed",
+        type=Path,
+        help="CSV output for the separate timing probes",
+    )
     parser.add_argument("--condition-id", action="append")
     parser.add_argument("--context-length", action="append", type=int)
     parser.add_argument("--repeats", type=int)
+    parser.add_argument("--timing-repeats", type=int)
     args = parser.parse_args(argv)
     manifest_path = _rooted(args.manifest)
     default_results = manifest_path.parent / "raw"
@@ -517,9 +657,12 @@ def main(argv: list[str] | None = None) -> int:
         manifest_path=manifest_path,
         output_path=output_path,
         processed_path=processed_path,
+        timing_output_path=args.timing_output,
+        timing_processed_path=args.timing_processed,
         condition_ids=args.condition_id,
         context_lengths=args.context_length,
         repeats=args.repeats,
+        timing_repeats=args.timing_repeats,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0

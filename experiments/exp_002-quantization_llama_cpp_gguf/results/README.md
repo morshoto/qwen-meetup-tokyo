@@ -8,9 +8,11 @@ results/
 ├── manifest.v001.json         # preserved historical v001 manifest
 ├── raw/
 │   ├── trials-v002.jsonl      # ignored by Git; append-only v002 evidence
+│   ├── timing-v002.jsonl      # ignored by Git; separate repeated timing probes
 │   └── trials.jsonl           # ignored historical v001 evidence
 ├── processed/
 │   ├── pilot-v002-summary.csv  # measured 30-trial v002 pilot summary
+│   ├── timing-summary.csv      # task-level summary of separate timing probes
 │   ├── pilot-v002-report.md    # pilot hash, observations, and completion boundary
 │   ├── summary.v001.csv        # preserved historical v001 summary
 │   ├── pilot-v001-summary.csv  # preserved historical v001 pilot summary
@@ -44,8 +46,19 @@ mismatched trial records are rejected. The v001 manifest,
 summary, and historical raw path remain preserved separately. The committed
 `pilot-v002-summary.csv` is pilot evidence only; a full v002 `summary.csv` is
 not valid until all variants, contexts, and tasks have been measured. The
-capability matrix uses one greedy run per independent task. Additional timing
-probes must use a separate output and denominator.
+capability matrix uses one greedy run per independent task. Timing probes use a
+separate raw output and summary, with the manifest-declared 3–5 repeats; those
+repeated prompts never enter the capability denominator. For example:
+
+```bash
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
+  --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
+  --timing-output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/timing-v002.jsonl \
+  --timing-processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/timing-summary.csv \
+  --repeats 1 --timing-repeats 5
+```
 The committed notebook has no cached outputs, and stale figures are removed;
 the two figures are regenerated from the selected calibrated phase. Pilot
 figures are explicitly pilot-only; a full comparison requires the complete

@@ -76,9 +76,8 @@ cells must be measured before a cross-variant conclusion is reported. Because
 the checked-in resolved manifest retains its legacy five-repeat envelope, its
 resume command may still schedule 1,170 execution slots; resolve a fresh
 manifest from the current template (or select `--repeats 1`) for the 240-cell
-capability matrix. If timing
-variance is important, collect separate timing probes and report their repeat
-count independently of capability accuracy.
+capability matrix. The timing command below writes separate timing probes and
+reports their repeat count independently of capability accuracy.
 
 The committed pilot was regenerated under the current source-revision resume
 guard. Its raw JSONL is terminal evidence for this 30-trial condition and may
@@ -100,6 +99,15 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
   --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
   --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
   --repeats 1
+
+# Collect timing probes separately from capability observations.
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
+  --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
+  --timing-output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/timing-v002.jsonl \
+  --timing-processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/timing-summary.csv \
+  --repeats 1 --timing-repeats 5
 ```
 
 ## Initial questions
@@ -125,15 +133,21 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
   size, batch size, GPU-layer setting, and flash-attention setting for every
   variant.
 - Capability repeats: one per independent task/condition/context cell under
-  greedy decoding. Timing probes, if collected, are reported separately.
-  `capability_repeats` and `timing_repeats` are explicit in newly resolved
-  manifests; historical manifests retain their original `repeats` field.
+  greedy decoding. Timing probes are collected into a separate JSONL/CSV pair
+  with `--timing-output` and `--timing-processed`; their 3–5 repeat count
+  never enters the capability denominator. `capability_repeats` and
+  `timing_repeats` are explicit in newly resolved manifests; historical
+  manifests retain their original `repeats` field and must be resolved again
+  before separate timing probes can run.
 
 ## Measurements
 
 The runner records one task-level raw trial for every selected
-variant/context/task/repeat cell. Processed summaries retain those task IDs
-and the runner's calibrated policy/catalog/artifact provenance.
+variant/context/task/capability-repeat cell. When timing probes are requested,
+it records a second task-level raw trial set with the same prompts and
+variant/context cells, tagged as timing samples and repeated independently.
+Processed summaries retain those task IDs and the runner's calibrated
+policy/catalog/artifact provenance.
 
 The runner records:
 
@@ -174,6 +188,8 @@ best measured end-to-end success. A condition with runtime or invalid-output
 failures cannot hide those failures by reporting only scored rows.
 With missing artifacts, missing cells, or missing metrics it fails loudly.
 
-The notebook is an analysis surface, not the benchmark runner. No conclusion
-or recommendation is valid until it is based on measured raw trials tied to a
-resolved manifest.
+The notebook is an analysis surface, not the benchmark runner. A full
+quantization recommendation requires both the complete capability summary and
+a separate timing summary with the manifest-declared 3–5 timing repeats. No
+conclusion or recommendation is valid until it is based on measured raw trials
+tied to a resolved manifest.
