@@ -42,6 +42,9 @@ SOURCE_REVISION_PATHS = {
     "datasets/catalog.py": ROOT / "src/llm_lab/datasets/catalog.py",
     "evaluation/contracts.py": ROOT / "src/llm_lab/evaluation/contracts.py",
     "evaluation/runner.py": ROOT / "src/llm_lab/evaluation/runner.py",
+    "generation/types.py": ROOT / "src/llm_lab/generation/types.py",
+    "runtimes/base.py": ROOT / "src/llm_lab/runtimes/base.py",
+    "runtimes/llama_cpp.py": ROOT / "src/llm_lab/runtimes/llama_cpp.py",
 }
 RuntimeFactory = Callable[[], LlamaCppRuntime]
 
