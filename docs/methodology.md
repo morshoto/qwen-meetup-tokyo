@@ -61,6 +61,9 @@ greedy execution of the same task/context is a timing or stability probe, not a
 new independent accuracy observation. Experiment configs therefore expose
 `capability_repeats` separately from `timing_repeats`; task-level bootstrap or
 paired comparisons should use independent task IDs as the resampling unit.
+The experiment notebooks report 95% Wilson intervals for binary exact,
+answer-bearing, and format-valid task rates; deterministic repeated task IDs
+are rejected as additional capability observations.
 
 For agent tasks, if deterministic decoding leads to brittle single-trajectory behavior, introduce a controlled nonzero sampling condition only as a separate analysis.
 
