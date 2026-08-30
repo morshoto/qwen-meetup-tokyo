@@ -18,7 +18,7 @@ results/
 │   ├── pilot-v001-summary.csv  # preserved historical v001 pilot summary
 │   ├── rescored-summary.csv    # issue #28 diagnostic comparison
 │   └── rescoring-report.md     # issue #28 provenance and caveat
-└── figures/                   # generated only after the complete v002 run
+└── figures/                   # generated from the selected pilot/full phase
 ```
 
 `manifest.json` must be derived from the experiment's template and contain
@@ -63,10 +63,11 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
   --timing-processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/timing-summary.csv \
   --repeats 1 --timing-repeats 5
 ```
-The committed notebook has no cached outputs, and stale figures are removed;
-the two figures are regenerated from the selected calibrated phase. Pilot
-figures are explicitly pilot-only; a full comparison requires the complete
-v002 summary.
+The committed notebook has no cached outputs. It writes separate capability
+and systems-cost figures: `accuracy-vs-memory.png`,
+`accuracy-vs-rss.png`, `ttft-vs-context.png`, and
+`throughput-vs-context.png`. Pilot figures are explicitly pilot-only; a full
+comparison requires the complete v002 summary and the separate timing summary.
 The committed pilot was regenerated under the source-revision resume guard;
 extend its raw JSONL only when the manifest and recorded source revisions still
 match.

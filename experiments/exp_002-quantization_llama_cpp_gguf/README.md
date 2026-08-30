@@ -181,11 +181,11 @@ do not remove failed cells from the denominator without explanation.
 ## Analysis
 
 Run `analysis.ipynb` only after a resolved manifest and processed summary CSV
-are present under `results/`. It produces end-to-end-success-vs-memory and
-separate prompt-throughput-proxy/post-first-chunk-output-vs-memory
-comparisons. It keeps capability outcomes (`scored_accuracy`,
-`end_to_end_success`, and `failure_rate`) separate from systems costs
-(artifact size, peak memory, stream TTFT, and stream throughput proxies), then
+are present under `results/`. It produces separate success-vs-artifact-size,
+success-vs-sampled-RSS, stream-TTFT, and throughput-proxy figures. It keeps
+capability outcomes (`scored_accuracy`, `end_to_end_success`, and
+`failure_rate`) separate from systems costs (artifact size, sampled peak RSS,
+stream TTFT, and stream throughput proxies), then
 recommends the smallest measured artifact within the declared tolerance of the
 best measured end-to-end success. A condition with runtime or invalid-output
 failures cannot hide those failures by reporting only scored rows.
