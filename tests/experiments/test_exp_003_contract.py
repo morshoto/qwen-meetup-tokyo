@@ -51,8 +51,10 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             self.assertIn("fixture", text.lower())
             self.assertIn("not a Qwen measurement", text)
         self.assertIn("execution source of truth", readme)
-        self.assertIn("explicit legacy exception", readme)
-        self.assertIn("not directly comparable", readme)
+        self.assertIn("CalibratedAnswerScorer", readme)
+        self.assertIn("`calibrated.v1`", readme)
+        self.assertIn("selected task IDs", readme)
+        self.assertNotIn("explicit legacy exception", readme)
 
     def test_main_declares_issue_21_matrix(self) -> None:
         protocol = yaml.safe_load(
