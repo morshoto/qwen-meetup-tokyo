@@ -151,6 +151,9 @@ def _manifest_file(directory: Path) -> Path:
         repeats=1,
         context_length_semantics="input_tokens",
         context_overhead_tokens=256,
+        task_catalog=str(runner.TASK_CATALOG),
+        task_catalog_sha256=runner._sha256(runner.TASK_CATALOG),
+        scorer_version="calibrated.v1",
     )
     path = directory / "manifest.json"
     path.write_text(json.dumps(manifest.to_record()), encoding="utf-8")
@@ -203,8 +206,8 @@ phases:
                 config_path=config_path,
             )
 
-            self.assertEqual(60, result["expected_trial_n"])
-            self.assertEqual(60, result["actual_trial_n"])
+            self.assertEqual(3, result["expected_trial_n"])
+            self.assertEqual(3, result["actual_trial_n"])
             self.assertEqual(
                 8192,
                 json.loads(
@@ -239,8 +242,8 @@ phases:
                 runtime_factory=FakeRuntime,
             )
 
-            self.assertEqual(240, result["expected_trial_n"])
-            self.assertEqual(240, result["actual_trial_n"])
+            self.assertEqual(24, result["expected_trial_n"])
+            self.assertEqual(24, result["actual_trial_n"])
             self.assertEqual(24, result["summary_row_n"])
             self.assertTrue(summary_path.is_file())
             self.assertTrue(all(instance.closed for instance in FakeRuntime.instances))
@@ -256,7 +259,7 @@ phases:
                     )
                 ].append(record)
 
-            self.assertEqual(120, len(grouped))
+            self.assertEqual(12, len(grouped))
             for matched_records in grouped.values():
                 self.assertEqual(2, len(matched_records))
                 self.assertEqual(
@@ -277,17 +280,17 @@ phases:
 
             manifest = json.loads(run_manifest_path.read_text(encoding="utf-8"))
             self.assertEqual("exp_003", manifest["experiment_id"])
-            self.assertEqual(240, manifest["planned_trial_n"])
-            self.assertEqual(240, manifest["actual_trial_n"])
+            self.assertEqual(24, manifest["planned_trial_n"])
+            self.assertEqual(24, manifest["actual_trial_n"])
             self.assertEqual(24, len(manifest["coverage"]))
             self.assertEqual(0, len(manifest["excluded_cells"]))
             self.assertEqual(
-                {10}, {row["independent_task_n"] for row in manifest["coverage"]}
+                {1}, {row["independent_task_n"] for row in manifest["coverage"]}
             )
             self.assertEqual(
-                {10}, {row["expected_trial_n"] for row in manifest["coverage"]}
+                {1}, {row["expected_trial_n"] for row in manifest["coverage"]}
             )
-            self.assertEqual(30, len(manifest["task_ids"]))
+            self.assertEqual(3, len(manifest["task_ids"]))
             self.assertEqual(
                 {"n_ctx": 33088, "n_batch": 512},
                 manifest["runtime"]["source_options"],
@@ -362,11 +365,11 @@ phases:
             runner.run_experiment(**kwargs)
             result = runner.run_experiment(**kwargs)
 
-            self.assertEqual(240, result["actual_trial_n"])
-            self.assertEqual(240, result["skipped_trial_n"])
+            self.assertEqual(24, result["actual_trial_n"])
+            self.assertEqual(24, result["skipped_trial_n"])
             records = load_trial_results(kwargs["output_path"])
-            self.assertEqual(240, len(records))
-            self.assertEqual(240, len({record.trial_id for record in records}))
+            self.assertEqual(24, len(records))
+            self.assertEqual(24, len({record.trial_id for record in records}))
 
     def test_fixture_and_measured_runs_have_distinct_fingerprints(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -393,6 +396,69 @@ phases:
             )
 
             self.assertNotEqual(fixture_fingerprint, measured_fingerprint)
+
+    def test_runner_uses_resolved_catalog_and_calibrated_scorer(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_manifest = _manifest_file(root)
+
+            result = runner.run_experiment(
+                source_manifest_path=source_manifest,
+                output_path=root / "raw" / "trials.jsonl",
+                manifest_output_path=root / "manifests" / "smoke.json",
+                processed_path=root / "processed" / "summary.csv",
+                phase="smoke",
+                backend="fixture",
+                condition_ids=("q8_0",),
+                context_lengths=(8192,),
+                repeats=1,
+                runtime_factory=FakeRuntime,
+            )
+
+            self.assertEqual(3, result["actual_trial_n"])
+            trials = load_trial_results(root / "raw" / "trials.jsonl")
+            self.assertEqual(
+                {"task.literal.000001", "task.semantic.000001", "task.multihop.000001"},
+                {trial.task_id for trial in trials},
+            )
+            self.assertTrue(
+                all(trial.score["scorer"] == "calibrated.v1" for trial in trials)
+            )
+            self.assertTrue(
+                all(
+                    trial.input["task_catalog"] == str(runner.TASK_CATALOG)
+                    and trial.input["task_catalog_sha256"]
+                    == runner._sha256(runner.TASK_CATALOG)
+                    for trial in trials
+                )
+            )
+            manifest = json.loads(
+                (root / "manifests" / "smoke.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual("calibrated.v1", manifest["scorer_version"])
+            self.assertEqual(3, manifest["planned_trial_n"])
+
+    def test_runner_rejects_task_catalog_hash_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_manifest = _manifest_file(root)
+            record = json.loads(source_manifest.read_text(encoding="utf-8"))
+            record["controls"]["task_catalog_sha256"] = "0" * 64
+            source_manifest.write_text(json.dumps(record), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "task catalog SHA-256 mismatch"):
+                runner.run_experiment(
+                    source_manifest_path=source_manifest,
+                    output_path=root / "raw" / "trials.jsonl",
+                    manifest_output_path=root / "manifests" / "smoke.json",
+                    processed_path=root / "processed" / "summary.csv",
+                    phase="smoke",
+                    backend="fixture",
+                    condition_ids=("q8_0",),
+                    context_lengths=(8192,),
+                    repeats=1,
+                    runtime_factory=FakeRuntime,
+                )
 
 
 if __name__ == "__main__":
