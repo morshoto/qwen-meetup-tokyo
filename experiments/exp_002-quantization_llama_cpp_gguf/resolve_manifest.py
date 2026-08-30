@@ -132,7 +132,10 @@ def _resolve_task_catalog(
         return None, None
     if task_catalog_path is not None:
         resolved_path = task_catalog_path.resolve()
-        reference = str(task_catalog_path)
+        try:
+            reference = resolved_path.relative_to(template_path.parents[2]).as_posix()
+        except ValueError:
+            reference = str(task_catalog_path)
     else:
         if not isinstance(template_reference, str) or not template_reference.strip():
             raise ValueError("task_catalog must be a non-empty path")

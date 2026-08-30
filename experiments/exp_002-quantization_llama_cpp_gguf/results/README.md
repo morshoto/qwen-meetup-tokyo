@@ -4,11 +4,16 @@ Expected outputs include:
 
 ```text
 results/
-├── manifest.json              # resolved, hashed artifact/control manifest
+├── manifest.json              # resolved, hashed v002 artifact/control manifest
+├── manifest.v001.json         # preserved historical v001 manifest
 ├── raw/
-│   └── trials.jsonl            # ignored by Git; append-only trial evidence
+│   ├── trials-v002.jsonl      # ignored by Git; append-only v002 evidence
+│   └── trials.jsonl           # ignored historical v001 evidence
 ├── processed/
-│   ├── summary.csv             # generated notebook input
+│   ├── summary.csv             # generated task-level v002 notebook input (full run)
+│   ├── pilot-v002-summary.csv  # measured 30-trial v002 pilot summary
+│   ├── pilot-v002-report.md    # pilot hash, observations, and completion boundary
+│   └── summary.v001.csv        # preserved historical v001 summary
 │   ├── rescored-summary.csv    # issue #28 diagnostic comparison
 │   └── rescoring-report.md     # issue #28 provenance and caveat
 └── figures/
@@ -20,12 +25,23 @@ results/
 actual model/runtime revisions, artifact SHA-256 digests, and artifact sizes.
 The template or a result with placeholder values is not a completed run.
 
-The current v002 pilot command selects `q8_0`, context length `8192`, and
-`--repeats 1`, for 30 trials. Running a new v002 output again without selectors
-resumes the same JSONL file and completes the full 1,200-trial matrix;
-duplicate trial IDs are rejected. The committed result files in this directory
-are historical v001 measurements over three tasks and 120 trials; their
-provenance is intentionally preserved.
+The v002 pilot command selects `q8_0`, context length `8192`, and
+`--repeats 1`, for 30 trials:
+
+```bash
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
+  --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-summary.csv \
+  --condition-id q8_0 --context-length 8192 --repeats 1
+```
+
+Running the same command again resumes by deterministic trial ID. Running it
+without selectors, with the same `--output`, completes the full 1,200-trial
+matrix; duplicate or mismatched trial records are rejected. The v001 manifest,
+summary, and historical raw path remain preserved separately. The committed
+`pilot-v002-summary.csv` is pilot evidence only; a full v002 `summary.csv` is
+not valid until all variants, contexts, tasks, and repeats have been measured.
 
 ## Diagnostic re-scoring (issue #28)
 

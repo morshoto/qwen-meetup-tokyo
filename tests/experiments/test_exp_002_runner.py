@@ -257,6 +257,45 @@ class Exp002RunnerTests(unittest.TestCase):
 
             self.assertEqual(120, runner.expected_trial_count(manifest))
 
+    def test_v002_template_declares_1200_trial_matrix(self) -> None:
+        template = json.loads(
+            (
+                ROOT
+                / "experiments/exp_002-quantization_llama_cpp_gguf/manifest.template.json"
+            ).read_text(encoding="utf-8")
+        )
+
+        controls = template["controls"]
+        self.assertEqual(30, len(controls["task_ids"]))
+        self.assertEqual(1200, 4 * 2 * len(controls["task_ids"]) * controls["repeats"])
+
+    def test_checked_in_manifest_is_resolved_v002(self) -> None:
+        manifest_path = (
+            ROOT
+            / "experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json"
+        )
+        record = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        controls = record["controls"]
+        self.assertFalse(record.get("template", True))
+        self.assertEqual(30, len(controls["task_ids"]))
+        self.assertEqual("data/tasks/core.v002.jsonl", controls["task_catalog"])
+        self.assertEqual("calibrated.v1", controls["scorer_version"])
+        self.assertEqual(64, len(controls["task_catalog_sha256"]))
+
+        manifest = runner.load_manifest(manifest_path)
+        self.assertEqual(1200, runner.expected_trial_count(manifest))
+
+    def test_checked_in_v002_pilot_summary_has_task_level_coverage(self) -> None:
+        summary_path = (
+            ROOT
+            / "experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-summary.csv"
+        )
+        rows = summary_path.read_text(encoding="utf-8").splitlines()
+
+        self.assertIn("task_id", rows[0].split(","))
+        self.assertEqual(30, len(rows) - 1)
+
     def test_analysis_notebook_rejects_legacy_summaries(self) -> None:
         notebook = (ROOT / "experiments/exp_002-quantization_llama_cpp_gguf/analysis.ipynb").read_text(
             encoding="utf-8"
