@@ -315,6 +315,10 @@ def run_experiment(
     resume_manifest = _load_resume_manifest(manifest_path) if resume else None
     if overwrite_smoke and (phase != "smoke" or backend != "fixture"):
         raise ValueError("overwrite_smoke is only supported for the fixture smoke phase")
+    if backend == "fixture" and phase != "smoke":
+        raise ValueError(
+            "fixture backend is harness-only and is permitted only for the smoke phase"
+        )
     if overwrite_smoke and resume:
         raise ValueError("overwrite_smoke and resume cannot be combined")
     if output_path == manifest_path:

@@ -214,6 +214,18 @@ class Exp001RunnerTests(unittest.TestCase):
             self.assertTrue(all(result.score["scorer"] == "calibrated.v1" for result in persisted))
             self.assertTrue(all("answer_bearing_correct" in result.score for result in persisted))
 
+    def test_fixture_backend_is_rejected_outside_smoke_phase(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaisesRegex(ValueError, "fixture backend is harness-only"):
+                runner.run_experiment(
+                    phase="main",
+                    backend="fixture",
+                    output_path=root / "raw" / "trials.jsonl",
+                    manifest_path=root / "manifests" / "main.json",
+                    config_path=ROOT / "experiments/exp_001-context_measurement/config.yaml",
+                )
+
     def test_analysis_notebook_requires_calibrated_scorer(self) -> None:
         notebook = (ROOT / "experiments/exp_001-context_measurement/analysis.ipynb").read_text(
             encoding="utf-8"
