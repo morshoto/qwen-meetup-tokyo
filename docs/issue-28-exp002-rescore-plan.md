@@ -194,7 +194,7 @@ git diff --check
 ## Rollout / Review Notes
 
 - This change is analysis-only and does not invoke the model runtime.
-- The historical `summary.csv` and `docs/findings.md` status remain unchanged.
+- The historical `summary.v001.csv` and `docs/findings.md` status remain unchanged.
 - Reviewers should check the raw hash, task catalog version, scorer version,
   category precedence, and diagnostic caveat before treating the table as
   evidence.

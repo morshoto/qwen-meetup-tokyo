@@ -10,11 +10,14 @@ Do not copy hypotheses, expected plots, vendor benchmarks, community anecdotes, 
 
 ```text
 exp_001: not yet measured
-exp_002: not yet measured
+exp_002: pilot measured (Q8_0 x 8,192 x 30 tasks x 1 repeat); full matrix pending
 exp_003: not yet measured
 exp_004: not yet measured
 exp_005: not yet measured
 ```
+
+The measured exp_002 pilot is documented in
+[`pilot-v002-report.md`](../experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-report.md).
 
 ## Finding template
 

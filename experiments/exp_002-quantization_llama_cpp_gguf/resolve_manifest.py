@@ -22,6 +22,7 @@ def resolve_manifest(
     converter_revision: str,
     artifact_paths: Mapping[str, Path],
     commands: Mapping[str, str],
+    task_catalog_path: Path | None = None,
 ) -> dict[str, object]:
     """Hash every artifact and write a complete manifest atomically."""
 
@@ -56,10 +57,20 @@ def resolve_manifest(
             f"expected {sorted(condition_ids)}, got {sorted(commands)}"
         )
 
+    catalog_reference, resolved_catalog_path = _resolve_task_catalog(
+        template_path=template_path,
+        record=record,
+        task_catalog_path=task_catalog_path,
+    )
+
     record["template"] = False
     record["model"]["revision"] = model_revision
     record["model"]["tokenizer_revision"] = tokenizer_revision
     record["runtime"]["version"] = runtime_version
+    if resolved_catalog_path is not None:
+        record["controls"]["task_catalog"] = catalog_reference
+        record["controls"]["task_catalog_sha256"] = _sha256(resolved_catalog_path)
+    record["controls"]["scorer_version"] = "calibrated.v1"
     for variant in variants:
         condition_id = str(variant["condition_id"])
         artifact_path = artifact_paths[condition_id].resolve()
@@ -107,6 +118,45 @@ def _artifact_uri(path: Path, manifest_directory: Path) -> str:
         return path.as_uri()
 
 
+def _resolve_task_catalog(
+    *,
+    template_path: Path,
+    record: Mapping[str, object],
+    task_catalog_path: Path | None,
+) -> tuple[str | None, Path | None]:
+    controls = record.get("controls")
+    if not isinstance(controls, dict):
+        raise ValueError("manifest template controls must be an object")
+    template_reference = controls.get("task_catalog")
+    if task_catalog_path is None and template_reference is None:
+        return None, None
+    if task_catalog_path is not None:
+        resolved_path = task_catalog_path.resolve()
+        try:
+            reference = resolved_path.relative_to(template_path.parents[2]).as_posix()
+        except ValueError:
+            reference = str(task_catalog_path)
+    else:
+        if not isinstance(template_reference, str) or not template_reference.strip():
+            raise ValueError("task_catalog must be a non-empty path")
+        reference = template_reference
+        candidate = Path(template_reference)
+        roots = (
+            template_path.parents[2],
+            template_path.parent,
+            Path.cwd(),
+        )
+        resolved_path = next(
+            (root / candidate for root in roots if (root / candidate).is_file()),
+            candidate,
+        ).resolve()
+    if not resolved_path.is_file():
+        raise FileNotFoundError(f"task catalog is missing: {resolved_path}")
+    if resolved_path.stat().st_size < 1:
+        raise ValueError(f"task catalog is empty: {resolved_path}")
+    return reference, resolved_path
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as source:
@@ -145,6 +195,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tokenizer-revision", required=True)
     parser.add_argument("--runtime-version", required=True)
     parser.add_argument("--converter-revision", required=True)
+    parser.add_argument("--task-catalog", type=Path)
     parser.add_argument(
         "--artifact",
         action="append",
@@ -169,6 +220,7 @@ def main(argv: list[str] | None = None) -> int:
         converter_revision=args.converter_revision,
         artifact_paths={key: Path(value) for key, value in artifact_values.items()},
         commands=command_values,
+        task_catalog_path=args.task_catalog,
     )
     print(json.dumps(record, ensure_ascii=False, indent=2))
     return 0

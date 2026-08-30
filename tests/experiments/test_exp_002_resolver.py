@@ -15,6 +15,51 @@ spec.loader.exec_module(resolver)
 
 
 class Exp002ManifestResolverTests(unittest.TestCase):
+    def test_resolver_records_task_catalog_hash_and_scorer_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifact_directory = root / "artifacts"
+            artifact_directory.mkdir()
+            artifacts = {}
+            for condition_id in ("q8_0", "q6_k", "q5_k_m", "q4_k_m"):
+                path = artifact_directory / f"{condition_id}.gguf"
+                path.write_bytes(f"fixture-{condition_id}".encode())
+                artifacts[condition_id] = path
+
+            catalog_path = root / "tasks.jsonl"
+            catalog_path.write_text(
+                '{"schema_version": 1, "id": "task.fixture", '
+                '"type": "literal_retrieval", "version": 1, '
+                '"question": "What is the code?", '
+                '"expected": {"type": "exact", "value": "A-1"}, '
+                '"evidence": [{"id": "evidence", "text": "The code is A-1."}], '
+                '"metadata": {"seed": 1, "source": "fixture", "license": "CC0"}}\n',
+                encoding="utf-8",
+            )
+            output_path = root / "manifest.json"
+
+            record = resolver.resolve_manifest(
+                template_path=ROOT / "experiments/exp_002-quantization_llama_cpp_gguf/manifest.template.json",
+                output_path=output_path,
+                model_revision="model-commit",
+                tokenizer_revision="tokenizer-commit",
+                runtime_version="llama-cpp-python==0.3.16",
+                converter_revision="converter-commit",
+                artifact_paths=artifacts,
+                commands={
+                    condition_id: f"convert-and-quantize {condition_id}"
+                    for condition_id in artifacts
+                },
+                task_catalog_path=catalog_path,
+            )
+
+            self.assertEqual(str(catalog_path), record["controls"]["task_catalog"])
+            self.assertEqual(
+                hashlib.sha256(catalog_path.read_bytes()).hexdigest(),
+                record["controls"]["task_catalog_sha256"],
+            )
+            self.assertEqual("calibrated.v1", record["controls"]["scorer_version"])
+
     def test_resolver_records_real_artifact_identity_and_revisions(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -154,6 +154,89 @@ class Exp002RunnerTests(unittest.TestCase):
     def setUp(self) -> None:
         FakeRuntime.instances = []
 
+    def test_runner_uses_manifest_task_catalog_and_records_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            catalog_path = root / "tasks.jsonl"
+            catalog_path.write_text(
+                '{"schema_version": 1, "id": "task.fixture", '
+                '"type": "literal_retrieval", "version": 1, '
+                '"question": "What is the code?", '
+                '"expected": {"type": "exact", "value": "A-1"}, '
+                '"evidence": [{"id": "evidence", "text": "The code is A-1."}], '
+                '"metadata": {"seed": 1, "source": "fixture", "license": "CC0"}}\n',
+                encoding="utf-8",
+            )
+            record = json.loads(manifest_path.read_text(encoding="utf-8"))
+            record["controls"]["task_ids"] = ["task.fixture"]
+            record["controls"]["task_catalog"] = str(catalog_path)
+            record["controls"]["task_catalog_sha256"] = hashlib.sha256(
+                catalog_path.read_bytes()
+            ).hexdigest()
+            record["controls"]["scorer_version"] = "calibrated.v1"
+            manifest_path.write_text(json.dumps(record), encoding="utf-8")
+            output_path = root / "raw" / "trials.jsonl"
+            summary_path = root / "processed" / "summary.csv"
+
+            result = runner.run_experiment(
+                manifest_path=manifest_path,
+                output_path=output_path,
+                processed_path=summary_path,
+                condition_ids=("q8_0",),
+                context_lengths=(8192,),
+                repeats=1,
+                runtime_factory=FakeRuntime,
+            )
+
+            self.assertEqual(1, result["actual_trial_n"])
+            [trial] = runner.load_trial_results(output_path)
+            self.assertEqual(str(catalog_path), trial.input["task_catalog"])
+            self.assertEqual(
+                record["controls"]["task_catalog_sha256"],
+                trial.input["task_catalog_sha256"],
+            )
+            self.assertEqual("calibrated.v1", trial.input["scorer_version"])
+            self.assertEqual(64, len(trial.input["context_sha256"]))
+            self.assertIn("context/synthetic.py", trial.input["source_revisions"])
+            self.assertIn("evaluation/contracts.py", trial.input["source_revisions"])
+            self.assertIn("generation/types.py", trial.input["source_revisions"])
+            self.assertIn("runtimes/llama_cpp.py", trial.input["source_revisions"])
+
+    def test_run_fingerprint_binds_source_revisions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            manifest_path = _manifest_file(Path(directory))
+            manifest = runner.load_manifest(manifest_path)
+
+            first = runner._run_fingerprint(
+                manifest, source_revisions={"context/synthetic.py": "revision-a"}
+            )
+            second = runner._run_fingerprint(
+                manifest, source_revisions={"context/synthetic.py": "revision-b"}
+            )
+
+            self.assertNotEqual(first, second)
+
+    def test_runner_rejects_a_task_catalog_hash_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            record = json.loads(manifest_path.read_text(encoding="utf-8"))
+            record["controls"]["task_catalog"] = str(ROOT / "data/tasks/core.v002.jsonl")
+            record["controls"]["task_catalog_sha256"] = "0" * 64
+            manifest_path.write_text(json.dumps(record), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "task catalog SHA-256 mismatch"):
+                runner.run_experiment(
+                    manifest_path=manifest_path,
+                    output_path=root / "raw" / "trials.jsonl",
+                    processed_path=root / "processed" / "summary.csv",
+                    condition_ids=("q8_0",),
+                    context_lengths=(8192,),
+                    repeats=1,
+                    runtime_factory=FakeRuntime,
+                )
+
     def test_pilot_runs_q8_at_8k_for_all_tasks_and_writes_summary(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -179,12 +262,78 @@ class Exp002RunnerTests(unittest.TestCase):
             self.assertTrue(summary_path.is_file())
             self.assertTrue(all(instance.closed for instance in FakeRuntime.instances))
 
+    def test_task_level_summary_keeps_distinct_tasks_in_one_family(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            record = json.loads(manifest_path.read_text(encoding="utf-8"))
+            record["controls"]["task_ids"] = [
+                "task.literal.000001",
+                "task.literal.000002",
+            ]
+            manifest_path.write_text(json.dumps(record), encoding="utf-8")
+            output_path = root / "raw" / "trials.jsonl"
+            summary_path = root / "processed" / "summary.csv"
+
+            result = runner.run_experiment(
+                manifest_path=manifest_path,
+                output_path=output_path,
+                processed_path=summary_path,
+                condition_ids=("q8_0",),
+                context_lengths=(8192,),
+                repeats=1,
+                runtime_factory=FakeRuntime,
+            )
+
+            self.assertEqual(2, result["summary_row_n"])
+            rows = summary_path.read_text(encoding="utf-8").splitlines()
+            self.assertIn("task_id", rows[0].split(","))
+
     def test_full_selection_has_120_expected_trials(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             manifest_path = _manifest_file(Path(directory))
             manifest = runner.load_manifest(manifest_path)
 
             self.assertEqual(120, runner.expected_trial_count(manifest))
+
+    def test_v002_template_declares_1200_trial_matrix(self) -> None:
+        template = json.loads(
+            (
+                ROOT
+                / "experiments/exp_002-quantization_llama_cpp_gguf/manifest.template.json"
+            ).read_text(encoding="utf-8")
+        )
+
+        controls = template["controls"]
+        self.assertEqual(30, len(controls["task_ids"]))
+        self.assertEqual(1200, 4 * 2 * len(controls["task_ids"]) * controls["repeats"])
+
+    def test_checked_in_manifest_is_resolved_v002(self) -> None:
+        manifest_path = (
+            ROOT
+            / "experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json"
+        )
+        record = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        controls = record["controls"]
+        self.assertFalse(record.get("template", True))
+        self.assertEqual(30, len(controls["task_ids"]))
+        self.assertEqual("data/tasks/core.v002.jsonl", controls["task_catalog"])
+        self.assertEqual("calibrated.v1", controls["scorer_version"])
+        self.assertEqual(64, len(controls["task_catalog_sha256"]))
+
+        manifest = runner.load_manifest(manifest_path)
+        self.assertEqual(1200, runner.expected_trial_count(manifest))
+
+    def test_checked_in_v002_pilot_summary_has_task_level_coverage(self) -> None:
+        summary_path = (
+            ROOT
+            / "experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-summary.csv"
+        )
+        rows = summary_path.read_text(encoding="utf-8").splitlines()
+
+        self.assertIn("task_id", rows[0].split(","))
+        self.assertEqual(30, len(rows) - 1)
 
     def test_analysis_notebook_rejects_legacy_summaries(self) -> None:
         notebook = (ROOT / "experiments/exp_002-quantization_llama_cpp_gguf/analysis.ipynb").read_text(
@@ -244,6 +393,62 @@ class Exp002RunnerTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "scorer version"):
                 runner.run_experiment(**kwargs)
+
+    def test_resume_rejects_changed_source_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            output_path = root / "raw" / "pilot-trials.jsonl"
+            summary_path = root / "processed" / "pilot-summary.csv"
+            kwargs = {
+                "manifest_path": manifest_path,
+                "output_path": output_path,
+                "processed_path": summary_path,
+                "condition_ids": ("q8_0",),
+                "context_lengths": (8192,),
+                "repeats": 1,
+                "runtime_factory": FakeRuntime,
+            }
+
+            runner.run_experiment(**kwargs)
+            original_source_revisions = runner._source_revisions
+            runner._source_revisions = lambda: {
+                **original_source_revisions(),
+                "context/synthetic.py": "changed-source",
+            }
+            try:
+                with self.assertRaisesRegex(ValueError, "selected manifest run"):
+                    runner.run_experiment(**kwargs)
+            finally:
+                runner._source_revisions = original_source_revisions
+
+    def test_resume_rejects_changed_runtime_source(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            output_path = root / "raw" / "pilot-trials.jsonl"
+            summary_path = root / "processed" / "pilot-summary.csv"
+            kwargs = {
+                "manifest_path": manifest_path,
+                "output_path": output_path,
+                "processed_path": summary_path,
+                "condition_ids": ("q8_0",),
+                "context_lengths": (8192,),
+                "repeats": 1,
+                "runtime_factory": FakeRuntime,
+            }
+
+            runner.run_experiment(**kwargs)
+            original_source_revisions = runner._source_revisions
+            runner._source_revisions = lambda: {
+                **original_source_revisions(),
+                "runtimes/llama_cpp.py": "changed-runtime-source",
+            }
+            try:
+                with self.assertRaisesRegex(ValueError, "selected manifest run"):
+                    runner.run_experiment(**kwargs)
+            finally:
+                runner._source_revisions = original_source_revisions
 
     def test_full_run_can_resume_from_a_pilot_same_output(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

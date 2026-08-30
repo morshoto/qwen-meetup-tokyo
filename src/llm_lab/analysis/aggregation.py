@@ -15,22 +15,24 @@ def aggregate_trials(
     trials: Iterable[TrialResult | Mapping[str, Any]],
     *,
     expected_scorer: str | None = None,
+    group_by_task: bool = False,
 ) -> list[dict[str, Any]]:
-    groups: dict[tuple[str, str, str], list[TrialResult]] = {}
+    groups: dict[tuple[str, str | None, str, str], list[TrialResult]] = {}
     parsed_trials: list[TrialResult] = []
     for value in trials:
         trial = value if isinstance(value, TrialResult) else TrialResult.from_record(value)
         parsed_trials.append(trial)
+        task_id = trial.task_id if group_by_task else None
         task_type = str(trial.input.get("task_type", "unknown"))
         condition_id = str(trial.input.get("condition_id", "default"))
-        key = (trial.experiment_id, task_type, condition_id)
+        key = (trial.experiment_id, task_id, task_type, condition_id)
         groups.setdefault(key, []).append(trial)
 
     if expected_scorer is not None:
         _require_scorer_version(parsed_trials, expected_scorer)
 
     summaries: list[dict[str, Any]] = []
-    for (experiment_id, task_type, condition_id), group in sorted(groups.items()):
+    for (experiment_id, task_id, task_type, condition_id), group in sorted(groups.items()):
         scored = [
             result.score["correct"]
             for result in group
@@ -86,6 +88,17 @@ def aggregate_trials(
                 "accuracy": sum(scored) / len(scored) if scored else None,
                 "scored_accuracy": sum(scored) / len(scored) if scored else None,
                 "scorer_version": _common_score_value(group, "scorer"),
+                "variant_label": _common_input_value(group, "variant_label"),
+                "quantization_type": _common_input_value(group, "quantization_type"),
+                "artifact_uri": _common_input_value(group, "artifact_uri"),
+                "artifact_sha256": _common_input_value(group, "artifact_sha256"),
+                "artifact_size_bytes": _common_input_value(
+                    group, "artifact_size_bytes"
+                ),
+                "task_catalog": _common_input_value(group, "task_catalog"),
+                "task_catalog_sha256": _common_input_value(
+                    group, "task_catalog_sha256"
+                ),
                 "exact_correct_n": sum(exact_scored),
                 "exact_scored_n": len(exact_scored),
                 "exact_accuracy": _accuracy(exact_scored),
@@ -129,6 +142,8 @@ def aggregate_trials(
                 "median_peak_memory_bytes": _median(peak_memory),
             }
         )
+        if group_by_task:
+            summaries[-1]["task_id"] = task_id
     return summaries
 
 
@@ -136,10 +151,12 @@ def aggregate_jsonl(
     path: str | Path,
     *,
     expected_scorer: str | None = None,
+    group_by_task: bool = False,
 ) -> list[dict[str, Any]]:
     return aggregate_trials(
         load_trial_results(path),
         expected_scorer=expected_scorer,
+        group_by_task=group_by_task,
     )
 
 

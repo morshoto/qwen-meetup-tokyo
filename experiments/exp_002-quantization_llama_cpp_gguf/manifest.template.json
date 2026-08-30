@@ -58,6 +58,9 @@
     "context_lengths": [8192, 32768],
     "context_length_semantics": "input_tokens",
     "context_overhead_tokens": 256,
+    "task_catalog": "data/tasks/core.v002.jsonl",
+    "task_catalog_sha256": "REPLACE_WITH_64_HEX_DIGEST",
+    "scorer_version": "calibrated.v1",
     "sampling": {
       "max_new_tokens": 64,
       "temperature": 0.0,

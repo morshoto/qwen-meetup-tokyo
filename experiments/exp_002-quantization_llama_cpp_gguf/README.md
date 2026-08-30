@@ -63,8 +63,17 @@ the resolved manifest, appends only missing trial IDs, and rejects mismatched
 or out-of-scope records. The current `core.v002` protocol has 30 independent
 QA tasks. Its pilot is Q8_0 × 8,192 × 30 tasks × one repeat (30 trials); the
 complete matrix is 4 × 2 × 30 × 5 (1,200 trials). The checked-in resolved
-manifest and summaries are historical `core.v001` measurements and remain
-unchanged until a new v002 run is measured.
+manifest is now the resolved v002 manifest. The measured v002 pilot is
+recorded in `results/processed/pilot-v002-summary.csv` and
+`pilot-v002-report.md`; it covers only Q8_0 at 8,192 tokens with one repeat per
+task. Historical v001 evidence remains separate as
+`results/manifest.v001.json`, `results/processed/summary.v001.csv`, and
+`results/processed/pilot-v001-summary.csv`. The remaining 1,170 v002 trials
+must be measured before a cross-variant conclusion is reported.
+
+The committed pilot was regenerated under the current source-revision resume
+guard. Its raw JSONL is terminal evidence for this 30-trial condition and may
+be extended only when the manifest and recorded source revisions still match.
 
 ```bash
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
@@ -99,6 +108,10 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 
 ## Measurements
 
+The runner records one task-level raw trial for every selected
+variant/context/task/repeat cell. Processed summaries retain those task IDs
+and the runner's calibrated policy/catalog/artifact provenance.
+
 The runner records:
 
 - weight/artifact footprint: the resolved GGUF file byte size;
@@ -113,9 +126,11 @@ The runner records:
 - scored accuracy, end-to-end success (`correct / attempted`), and failure
   rate, all retained with their denominators.
 
-The runtime records `timing_source: first_stream_chunk`. The two throughput
-fields above are portable stream-derived proxies, not backend-native kernel
-counters. Do not compare them with native prefill/decode timings without
+The runtime records `timing_source: first_stream_chunk` and
+`timing_semantics: stream_ttft_and_post_first_chunk_elapsed`. The two
+throughput fields above are portable stream-derived proxies, not backend-native
+kernel counters; native prefill/decode counters are unavailable through this
+binding. Do not compare them with native prefill/decode timings without
 labelling the difference.
 Record OOM, timeout, invalid-output, and other runtime failures as statuses;
 do not remove failed cells from the denominator without explanation.
@@ -125,10 +140,12 @@ do not remove failed cells from the denominator without explanation.
 Run `analysis.ipynb` only after a resolved manifest and processed summary CSV
 are present under `results/`. It produces end-to-end-success-vs-memory and
 separate prompt-throughput-proxy/post-first-chunk-output-vs-memory
-comparisons, then recommends the smallest measured artifact within the
-declared tolerance of the best measured end-to-end success. A condition with
-runtime or invalid-output failures cannot hide those failures by reporting
-only scored rows.
+comparisons. It keeps capability outcomes (`scored_accuracy`,
+`end_to_end_success`, and `failure_rate`) separate from systems costs
+(artifact size, peak memory, stream TTFT, and stream throughput proxies), then
+recommends the smallest measured artifact within the declared tolerance of the
+best measured end-to-end success. A condition with runtime or invalid-output
+failures cannot hide those failures by reporting only scored rows.
 With missing artifacts, missing cells, or missing metrics it fails loudly.
 
 The notebook is an analysis surface, not the benchmark runner. No conclusion
