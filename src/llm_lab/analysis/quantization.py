@@ -25,6 +25,8 @@ REQUIRED_TRADEOFF_METRICS = (
 def tradeoff_rows(
     summaries: Iterable[Mapping[str, Any]],
     manifest: QuantizationManifest | Mapping[str, Any],
+    *,
+    require_complete: bool = False,
 ) -> list[dict[str, Any]]:
     """Join aggregated trial metrics to resolved artifact provenance.
 
@@ -33,9 +35,13 @@ def tradeoff_rows(
     failures remain in the attempted denominator and are reported separately.
     """
 
+    summary_rows = [dict(row) for row in summaries]
+    if require_complete:
+        validate_complete_quantization_matrix(summary_rows, manifest)
+
     variants = _manifest_variants(manifest)
     grouped: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
-    for row in summaries:
+    for row in summary_rows:
         condition_id = row.get("variant_condition_id") or row.get("condition_id")
         if condition_id is not None:
             grouped[str(condition_id)].append(row)
@@ -83,6 +89,67 @@ def tradeoff_rows(
             }
         )
     return rows
+
+
+def validate_complete_quantization_matrix(
+    summaries: Iterable[Mapping[str, Any]],
+    manifest: QuantizationManifest | Mapping[str, Any],
+) -> None:
+    """Reject summaries that cannot support a complete comparison."""
+
+    resolved_manifest = (
+        manifest
+        if isinstance(manifest, QuantizationManifest)
+        else QuantizationManifest.from_record(manifest)
+    )
+    expected = {
+        (variant.condition_id, context_length, task_id)
+        for variant in resolved_manifest.variants
+        for context_length in resolved_manifest.context_lengths
+        for task_id in resolved_manifest.task_ids
+    }
+    observed: set[tuple[str, int, str]] = set()
+    for row in summaries:
+        variant_id = row.get("variant_condition_id")
+        task_id = row.get("task_id")
+        context_length = row.get("target_context_tokens")
+        if not isinstance(variant_id, str) or not variant_id:
+            raise QuantizationAnalysisError(
+                "complete quantization matrix requires variant_condition_id"
+            )
+        if not isinstance(task_id, str) or not task_id:
+            raise QuantizationAnalysisError(
+                "complete quantization matrix requires task_id"
+            )
+        try:
+            context_length = int(context_length)
+            attempted_n = int(row.get("attempted_n"))
+        except (TypeError, ValueError):
+            raise QuantizationAnalysisError(
+                "complete quantization matrix requires integer context and attempted_n"
+            ) from None
+        key = (variant_id, context_length, task_id)
+        if key not in expected:
+            raise QuantizationAnalysisError(
+                f"summary contains an unexpected quantization matrix cell: {key}"
+            )
+        if key in observed:
+            raise QuantizationAnalysisError(
+                f"summary contains duplicate quantization matrix cell: {key}"
+            )
+        if attempted_n != resolved_manifest.repeats:
+            raise QuantizationAnalysisError(
+                f"{key} has attempted_n={attempted_n}; "
+                f"expected manifest repeats={resolved_manifest.repeats}"
+            )
+        observed.add(key)
+
+    missing = expected - observed
+    if missing:
+        raise QuantizationAnalysisError(
+            "summary does not cover the complete quantization matrix; "
+            f"missing {len(missing)} cell(s), first={sorted(missing)[0]}"
+        )
 
 
 def recommend_baseline(

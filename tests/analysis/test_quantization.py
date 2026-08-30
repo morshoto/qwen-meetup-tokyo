@@ -7,6 +7,7 @@ from llm_lab.analysis.quantization import (
     QuantizationAnalysisError,
     recommend_baseline,
     tradeoff_rows,
+    validate_complete_quantization_matrix,
 )
 from llm_lab.quantization import (
     ArtifactProvenance,
@@ -88,6 +89,22 @@ def summary(
         "median_post_first_chunk_output_tok_s": 20.0,
         "median_peak_memory_bytes": 200,
     }
+
+
+def complete_matrix_summaries() -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for condition_id in ("q8_0", "q6_k", "q5_k_m", "q4_k_m"):
+        for context_length in (8192, 32768):
+            row = summary(f"{condition_id}:ctx{context_length}", 0.8, scored_n=5)
+            row.update(
+                {
+                    "task_id": "task.literal.000001",
+                    "target_context_tokens": context_length,
+                    "variant_condition_id": condition_id,
+                }
+            )
+            rows.append(row)
+    return rows
 
 
 class QuantizationAnalysisTests(unittest.TestCase):
@@ -202,6 +219,24 @@ class QuantizationAnalysisTests(unittest.TestCase):
             "q8_0 is missing measured median_peak_memory_bytes",
         ):
             tradeoff_rows(summaries, manifest())
+
+    def test_tradeoff_rows_rejects_partial_matrix_before_recommendation(self) -> None:
+        summaries = complete_matrix_summaries()
+        summaries.pop()
+
+        with self.assertRaisesRegex(
+            QuantizationAnalysisError, "complete quantization matrix"
+        ):
+            tradeoff_rows(summaries, manifest(), require_complete=True)
+
+    def test_complete_quantization_matrix_requires_manifest_repeats(self) -> None:
+        summaries = complete_matrix_summaries()
+        summaries[0]["attempted_n"] = 4
+
+        with self.assertRaisesRegex(
+            QuantizationAnalysisError, "expected manifest repeats=5"
+        ):
+            validate_complete_quantization_matrix(summaries, manifest())
 
     def test_notebook_contains_required_analysis_sections(self) -> None:
         notebook_path = Path(
