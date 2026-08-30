@@ -42,8 +42,9 @@ summary, and historical raw path remain preserved separately. The committed
 not valid until all variants, contexts, tasks, and repeats have been measured.
 The committed notebook has no cached outputs, and stale figures are removed;
 the two figures are regenerated only from the complete v002 summary.
-The committed pilot predates the source-revision resume guard, so regenerate
-its raw JSONL with the current runner before extending the run.
+The committed pilot was regenerated under the source-revision resume guard;
+extend its raw JSONL only when the manifest and recorded source revisions still
+match.
 
 ## Diagnostic re-scoring (issue #28)
 

@@ -7,18 +7,19 @@ Q8/Q6/Q5/Q4 recommendation.
 ## Provenance
 
 - Manifest: `results/manifest.json`
-- Run fingerprint: `43d3f537c958b5eb1dd1886657057cf21f4ec3a3bf907ed0fa301c2000b19553`
+- Run fingerprint: `231ed9320044933bcdbc293612927f345e0de809ca5bf3a6f64e143a693c8ebe`
 - Raw input: `results/raw/trials-v002.jsonl` (Git-ignored)
 - Raw trial count: 30
-- Raw SHA-256: `a1ab081206720682dc156dafaf26a99b11fa928a30ee12567cb1e8476b1f7d86`
+- Raw SHA-256: `84eab3da1656d15df100e3fd7382ca3ab44cfaf83e32f1cd1a123b061a62ade6`
 - Task catalog: `data/tasks/core.v002.jsonl`
 - Task catalog SHA-256: `7631adc23aab29b0a1b06fae51267a940aa9f86d58dbe830724a3a2bc8703512`
 - Scorer: `calibrated.v1`
 - Artifact condition: `q8_0` / `Q8_0`
 - Context condition: 8,192 input tokens
 - Repeats: one per each of the 30 independent tasks
-- Source-revision note: this pilot predates the current resume guard; its raw
-  JSONL must be regenerated before extending the run under the current code.
+- Source revisions: each raw trial records the current runner, context,
+  evaluation, generation, and llama.cpp runtime source revisions; each raw and
+  processed row records its generated context SHA-256.
 
 ## Measured pilot observations
 
@@ -31,8 +32,8 @@ status. Calibrated outcomes were:
 | Answer-bearing outputs | 30 / 30 |
 | Format-valid outputs | 19 / 30 |
 
-Median stream-derived measurements were 71.7368 seconds TTFT, 114.8364
-prompt-tokens/second proxy, and 7.9619 completion-tokens/second proxy.
+Median stream-derived measurements were 71.1740 seconds TTFT, 115.7094
+prompt-tokens/second proxy, and 7.9671 completion-tokens/second proxy.
 Native prefill/decode counters are unavailable through this binding and remain
 `null`; these stream-derived values must not be treated as native kernel
 metrics.
