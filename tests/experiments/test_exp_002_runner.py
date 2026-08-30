@@ -297,6 +297,18 @@ class Exp002RunnerTests(unittest.TestCase):
                 all(trial.input.get("sample_role") == "timing" for trial in timing_trials)
             )
             self.assertTrue(timing_summary.is_file())
+            capability_rows = capability_summary.read_text(encoding="utf-8").splitlines()
+            timing_rows = timing_summary.read_text(encoding="utf-8").splitlines()
+            self.assertIn("raw_results_sha256", capability_rows[0].split(","))
+            self.assertIn("timing_raw_results_sha256", timing_rows[0].split(","))
+            self.assertEqual(
+                hashlib.sha256(capability_output.read_bytes()).hexdigest(),
+                result["raw_results_sha256"],
+            )
+            self.assertEqual(
+                hashlib.sha256(timing_output.read_bytes()).hexdigest(),
+                result["timing_raw_results_sha256"],
+            )
 
     def test_timing_probes_require_explicit_manifest_repeat_control(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -348,13 +348,30 @@ def run_experiment(
         expected_scorer=SCORER_VERSION,
         group_by_task=True,
     )
+    raw_results_sha256 = _sha256(output_path)
+    _attach_raw_provenance(
+        summaries,
+        path=output_path,
+        sha256=raw_results_sha256,
+        path_key="raw_results",
+        hash_key="raw_results_sha256",
+    )
     write_summary_csv(processed_path, summaries)
     timing_summary_row_n: int | None = None
+    timing_raw_results_sha256: str | None = None
     if timing_output_path is not None and timing_processed_path is not None:
         timing_summaries = aggregate_jsonl(
             timing_output_path,
             expected_scorer=SCORER_VERSION,
             group_by_task=True,
+        )
+        timing_raw_results_sha256 = _sha256(timing_output_path)
+        _attach_raw_provenance(
+            timing_summaries,
+            path=timing_output_path,
+            sha256=timing_raw_results_sha256,
+            path_key="timing_raw_results",
+            hash_key="timing_raw_results_sha256",
         )
         write_summary_csv(timing_processed_path, timing_summaries)
         timing_summary_row_n = len(timing_summaries)
@@ -369,6 +386,8 @@ def run_experiment(
         "summary_row_n": len(summaries),
         "timing_summary_row_n": timing_summary_row_n,
         "scorer_version": SCORER_VERSION,
+        "raw_results_sha256": raw_results_sha256,
+        "timing_raw_results_sha256": timing_raw_results_sha256,
         "output_path": str(output_path),
         "processed_path": str(processed_path),
         "timing_output_path": (
@@ -379,6 +398,21 @@ def run_experiment(
         ),
         "run_fingerprint": fingerprint,
     }
+
+
+def _attach_raw_provenance(
+    summaries: list[dict[str, Any]],
+    *,
+    path: Path,
+    sha256: str,
+    path_key: str,
+    hash_key: str,
+) -> None:
+    """Attach immutable raw-output identity to every processed summary row."""
+
+    for row in summaries:
+        row[path_key] = str(path)
+        row[hash_key] = sha256
 
 
 def _build_tasks(
