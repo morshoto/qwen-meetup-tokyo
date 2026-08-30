@@ -91,6 +91,12 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             "accuracy_degradation",
             "docs/findings.md",
             "not yet measured",
+            "analyze.py",
+            "regenerate",
+            "relative-degradation.csv",
+            "interaction.json",
+            "scorer_version",
+            "insufficient_data",
         ):
             self.assertIn(required, notebook)
 
