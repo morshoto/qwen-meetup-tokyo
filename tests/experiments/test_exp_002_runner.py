@@ -223,6 +223,33 @@ class Exp002RunnerTests(unittest.TestCase):
             self.assertTrue(summary_path.is_file())
             self.assertTrue(all(instance.closed for instance in FakeRuntime.instances))
 
+    def test_task_level_summary_keeps_distinct_tasks_in_one_family(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            record = json.loads(manifest_path.read_text(encoding="utf-8"))
+            record["controls"]["task_ids"] = [
+                "task.literal.000001",
+                "task.literal.000002",
+            ]
+            manifest_path.write_text(json.dumps(record), encoding="utf-8")
+            output_path = root / "raw" / "trials.jsonl"
+            summary_path = root / "processed" / "summary.csv"
+
+            result = runner.run_experiment(
+                manifest_path=manifest_path,
+                output_path=output_path,
+                processed_path=summary_path,
+                condition_ids=("q8_0",),
+                context_lengths=(8192,),
+                repeats=1,
+                runtime_factory=FakeRuntime,
+            )
+
+            self.assertEqual(2, result["summary_row_n"])
+            rows = summary_path.read_text(encoding="utf-8").splitlines()
+            self.assertIn("task_id", rows[0].split(","))
+
     def test_full_selection_has_120_expected_trials(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             manifest_path = _manifest_file(Path(directory))

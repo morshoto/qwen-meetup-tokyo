@@ -215,7 +215,11 @@ def run_experiment(
         finally:
             runtime.close()
 
-    summaries = aggregate_jsonl(output_path, expected_scorer=SCORER_VERSION)
+    summaries = aggregate_jsonl(
+        output_path,
+        expected_scorer=SCORER_VERSION,
+        group_by_task=True,
+    )
     write_summary_csv(processed_path, summaries)
     return {
         "experiment_id": manifest.experiment_id,

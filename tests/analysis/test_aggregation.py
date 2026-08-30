@@ -36,6 +36,32 @@ def trial(
 
 
 class AggregationTests(unittest.TestCase):
+    def test_task_level_summary_keeps_task_ids(self) -> None:
+        summaries = aggregate_trials(
+            [
+                trial(
+                    "task-one",
+                    task_type="literal_retrieval",
+                    condition_id="q8:ctx8192",
+                    status=TrialStatus.COMPLETED,
+                    correct=True,
+                    total_s=1.0,
+                ),
+                trial(
+                    "task-two",
+                    task_type="literal_retrieval",
+                    condition_id="q8:ctx8192",
+                    status=TrialStatus.COMPLETED,
+                    correct=False,
+                    total_s=1.0,
+                ),
+            ],
+            group_by_task=True,
+        )
+
+        self.assertEqual(2, len(summaries))
+        self.assertEqual({"task-one", "task-two"}, {row["task_id"] for row in summaries})
+
     def test_aggregation_groups_trials_and_excludes_unscored_failures(self) -> None:
         summaries = aggregate_trials(
             [
