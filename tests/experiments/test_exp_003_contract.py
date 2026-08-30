@@ -115,12 +115,16 @@ class Exp003ExperimentContractTests(unittest.TestCase):
         self.assertIn("RESULTS_DIR = ROOT /", notebook_text)
         self.assertIn("runpy.run_path", notebook_text)
         self.assertIn("allow_fixture=False", notebook_text)
+        self.assertIn("analysis_ready", notebook_text)
+        self.assertIn("if not analysis_ready:", notebook_text)
         self.assertNotIn("allow_fixture=True", notebook_text)
         self.assertNotIn("/var/folders/", notebook_text)
         self.assertNotIn("exec(compile", notebook_text)
         for cell in code_cells:
             self.assertIsNone(cell["execution_count"])
             self.assertEqual([], cell["outputs"])
+        for cell in code_cells[1:]:
+            self.assertIn("if analysis_ready:", "".join(cell["source"]))
 
 
 if __name__ == "__main__":
