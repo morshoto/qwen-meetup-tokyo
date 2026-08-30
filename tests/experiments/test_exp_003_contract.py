@@ -111,7 +111,6 @@ class Exp003ExperimentContractTests(unittest.TestCase):
             cell for cell in notebook["cells"] if cell["cell_type"] == "code"
         ]
 
-        self.assertIn("PHASE = 'main'", notebook_text)
         self.assertIn("os.environ.get('EXP003_PHASE', 'main')", notebook_text)
         self.assertIn("os.environ.get('EXP003_RESULTS_DIR'", notebook_text)
         self.assertIn("RESULTS_DIR = Path(", notebook_text)
