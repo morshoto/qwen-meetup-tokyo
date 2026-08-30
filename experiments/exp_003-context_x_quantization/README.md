@@ -52,6 +52,8 @@ source of truth for the v002 catalog, catalog hash, artifact identities, and
 
 The runner loads phase lengths, evidence positions, the capability repeat
 count, backend, and the default quantization variants from `config.yaml`.
+When `--source-manifest` is omitted, it uses the pinned
+`experiment.source_manifest` value from that same config.
 The larger `repeats` value is retained as a timing/legacy envelope; matching
 CLI flags are explicit overrides for a selected run.
 
