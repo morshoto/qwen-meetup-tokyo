@@ -14,9 +14,9 @@ resolved exp_002 manifest. A context instance is generated once for each task,
 context length, evidence position, and seed, then reused for every
 quantization variant so matched-cell comparisons are valid.
 
-The checked-in exp_003 outputs are historical three-task measurements from the
-previous catalog version. They remain unchanged until a real llama.cpp run
-produces measurements for the expanded catalog.
+The checked-in exp_003 outputs are historical three-task smoke measurements from
+the previous catalog version. They remain unchanged until a real llama.cpp run
+produces the issue #21 measurement for the expanded catalog.
 
 For new runs, `core.v002.jsonl` is the execution source of truth. The exp_002
 source manifest supplies model, artifact, and runtime provenance; its historical
@@ -32,7 +32,7 @@ the separate scoring-calibration work until exp_003 is migrated in a follow-up.
 
 | Variable | Main values |
 | --- | --- |
-| Context length | 8K, 32K, 64K, 128K, 262K or highest practical |
+| Context length | 8K, 32K, 64K, 128K |
 | Evidence position | 5%, 25%, 50%, 75%, 95% |
 | Quantization | Q8_0, Q6_K, Q5_K_M, Q4_K_M from exp_002 |
 | Task family | literal, semantic, multi-hop |
@@ -47,7 +47,9 @@ alter the interpretation of a run.
 
 The output run manifest keeps inherited source runtime options separately from
 the effective per-variant options used for execution, including derived
-context capacity and model path settings.
+context capacity and model path settings. The resolved exp_002 manifest is the
+source of truth for the v002 catalog, catalog hash, artifact identities, and
+`calibrated.v1` scorer policy.
 
 The runner loads phase lengths, evidence positions, repeats, backend, and the
 default quantization variants from `config.yaml`. Matching CLI flags are
@@ -77,6 +79,12 @@ and coverage. It is not a Qwen measurement and must not be copied into
 `docs/findings.md` as a model finding. Runtime/OOM/timeout cells remain in raw
 results and are listed as exclusions with reasons rather than being silently
 dropped.
+
+The issue #21 main matrix is four quantization variants × four context lengths
+× five evidence positions × 30 independent tasks × 20 repeats = 48,000
+attempted trials before runtime exclusions. Q8_0 and Q4_K_M are the required
+matched comparison; Q6_K and Q5_K_M remain in the declared matrix for the same
+artifact-controlled interaction view.
 
 ## Analysis
 

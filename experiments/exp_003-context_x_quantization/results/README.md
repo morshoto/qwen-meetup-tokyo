@@ -24,6 +24,8 @@ cell coverage, exclusions, and the raw-result SHA-256. Raw runtime failures
 remain in the denominator. The real backend is llama.cpp; generated fixture
 output validates the harness only and is not a Qwen measurement.
 
-The checked-in manifest and processed outputs are historical three-task
-measurements from catalog v001. New runs use catalog v002, which contains 10
-independent tasks per QA family; no expanded real measurement is claimed here.
+The checked-in manifest and processed outputs are historical three-task smoke
+measurements from catalog v001. New issue #21 runs use the resolved exp_002
+manifest, catalog v002, and `calibrated.v1`; catalog v002 contains 10
+independent tasks per QA family. No expanded real measurement is claimed here
+until a llama.cpp run produces and verifies the full declared coverage.
