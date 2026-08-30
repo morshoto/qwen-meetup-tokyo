@@ -16,9 +16,7 @@ results/
 │   ├── pilot-v001-summary.csv  # preserved historical v001 pilot summary
 │   ├── rescored-summary.csv    # issue #28 diagnostic comparison
 │   └── rescoring-report.md     # issue #28 provenance and caveat
-└── figures/
-    ├── accuracy-vs-memory.png
-    └── speed-vs-memory.png
+└── figures/                   # generated only after the complete v002 run
 ```
 
 `manifest.json` must be derived from the experiment's template and contain
@@ -42,6 +40,8 @@ matrix; duplicate or mismatched trial records are rejected. The v001 manifest,
 summary, and historical raw path remain preserved separately. The committed
 `pilot-v002-summary.csv` is pilot evidence only; a full v002 `summary.csv` is
 not valid until all variants, contexts, tasks, and repeats have been measured.
+The committed notebook has no cached outputs, and stale figures are removed;
+the two figures are regenerated only from the complete v002 summary.
 
 ## Diagnostic re-scoring (issue #28)
 

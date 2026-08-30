@@ -249,6 +249,17 @@ class QuantizationAnalysisTests(unittest.TestCase):
         ):
             self.assertIn(required, source)
 
+    def test_notebook_has_no_cached_analysis_outputs(self) -> None:
+        notebook_path = Path(
+            "experiments/exp_002-quantization_llama_cpp_gguf/analysis.ipynb"
+        )
+        notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
+
+        code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
+        self.assertTrue(code_cells)
+        self.assertTrue(all(cell.get("execution_count") is None for cell in code_cells))
+        self.assertTrue(all(cell.get("outputs") == [] for cell in code_cells))
+
 
 if __name__ == "__main__":
     unittest.main()
