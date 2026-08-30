@@ -1039,8 +1039,22 @@ def _display_path(path: Path) -> str:
 def main(argv: list[str] | None = None) -> int:
     config = load_experiment_config()
     phase_names = tuple(_config_section(config, "phases"))
+    configured_source_manifest = _config_section(config, "experiment").get(
+        "source_manifest"
+    )
+    if not isinstance(configured_source_manifest, str) or not configured_source_manifest.strip():
+        raise ValueError(
+            "experiment config must declare a non-empty source_manifest"
+        )
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source-manifest", type=Path, required=True)
+    parser.add_argument(
+        "--source-manifest",
+        type=Path,
+        help=(
+            "resolved exp_002 manifest; defaults to experiment.source_manifest "
+            "from config.yaml"
+        ),
+    )
     parser.add_argument("--phase", choices=phase_names)
     parser.add_argument("--backend", choices=("fixture", "llama.cpp"))
     parser.add_argument("--output", type=Path)
@@ -1053,12 +1067,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fixture-seed", type=int, default=42)
     args = parser.parse_args(argv)
     phase = args.phase or _default_phase(config)
+    source_manifest_path = args.source_manifest or (
+        CONFIG_PATH.parent / Path(configured_source_manifest)
+    )
     experiment_root = ROOT / "experiments/exp_003-context_x_quantization/results"
     output_path = args.output or experiment_root / "raw" / f"{phase}-trials.jsonl"
     manifest_output_path = args.manifest_output or experiment_root / "manifests" / f"{phase}.json"
     processed_path = args.processed or experiment_root / "processed" / f"{phase}-summary.csv"
     result = run_experiment(
-        source_manifest_path=args.source_manifest,
+        source_manifest_path=source_manifest_path,
         output_path=output_path,
         manifest_output_path=manifest_output_path,
         processed_path=processed_path,

@@ -56,6 +56,7 @@ class Exp003ExperimentContractTests(unittest.TestCase):
         self.assertIn("`calibrated.v1`", readme)
         self.assertIn("selected task IDs", readme)
         self.assertNotIn("explicit legacy exception", readme)
+        self.assertIn("manifest.full.json", config)
 
     def test_main_declares_issue_21_matrix(self) -> None:
         protocol = yaml.safe_load(
