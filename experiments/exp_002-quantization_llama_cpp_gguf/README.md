@@ -58,26 +58,21 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/resolve_m
   --command 'q4_k_m=COMPLETE_CONVERSION_AND_QUANTIZATION_COMMAND'
 ```
 
-Use the same raw output for the pilot and full run: the runner fingerprints
-the resolved manifest, appends only missing trial IDs, and rejects mismatched
-or out-of-scope records. The current `core.v002` protocol has 30 independent
+The runner fingerprints the resolved manifest, appends only missing trial IDs,
+and rejects mismatched or out-of-scope records. The current `core.v002` protocol has 30 independent
 QA tasks. Its pilot is Q8_0 × 8,192 × 30 tasks × one capability run (30 trials);
 the capability matrix is 4 × 2 × 30 × 1 (240 trials) when resolved from the
-current template. The checked-in resolved manifest predates the explicit
-`capability_repeats` field (its legacy repeat envelope is five), so its pilot
-uses `--repeats 1` and must not be interpreted as five independent capability
-observations. The measured v002 pilot is
+current template. `results/manifest.json` is the historical pilot manifest;
+`results/manifest.full.json` is the resolved full-run control manifest with
+explicit `capability_repeats: 1` and `timing_repeats: 5`. The measured v002 pilot is
 recorded in `results/processed/pilot-v002-summary.csv` and
 `pilot-v002-report.md`; it covers only Q8_0 at 8,192 tokens with one repeat per
 task. Historical v001 evidence remains separate as
 `results/manifest.v001.json`, `results/processed/summary.v001.csv`, and
 `results/processed/pilot-v001-summary.csv`. The remaining 210 v002 capability
-cells must be measured before a cross-variant conclusion is reported. Because
-the checked-in resolved manifest retains its legacy five-repeat envelope, its
-resume command may still schedule 1,170 execution slots; resolve a fresh
-manifest from the current template (or select `--repeats 1`) for the 240-cell
-capability matrix. The timing command below writes separate timing probes and
-reports their repeat count independently of capability accuracy.
+cells must be measured before a cross-variant conclusion is reported. Full runs
+using `manifest.full.json` should use new raw paths; the historical pilot raw
+file is terminal evidence for its original manifest.
 
 The committed pilot was regenerated under the current source-revision resume
 guard. Its raw JSONL is terminal evidence for this 30-trial condition and may
@@ -91,22 +86,19 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
   --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json
 
-# Capability pilot extension using one greedy execution per independent task.
-# For a formal full analysis, resolve a fresh manifest containing
-# capability_repeats: 1 before running all cells.
+# Full capability matrix: one greedy execution per independent task, with the
+# committed full-run control manifest and a separate raw path from the pilot.
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
-  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
-  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/full-capability.jsonl \
   --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
   --repeats 1
 
 # Collect timing probes separately from capability observations. This requires
-# a newly resolved manifest written to `results/manifest.json` with explicit
-# `capability_repeats: 1` and `timing_repeats: 5`; the historical checked-in
-# manifest intentionally fails closed because it predates those controls.
+# the same full-run manifest and a separate timing raw output.
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
-  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
-  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/full-capability.jsonl \
   --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
   --timing-output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/timing-v002.jsonl \
   --timing-processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/timing-summary.csv \
