@@ -62,6 +62,7 @@ class Exp001ExperimentContractTests(unittest.TestCase):
             "--resume",
             "real-model",
             "llama.cpp",
+            "capability_repeats",
         ):
             self.assertIn(required, notebook + readme)
 

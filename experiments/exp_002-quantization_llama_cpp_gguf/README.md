@@ -100,7 +100,10 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
   --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
   --repeats 1
 
-# Collect timing probes separately from capability observations.
+# Collect timing probes separately from capability observations. This requires
+# a newly resolved manifest written to `results/manifest.json` with explicit
+# `capability_repeats: 1` and `timing_repeats: 5`; the historical checked-in
+# manifest intentionally fails closed because it predates those controls.
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
   --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
   --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
