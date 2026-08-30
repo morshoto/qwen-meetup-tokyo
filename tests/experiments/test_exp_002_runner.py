@@ -198,6 +198,10 @@ class Exp002RunnerTests(unittest.TestCase):
             )
             self.assertEqual("calibrated.v1", trial.input["scorer_version"])
             self.assertEqual(64, len(trial.input["context_sha256"]))
+            self.assertEqual(
+                "task.fixture:baseline:ctx008192:p050:seed43",
+                trial.input["context_instance_id"],
+            )
             self.assertIn("context/synthetic.py", trial.input["source_revisions"])
             self.assertIn("evaluation/contracts.py", trial.input["source_revisions"])
             self.assertIn("generation/types.py", trial.input["source_revisions"])

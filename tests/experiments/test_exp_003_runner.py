@@ -223,6 +223,12 @@ phases:
         self.assertEqual("ctx008192:p005", conditions[0].condition_id)
         self.assertEqual("ctx032768:p050", conditions[-1].condition_id)
 
+    def test_context_instance_id_matches_exp001_canonical_format(self) -> None:
+        self.assertEqual(
+            "task.literal.000001:baseline:ctx008192:p005:seed1043",
+            runner._context_instance_id("task.literal.000001", 8192, 0.05, 1043),
+        )
+
     def test_runner_reuses_context_instance_across_variants(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

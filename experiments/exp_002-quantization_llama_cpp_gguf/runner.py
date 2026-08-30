@@ -459,6 +459,9 @@ def _build_tasks(
                 context=generated.text,
                 prompt_id=prompt_id,
                 metadata={
+                    "context_instance_id": (
+                        f"{task_id}:baseline:ctx{context_tokens:06d}:p050:seed{task_seed}"
+                    ),
                     "target_context_tokens": context_tokens,
                     "actual_context_tokens": generated.token_count,
                     "requested_evidence_position": 0.5,

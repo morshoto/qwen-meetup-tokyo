@@ -725,7 +725,10 @@ def _context_instance_id(
     position: float,
     seed: int,
 ) -> str:
-    return f"{task_id}:seed{seed}:ctx{context_tokens}:p{int(position * 100):03d}"
+    return (
+        f"{task_id}:baseline:ctx{context_tokens:06d}:"
+        f"p{int(position * 100):03d}:seed{seed}"
+    )
 
 
 def _run_fingerprint(
