@@ -20,6 +20,7 @@ def matched_cell_rows(
     evidence_positions: Iterable[float],
     task_types: Iterable[str],
     task_ids: Iterable[str] | None = None,
+    task_types_by_id: Mapping[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Validate and sort one summary row per matched task/context cell.
 
@@ -42,11 +43,38 @@ def matched_cell_rows(
         selected_task_ids = tuple(sorted({str(row["task_id"]) for row in rows}))
     if task_aware and not selected_task_ids:
         raise InteractionAnalysisError("task-aware matching requires task_ids")
+    selected_task_types = {
+        task_id: (
+            (str(task_types_by_id[task_id]),)
+            if task_types_by_id is not None and task_id in task_types_by_id
+            else tuple(
+                sorted(
+                    {
+                        str(row["task_type"])
+                        for row in rows
+                        if str(row.get("task_id")) == task_id
+                    }
+                )
+            )
+        )
+        for task_id in selected_task_ids
+    }
+    if task_aware and any(not values for values in selected_task_types.values()):
+        missing_task_ids = sorted(
+            task_id for task_id, values in selected_task_types.items() if not values
+        )
+        raise InteractionAnalysisError(
+            f"task-aware matching cannot determine task types: {missing_task_ids}"
+        )
     expected = {
         _matched_key(task_id, variant, task, context, position, task_aware)
         for task_id in (selected_task_ids if task_aware else (None,))
         for variant in variant_ids
-        for task in task_types
+        for task in (
+            selected_task_types[task_id]
+            if task_aware
+            else tuple(str(task_type) for task_type in task_types)
+        )
         for context in context_lengths
         for position in evidence_positions
     }

@@ -134,6 +134,11 @@ def regenerate(
         evidence_positions=evidence_positions,
         task_types=task_types,
         task_ids=task_ids,
+        task_types_by_id={
+            task.task_id: task.task_type
+            for task in catalog.tasks
+            if task.task_id in task_ids
+        },
     )
     degradation = relative_degradation_rows(
         matched,
@@ -397,7 +402,11 @@ def _output_paths(
     interaction_path: str | Path | None,
     effective_context_path: str | Path | None,
 ) -> dict[str, Path]:
-    results_root = manifest_file.parent.parent
+    results_root = (
+        manifest_file.parent.parent
+        if manifest_file.parent.name == "manifests"
+        else manifest_file.parent
+    )
     values = {
         "summary": summary_path or results_root / "processed/summary.csv",
         "degradation": degradation_path

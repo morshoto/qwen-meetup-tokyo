@@ -188,7 +188,10 @@ class Exp003AnalysisTests(unittest.TestCase):
 
             result = analysis.regenerate(manifest_path)
 
-            self.assertEqual(root / "processed/summary.csv", Path(result["outputs"]["summary"]))
+            self.assertEqual(
+                root.resolve() / "processed/summary.csv",
+                Path(result["outputs"]["summary"]),
+            )
             self.assertTrue((root / "processed/summary.csv").is_file())
 
 
