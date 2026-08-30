@@ -40,28 +40,22 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
   --condition-id q8_0 --context-length 8192 --repeats 1
 ```
 
-Running the same command again resumes by deterministic trial ID. Use the
-same `--output` and `--processed` paths plus `--repeats 1` to extend the
-capability pilot across the remaining variants and context length. A newly
-resolved manifest with `capability_repeats: 1` completes the full 240-trial
-capability matrix; the checked-in historical manifest still declares a
-five-repeat envelope and therefore reports 1,200 legacy trial IDs. Duplicate or
-mismatched trial records are rejected. The v001 manifest,
-summary, and historical raw path remain preserved separately. The committed
-`pilot-v002-summary.csv` is pilot evidence only; a full v002 `summary.csv` is
-not valid until all variants, contexts, and tasks have been measured. The
-capability matrix uses one greedy run per independent task. Timing probes use a
-separate raw output and summary, with the manifest-declared 3–5 repeats; those
-repeated prompts never enter the capability denominator. The historical
-checked-in manifest predates these explicit controls and intentionally fails
-closed for timing; first resolve a fresh `manifest.json` with
-`capability_repeats: 1` and `timing_repeats: 5` (write the resolved manifest to
-`results/manifest.json` before running this command):
+Running the same pilot command again resumes by deterministic trial ID. The
+historical pilot raw file is not reused for the full run because its manifest
+fingerprint is different. Use `manifest.full.json` and a new raw path for the
+full 240-trial capability matrix; duplicate or mismatched trial records are
+rejected. The v001 manifest, summary, and historical raw path remain preserved
+separately. The committed `pilot-v002-summary.csv` is pilot evidence only; a
+full v002 `summary.csv` is not valid until all variants, contexts, and tasks
+have been measured. The capability matrix uses one greedy run per independent
+task. Timing probes use a separate raw output and summary, with the manifest-
+declared 3–5 repeats; those repeated prompts never enter the capability
+denominator. Use `manifest.full.json` for these separate timing probes:
 
 ```bash
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
-  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
-  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/full-capability.jsonl \
   --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
   --timing-output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/timing-v002.jsonl \
   --timing-processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/timing-summary.csv \
