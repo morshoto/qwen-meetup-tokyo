@@ -5,6 +5,7 @@ Expected outputs include:
 ```text
 results/
 ├── manifest.json              # resolved, hashed v002 artifact/control manifest
+├── manifest.full.json         # pinned full-run controls (capability=1, timing=5)
 ├── manifest.v001.json         # preserved historical v001 manifest
 ├── raw/
 │   ├── trials-v002.jsonl      # ignored by Git; append-only v002 evidence
@@ -24,6 +25,9 @@ results/
 `manifest.json` must be derived from the experiment's template and contain
 actual model/runtime revisions, artifact SHA-256 digests, and artifact sizes.
 The template or a result with placeholder values is not a completed run.
+`manifest.full.json` is the checked-in resolved control manifest for the full
+matrix; pass it through `EXP002_MANIFEST_PATH` (or resolve a fresh
+`results/manifest.json`) before running the full phase.
 
 The v002 pilot command selects `q8_0`, context length `8192`, and
 `--repeats 1`, for 30 trials:
