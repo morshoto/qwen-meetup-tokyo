@@ -213,7 +213,7 @@ quantization comparison and recommendation remain pending.
 | `tests/experiments/test_exp_002_resolver.py` | Modify | Red | Catalog hash resolution. |
 | `tests/analysis/test_aggregation.py` | Modify | Red | Task-level grouping and denominator preservation. |
 | `tests/analysis/test_quantization.py` | Modify | Red | Analysis boundary contract. |
-| `experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json` | Replace after measurement | Evidence | Resolved v002 artifact/control manifest. |
+| `experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json` | Pin before measurement | Evidence | Resolved v002 full-matrix artifact/control manifest; the historical pilot manifest remains separate. |
 | `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-summary.csv` | Create | Evidence | Measured 30-trial v002 pilot summaries. |
 | `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv` | Pending full matrix | Evidence | Task-level measured v002 summaries after all 1,200 trials. |
 
