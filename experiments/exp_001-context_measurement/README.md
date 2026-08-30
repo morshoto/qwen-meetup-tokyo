@@ -42,7 +42,13 @@ experiment contract.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase smoke --backend fixture --overwrite-smoke
 
-# Pilot/main runs use the optional local Transformers backend and local Qwen weights.
+# Operational pilot/main runs use the resolved Q8_0 GGUF through llama.cpp.
+PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
+  --phase pilot --backend llama.cpp
+PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
+  --phase main --backend llama.cpp
+
+# A full-precision comparison is optional and uses the local Transformers backend.
 python3 -m pip install -e '.[transformers,analysis]'
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase pilot --backend transformers
@@ -59,16 +65,15 @@ PYTHONPATH=src python3 experiments/exp_001-context_measurement/analyze.py \
   --manifest experiments/exp_001-context_measurement/results/manifests/main.json
 ```
 
-The real-model command is intentionally not a download command. The required
-Transformers/Torch stack, Qwen weights, and hardware must already be available;
-otherwise the run is blocked and fixture output must not be substituted.
+The real-model command is intentionally not a download command. The resolved
+Q8_0 artifact, llama.cpp binding, and hardware must already be available;
+otherwise the run is blocked and fixture output must not be substituted. The
+artifact path and SHA-256 in `config.yaml` are verified before inference.
 
-The real-model path currently uses Transformers, while exp_002 and exp_003 use
-llama.cpp/GGUF. Those backends are an explicit confound and their absolute
-accuracy, latency, and memory values must not be compared as if they were one
-runtime. For an operational cross-experiment reference, use the matched Q8_0
-llama.cpp condition in exp_003; keep this exp_001 run as the Transformers
-baseline unless a separately provisioned Q8_0 llama.cpp baseline is collected.
+The default operational reference is Q8_0 through llama.cpp, matching exp_002
+and exp_003. A Transformers run is a separately labelled full-precision
+reference; its absolute accuracy, latency, and memory values must not be
+pooled with GGUF results.
 
 The fixture backend returns catalog answers by design. It validates task
 construction, evidence offsets, scoring, append-only storage, and coverage; it

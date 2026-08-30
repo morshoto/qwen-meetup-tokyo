@@ -9,9 +9,23 @@ experiment:
 
 model:
   model: Qwen/Qwen3.8-27B
-  revision: record-at-run-time
-  tokenizer_revision: record-at-run-time
-  quantization: null
+  revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+  tokenizer_revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+  quantization: Q8_0
+
+runtime:
+  reference_backend: llama.cpp
+  llama_cpp:
+    model_path: experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf
+    artifact_uri: artifacts/q8_0.gguf
+    artifact_sha256: 6cb70620c7811dce01e1a622fe0a4f9ac445e31c569640c36ecfac85c4609b6c
+    artifact_size_bytes: 29047084256
+    version: llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3
+    n_ctx: 131392
+    n_batch: 512
+    n_gpu_layers: -1
+    flash_attn: true
+    verbose: false
 
 context:
   lengths: [8192, 32768, 65536, 131072]

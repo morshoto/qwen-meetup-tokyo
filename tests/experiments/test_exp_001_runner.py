@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import importlib.util
 import json
 import sys
@@ -21,6 +22,54 @@ SPEC.loader.exec_module(runner)
 
 
 class Exp001RunnerTests(unittest.TestCase):
+    def test_llama_cpp_options_verifies_and_records_reference_artifact(self) -> None:
+        with TemporaryDirectory() as directory:
+            artifact = Path(directory) / "q8_0.gguf"
+            artifact.write_bytes(b"q8 fixture artifact")
+            digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            size = artifact.stat().st_size
+            options = runner._llama_cpp_options(
+                {
+                    "runtime": {
+                        "llama_cpp": {
+                            "model_path": str(artifact),
+                            "artifact_sha256": digest,
+                            "artifact_size_bytes": size,
+                            "version": "llama-test",
+                            "n_ctx": 8192,
+                            "n_batch": 128,
+                            "n_gpu_layers": 0,
+                            "flash_attn": False,
+                            "verbose": True,
+                        }
+                    }
+                }
+            )
+
+        self.assertEqual(str(artifact), options["model_path"])
+        self.assertEqual(str(artifact), options["_artifact_uri"])
+        self.assertEqual("llama-test", options["version"])
+        self.assertEqual(digest, options["_artifact_sha256"])
+        self.assertEqual(size, options["_artifact_size_bytes"])
+        self.assertEqual(8192, options["n_ctx"])
+        self.assertFalse(options["flash_attn"])
+
+    def test_llama_cpp_options_rejects_reference_artifact_hash_mismatch(self) -> None:
+        with TemporaryDirectory() as directory:
+            artifact = Path(directory) / "q8_0.gguf"
+            artifact.write_bytes(b"q8 fixture artifact")
+            with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+                runner._llama_cpp_options(
+                    {
+                        "runtime": {
+                            "llama_cpp": {
+                                "model_path": str(artifact),
+                                "artifact_sha256": "0" * 64,
+                            }
+                        }
+                    }
+                )
+
     def test_checked_in_smoke_artifact_covers_expanded_catalog(self) -> None:
         manifest = json.loads(
             (

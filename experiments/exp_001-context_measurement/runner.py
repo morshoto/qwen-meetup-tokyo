@@ -1,8 +1,9 @@
 """Run the exp_001 context-length and evidence-position matrix.
 
 The fixture backend validates the experiment plumbing without model weights.
-Use ``--backend transformers`` for a real local Qwen run after installing the
-optional backend and recording the runtime/resource configuration.
+Use ``--backend llama.cpp`` with the resolved Q8_0 GGUF for the operational
+Qwen reference, or ``--backend transformers`` when a matching full-precision
+environment is intentionally being measured.
 """
 
 from __future__ import annotations
@@ -50,6 +51,7 @@ from llm_lab.generation import (  # noqa: E402
 )
 from llm_lab.models import ModelSpec, qwen38_model_spec  # noqa: E402
 from llm_lab.runtimes import RuntimeConfig  # noqa: E402
+from llm_lab.runtimes.llama_cpp import LlamaCppRuntime  # noqa: E402
 from llm_lab.runtimes.transformers import QwenTransformersRuntime  # noqa: E402
 from llm_lab.telemetry import capture_environment  # noqa: E402
 
@@ -331,8 +333,11 @@ def run_experiment(
     working_output_path = temporary_output or output_path
     catalog = TaskCatalog.from_jsonl(catalog_path)
     context_tokenizer: ContextTokenizer | None = None
+    runtime_options: dict[str, Any] = {}
+    runtime_record: dict[str, Any] = {}
     if backend == "fixture":
         runtime: Any = FixtureRuntime(_fixture_answers(catalog))
+        runtime_record = {"name": "fixture", "version": None, "options": {}}
     elif backend == "transformers":
         runtime = QwenTransformersRuntime()
         runtime.load(
@@ -345,6 +350,11 @@ def run_experiment(
                 },
             ),
         )
+        runtime_record = {
+            "name": "transformers",
+            "version": None,
+            "options": {"device_map": "auto", "trust_remote_code": True},
+        }
         model = runtime.resolved_model_spec()
         if not model.revision or not model.tokenizer_revision:
             runtime.close()
@@ -356,6 +366,36 @@ def run_experiment(
         context_tokenizer = InferenceTokenizer(
             backend=runtime.get_tokenizer(),
             name=f"transformers:{tokenizer_id}@{revision}",
+        )
+    elif backend == "llama.cpp":
+        runtime = LlamaCppRuntime()
+        resolved_runtime = _llama_cpp_options(config)
+        runtime_version = resolved_runtime.pop("version", None)
+        artifact_record = {
+            "uri": resolved_runtime.pop("_artifact_uri"),
+            "sha256": resolved_runtime.pop("_artifact_sha256"),
+            "size_bytes": resolved_runtime.pop("_artifact_size_bytes"),
+        }
+        runtime_options = dict(resolved_runtime)
+        runtime.load(
+            model,
+            RuntimeConfig(
+                name="llama.cpp",
+                version=runtime_version,
+                options=runtime_options,
+            ),
+        )
+        runtime_record = {
+            "name": "llama.cpp",
+            "version": runtime_version,
+            "options": dict(runtime_options),
+            "artifact": artifact_record,
+        }
+        tokenizer_id = model.tokenizer_id or model.model_id
+        revision = model.tokenizer_revision or "embedded"
+        context_tokenizer = InferenceTokenizer(
+            backend=runtime.get_tokenizer(),
+            name=f"llama.cpp:{tokenizer_id}@{revision}",
         )
     else:
         raise ValueError(f"unsupported backend: {backend!r}")
@@ -473,6 +513,7 @@ def run_experiment(
         generation_seed_policy=generation_seed_policy,
         model=model,
         context_provenance=context_provenance,
+        runtime_record=runtime_record,
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -523,6 +564,7 @@ def _manifest(
     generation_seed_policy: str | None = None,
     model: ModelSpec | None = None,
     context_provenance: Mapping[str, Any] | None = None,
+    runtime_record: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     condition_list = list(conditions)
@@ -591,6 +633,7 @@ def _manifest(
         "scorer_version": SCORER_VERSION,
         "phase": phase,
         "backend": backend,
+        "runtime": dict(runtime_record or {"name": backend, "version": None, "options": {}}),
         "fixture_seed": fixture_seed,
         "task_catalog": _relative_or_absolute(catalog_path or TASK_CATALOG),
         "task_ids": list(catalog.ids),
@@ -738,6 +781,58 @@ def _sampling_from_config(
         expected["generation_seed_policy"] = policy
         _validate_sampling_match(previous_sampling, expected)
     return sampling, policy
+
+
+def _llama_cpp_options(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Resolve and verify the operational Q8_0 llama.cpp reference artifact."""
+
+    runtime = config.get("runtime", {})
+    if not isinstance(runtime, Mapping):
+        raise ValueError("llama.cpp backend requires a runtime mapping")
+    values = runtime.get("llama_cpp", runtime)
+    if not isinstance(values, Mapping):
+        raise ValueError("runtime.llama_cpp must be a mapping")
+    configured_path = values.get("model_path") or os.environ.get(
+        "EXP001_LLAMA_MODEL_PATH"
+    )
+    if not isinstance(configured_path, str) or not configured_path.strip():
+        raise ValueError(
+            "llama.cpp backend requires runtime.llama_cpp.model_path or "
+            "EXP001_LLAMA_MODEL_PATH"
+        )
+    model_path = _rooted(Path(configured_path))
+    if not model_path.is_file():
+        raise FileNotFoundError(f"llama.cpp model artifact is missing: {model_path}")
+    expected_size = values.get("artifact_size_bytes")
+    actual_size = model_path.stat().st_size
+    if expected_size is not None and actual_size != int(expected_size):
+        raise ValueError(
+            "llama.cpp model artifact size mismatch: "
+            f"expected {expected_size}, found {actual_size}"
+        )
+    expected_sha256 = values.get("artifact_sha256")
+    actual_sha256 = _sha256(model_path)
+    if expected_sha256 is not None:
+        if actual_sha256.lower() != str(expected_sha256).lower():
+            raise ValueError(
+                "llama.cpp model artifact SHA-256 mismatch: "
+                f"expected {expected_sha256}, found {actual_sha256}"
+            )
+    options: dict[str, Any] = {
+        "model_path": str(model_path),
+        "n_ctx": int(values.get("n_ctx", 131392)),
+        "n_batch": int(values.get("n_batch", 512)),
+        "n_gpu_layers": int(values.get("n_gpu_layers", -1)),
+        "flash_attn": bool(values.get("flash_attn", True)),
+        "verbose": bool(values.get("verbose", False)),
+        "_artifact_uri": str(values.get("artifact_uri", configured_path)),
+        "_artifact_sha256": actual_sha256,
+        "_artifact_size_bytes": actual_size,
+    }
+    version = values.get("version")
+    if version is not None:
+        options["version"] = str(version)
+    return options
 
 
 def _load_resume_manifest(path: Path) -> dict[str, Any]:
@@ -961,7 +1056,11 @@ def runner_trial_id(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--phase", choices=tuple(REPEATS), default="smoke")
-    parser.add_argument("--backend", choices=("fixture", "transformers"), default="fixture")
+    parser.add_argument(
+        "--backend",
+        choices=("fixture", "transformers", "llama.cpp"),
+        default="fixture",
+    )
     parser.add_argument("--output", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--fixture-seed", type=int)
