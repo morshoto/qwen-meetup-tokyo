@@ -64,7 +64,7 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
   --repeats 1 --timing-repeats 5
 ```
 The committed notebook has no cached outputs. It writes separate capability
-and systems-cost figures: `accuracy-vs-memory.png`,
+and systems-cost figures: `success-vs-artifact-size.png`,
 `accuracy-vs-rss.png`, `ttft-vs-context.png`, and
 `throughput-vs-context.png`. Pilot figures are explicitly pilot-only; a full
 comparison requires the complete v002 summary and the separate timing summary.
