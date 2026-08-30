@@ -86,6 +86,18 @@ attempted trials before runtime exclusions. Q8_0 and Q4_K_M are the required
 matched comparison; Q6_K and Q5_K_M remain in the declared matrix for the same
 artifact-controlled interaction view.
 
+After a model run, regenerate the verified task-level tables before opening the
+notebook:
+
+```bash
+PYTHONPATH=src python3 experiments/exp_003-context_x_quantization/analyze.py \
+  --manifest experiments/exp_003-context_x_quantization/results/manifests/main.json
+```
+
+This writes `summary.csv`, `relative-degradation.csv`, `interaction.json`, and
+`effective-context.json` only after source-manifest, catalog, raw-result,
+scorer, coverage, and matched-context validation succeeds.
+
 ## Analysis
 
 `analysis.ipynb` loads the generated raw results, processed summary, and output

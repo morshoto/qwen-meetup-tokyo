@@ -451,6 +451,11 @@ def run_experiment(
         catalog_path=catalog_path,
         fingerprint=fingerprint,
         source_revisions=source_revisions,
+        analysis_controls=(
+            config.get("analysis", {})
+            if isinstance(config.get("analysis", {}), Mapping)
+            else {}
+        ),
         effective_runtime_options_by_variant={
             condition_id: dict(runtime_config.options)
             for condition_id, runtime_config in runtime_configs.items()
@@ -826,6 +831,7 @@ def _run_manifest(
     effective_runtime_options_by_variant: Mapping[str, Mapping[str, Any]],
     catalog_path: Path | None = None,
     source_revisions: Mapping[str, str] | None = None,
+    analysis_controls: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     variant_list = list(variants)
@@ -923,6 +929,16 @@ def _run_manifest(
             condition.evidence_position for condition in condition_list
         ),
         "repeats": repeats,
+        "analysis": dict(analysis_controls or {}),
+        "effective_context": {
+            "baseline_length": int(
+                (analysis_controls or {}).get("baseline_context_tokens", 8192)
+            ),
+            "baseline_accuracy_gate": float(
+                (analysis_controls or {}).get("baseline_accuracy_gate", 0.80)
+            ),
+            "alpha": float((analysis_controls or {}).get("alpha", 0.90)),
+        },
         "matching": "same task seed, generated context text, context length, and evidence position across variants",
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),

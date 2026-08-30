@@ -9,7 +9,10 @@ results/
 ├── raw/
 │   └── trials.jsonl              # ignored by Git; append-only evidence
 ├── processed/
-│   └── summary.csv               # generated notebook input
+│   ├── summary.csv               # task-level generated notebook input
+│   ├── relative-degradation.csv # short-context-relative accuracy
+│   ├── interaction.json          # direct gap and classification report
+│   └── effective-context.json    # variant/task effective context
 └── figures/
     ├── context-x-quantization.png
     ├── position-x-context-q8_0.png
@@ -23,6 +26,12 @@ variant/artifact identities, the complete context/position/task matrix, matched
 cell coverage, exclusions, and the raw-result SHA-256. Raw runtime failures
 remain in the denominator. The real backend is llama.cpp; generated fixture
 output validates the harness only and is not a Qwen measurement.
+
+`analyze.py` regenerates these processed outputs from a verified manifest. It
+requires `calibrated.v1`, validates the resolved catalog hash and raw hash, and
+rejects excluded cells before writing direct interaction results. Pass
+`--allow-fixture` only when explicitly validating the harness; fixture output
+cannot produce a project finding.
 
 The checked-in manifest and processed outputs are historical three-task smoke
 measurements from catalog v001. New issue #21 runs use the resolved exp_002

@@ -23,6 +23,8 @@ TASK_IDS = ("task.literal.000001", "task.literal.000002")
 VARIANTS = ("q8_0", "q4_k_m")
 CONTEXTS = (8192, 32768)
 POSITIONS = (0.50,)
+CATALOG_PATH = ROOT / "data/tasks/core.v002.jsonl"
+CATALOG_SHA256 = hashlib.sha256(CATALOG_PATH.read_bytes()).hexdigest()
 
 
 def trial(
@@ -54,7 +56,7 @@ def trial(
             "context_instance_id": instance_id,
             "context_sha256": hashlib.sha256(instance_id.encode()).hexdigest(),
             "task_catalog": "data/tasks/core.v002.jsonl",
-            "task_catalog_sha256": "b" * 64,
+            "task_catalog_sha256": CATALOG_SHA256,
             "scorer_version": "calibrated.v1",
         },
         score={
@@ -96,7 +98,7 @@ def write_manifest(root: Path, raw_path: Path, *, backend: str = "llama.cpp") ->
         "source_manifest": str(source_manifest),
         "source_manifest_sha256": hashlib.sha256(source_manifest.read_bytes()).hexdigest(),
         "task_catalog": "data/tasks/core.v002.jsonl",
-        "task_catalog_sha256": "b" * 64,
+        "task_catalog_sha256": CATALOG_SHA256,
         "task_ids": list(TASK_IDS),
         "task_types": ["literal_retrieval"],
         "quantization_variants": [
