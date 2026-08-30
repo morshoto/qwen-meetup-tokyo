@@ -63,8 +63,13 @@ the resolved manifest, appends only missing trial IDs, and rejects mismatched
 or out-of-scope records. The current `core.v002` protocol has 30 independent
 QA tasks. Its pilot is Q8_0 × 8,192 × 30 tasks × one repeat (30 trials); the
 complete matrix is 4 × 2 × 30 × 5 (1,200 trials). The checked-in resolved
-manifest and summaries are historical `core.v001` measurements and remain
-unchanged until a new v002 run is measured.
+manifest is now the resolved v002 manifest. The measured v002 pilot is
+recorded in `results/processed/pilot-v002-summary.csv` and
+`pilot-v002-report.md`; it covers only Q8_0 at 8,192 tokens with one repeat per
+task. Historical v001 evidence remains separate as
+`results/manifest.v001.json`, `results/processed/summary.v001.csv`, and
+`results/processed/pilot-v001-summary.csv`. The remaining 1,170 v002 trials
+must be measured before a cross-variant conclusion is reported.
 
 ```bash
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \

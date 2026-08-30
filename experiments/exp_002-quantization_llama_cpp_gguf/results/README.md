@@ -10,10 +10,10 @@ results/
 │   ├── trials-v002.jsonl      # ignored by Git; append-only v002 evidence
 │   └── trials.jsonl           # ignored historical v001 evidence
 ├── processed/
-│   ├── summary.csv             # generated task-level v002 notebook input (full run)
 │   ├── pilot-v002-summary.csv  # measured 30-trial v002 pilot summary
 │   ├── pilot-v002-report.md    # pilot hash, observations, and completion boundary
-│   └── summary.v001.csv        # preserved historical v001 summary
+│   ├── summary.v001.csv        # preserved historical v001 summary
+│   ├── pilot-v001-summary.csv  # preserved historical v001 pilot summary
 │   ├── rescored-summary.csv    # issue #28 diagnostic comparison
 │   └── rescoring-report.md     # issue #28 provenance and caveat
 └── figures/
@@ -64,6 +64,6 @@ or empty. It writes:
 
 The current 120-trial input is recorded by SHA-256 as
 `24ec3aca8687d369a58bc33843a8d2beaf37643c781b32fee2d198c035cf0188`.
-Diagnostic re-scoring does not replace the historical `summary.csv` and must
+Diagnostic re-scoring does not replace the historical `summary.v001.csv` and must
 not be used for a final quantization claim without a formal re-measurement
 under the calibrated policy.

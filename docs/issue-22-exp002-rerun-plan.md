@@ -19,6 +19,13 @@ be independently traceable and must not silently reuse that historical output.
 
 > Re-run `exp_002` with the calibrated scorer and expanded task catalog.
 
+### Current Delivery Status
+
+The implementation is complete and a real-model v002 pilot is committed. The
+pilot covers 30 Q8_0 trials at 8,192 input tokens; the remaining 1,170 trials
+of the declared 1,200-trial matrix are intentionally unrun, so the full
+quantization comparison and recommendation remain pending.
+
 ### Scope
 
 **In scope**
@@ -175,9 +182,10 @@ be independently traceable and must not silently reuse that historical output.
 - Resolve all four local GGUF artifacts against the v002 template with the
   exact model/tokenizer/runtime/converter revisions and catalog hash.
 - Run the v002 pilot first, then resume the same append-only JSONL to complete
-  the full 4 × 2 × 30 × 5 matrix when runtime/hardware permits.
-- Generate task-level `summary.csv`, run the measured-only notebook, and
-  retain runtime/invalid-output rows rather than filtering them.
+  the full 4 × 2 × 30 × 5 matrix when runtime/hardware permits. The committed
+  evidence currently contains the pilot only.
+- Generate task-level `summary.csv` after the full matrix, run the measured-only
+  notebook, and retain runtime/invalid-output rows rather than filtering them.
 - Commit only the resolved manifest, processed summaries/figures, README, and
   provenance documentation; keep raw trials and weights ignored.
 
@@ -206,7 +214,8 @@ be independently traceable and must not silently reuse that historical output.
 | `tests/analysis/test_aggregation.py` | Modify | Red | Task-level grouping and denominator preservation. |
 | `tests/analysis/test_quantization.py` | Modify | Red | Analysis boundary contract. |
 | `experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json` | Replace after measurement | Evidence | Resolved v002 artifact/control manifest. |
-| `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv` | Replace after measurement | Evidence | Task-level measured v002 summaries. |
+| `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-summary.csv` | Create | Evidence | Measured 30-trial v002 pilot summaries. |
+| `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv` | Pending full matrix | Evidence | Task-level measured v002 summaries after all 1,200 trials. |
 
 ### Test Commands
 

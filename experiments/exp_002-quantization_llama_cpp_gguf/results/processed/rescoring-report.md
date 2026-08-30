@@ -42,4 +42,4 @@ per task, quantization variant, and context length.
 The historical raw JSONL and its `expected.v1` scores are preserved.
 This diagnostic table must not be used for a final quantization claim
 without the required caveat and a formal re-measurement under the
-calibrated policy. The existing formal `summary.csv` is unchanged.
+calibrated policy. The existing formal `summary.v001.csv` is unchanged.
