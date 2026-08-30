@@ -258,7 +258,7 @@ class QuantizationAnalysisTests(unittest.TestCase):
 
         for required in (
             "SUMMARY_PATH = RESULTS_DIR / 'processed/summary.csv'",
-            "MANIFEST_PATH = RESULTS_DIR / 'manifest.json'",
+            "'manifest.full.json' if PHASE == 'full' else 'manifest.json'",
             "tradeoff_rows",
             "accuracy_vs_memory",
             "speed_vs_memory",
