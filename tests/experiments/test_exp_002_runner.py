@@ -198,6 +198,26 @@ class Exp002RunnerTests(unittest.TestCase):
             )
             self.assertEqual("calibrated.v1", trial.input["scorer_version"])
 
+    def test_runner_rejects_a_task_catalog_hash_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            record = json.loads(manifest_path.read_text(encoding="utf-8"))
+            record["controls"]["task_catalog"] = str(ROOT / "data/tasks/core.v002.jsonl")
+            record["controls"]["task_catalog_sha256"] = "0" * 64
+            manifest_path.write_text(json.dumps(record), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "task catalog SHA-256 mismatch"):
+                runner.run_experiment(
+                    manifest_path=manifest_path,
+                    output_path=root / "raw" / "trials.jsonl",
+                    processed_path=root / "processed" / "summary.csv",
+                    condition_ids=("q8_0",),
+                    context_lengths=(8192,),
+                    repeats=1,
+                    runtime_factory=FakeRuntime,
+                )
+
     def test_pilot_runs_q8_at_8k_for_all_tasks_and_writes_summary(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
