@@ -19,6 +19,7 @@ def matched_cell_rows(
     context_lengths: Iterable[int],
     evidence_positions: Iterable[float],
     task_types: Iterable[str],
+    task_ids: Iterable[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Validate and sort one summary row per matched task/context cell.
 
@@ -28,17 +29,38 @@ def matched_cell_rows(
     """
 
     rows = [dict(row) for row in summaries]
+    task_aware = task_ids is not None or any(
+        row.get("task_id") is not None for row in rows
+    )
+    if not task_aware:
+        selected_task_ids = ()
+    elif task_ids is not None:
+        selected_task_ids = tuple(
+            dict.fromkeys(str(task_id) for task_id in task_ids)
+        )
+    else:
+        selected_task_ids = tuple(sorted({str(row["task_id"]) for row in rows}))
+    if task_aware and not selected_task_ids:
+        raise InteractionAnalysisError("task-aware matching requires task_ids")
     expected = {
-        (str(variant), str(task), int(context), float(position))
+        _matched_key(task_id, variant, task, context, position, task_aware)
+        for task_id in (selected_task_ids if task_aware else (None,))
         for variant in variant_ids
         for task in task_types
         for context in context_lengths
         for position in evidence_positions
     }
-    actual: set[tuple[str, str, int, float]] = set()
-    context_identity: dict[tuple[str, int, float], tuple[str, str]] = {}
+    actual: set[tuple[Any, ...]] = set()
+    context_identity: dict[tuple[Any, ...], tuple[str, str]] = {}
     for row in rows:
-        key = _row_key(row)
+        key = _matched_key(
+            row.get("task_id"),
+            row.get("variant_condition_id"),
+            row.get("task_type"),
+            row.get("target_context_tokens"),
+            row.get("requested_evidence_position"),
+            task_aware,
+        )
         if key in actual:
             raise InteractionAnalysisError(f"duplicate matched cell: {key}")
         actual.add(key)
@@ -52,7 +74,7 @@ def matched_cell_rows(
             raise InteractionAnalysisError(
                 f"matched cell {key} is missing context_sha256"
             )
-        base_key = key[1:]
+        base_key = (key[0], key[2], key[3], key[4]) if task_aware else key[1:]
         identity = (instance_id, context_sha256)
         previous = context_identity.setdefault(base_key, identity)
         if previous != identity:
@@ -72,7 +94,14 @@ def matched_cell_rows(
         )
     return sorted(
         rows,
-        key=lambda row: _row_key(row),
+        key=lambda row: _matched_key(
+            row.get("task_id"),
+            row.get("variant_condition_id"),
+            row.get("task_type"),
+            row.get("target_context_tokens"),
+            row.get("requested_evidence_position"),
+            task_aware,
+        ),
     )
 
 
@@ -84,16 +113,17 @@ def relative_degradation_rows(
     """Compare each cell with its variant/task/position short-context baseline."""
 
     rows = [dict(row) for row in summaries]
-    baselines: dict[tuple[str, str, float], Mapping[str, Any]] = {}
+    task_aware = _has_task_identity(rows)
+    baselines: dict[tuple[Any, ...], Mapping[str, Any]] = {}
     for row in rows:
         key = _row_key(row)
         if key[2] == baseline_context_tokens:
-            baselines[(key[0], key[1], key[3])] = row
+            baselines[_baseline_key(row, task_aware)] = row
 
     output: list[dict[str, Any]] = []
     for row in rows:
         key = _row_key(row)
-        baseline = baselines.get((key[0], key[1], key[3]))
+        baseline = baselines.get(_baseline_key(row, task_aware))
         if baseline is None:
             raise InteractionAnalysisError(
                 "missing short-context baseline for "
@@ -133,14 +163,24 @@ def interaction_report(
     if approx_constant_gap_tolerance < 0:
         raise ValueError("approx_constant_gap_tolerance cannot be negative")
     rows = [dict(row) for row in summaries]
-    by_key = {_row_key(row): row for row in rows}
+    task_aware = _has_task_identity(rows)
+    by_key = {
+        _interaction_key(row, task_aware): row
+        for row in rows
+    }
     reports: list[dict[str, Any]] = []
     grouped: dict[tuple[str, str, int], list[tuple[float, int]]] = defaultdict(list)
     for row in rows:
         variant, task_type, context_tokens, position = _row_key(row)
         if variant == reference_variant:
             continue
-        reference = by_key.get((reference_variant, task_type, context_tokens, position))
+        reference = by_key.get(
+            _interaction_key(
+                row,
+                task_aware,
+                variant=reference_variant,
+            )
+        )
         if reference is None:
             raise InteractionAnalysisError(
                 "missing reference cell for "
@@ -252,6 +292,66 @@ def _row_key(row: Mapping[str, Any]) -> tuple[str, str, int, float]:
         int(required[2]),
         float(required[3]),
     )
+
+
+def _matched_key(
+    task_id: Any,
+    variant: Any,
+    task_type: Any,
+    context_tokens: Any,
+    evidence_position: Any,
+    task_aware: bool,
+) -> tuple[Any, ...]:
+    if task_aware and (task_id is None or not str(task_id).strip()):
+        raise InteractionAnalysisError(
+            "task-aware matched rows must include a non-empty task_id"
+        )
+    key = _row_key(
+        {
+            "variant_condition_id": variant,
+            "task_type": task_type,
+            "target_context_tokens": context_tokens,
+            "requested_evidence_position": evidence_position,
+        }
+    )
+    return (str(task_id), *key) if task_aware else key
+
+
+def _has_task_identity(rows: Iterable[Mapping[str, Any]]) -> bool:
+    return any(row.get("task_id") is not None for row in rows)
+
+
+def _baseline_key(
+    row: Mapping[str, Any],
+    task_aware: bool,
+) -> tuple[Any, ...]:
+    key = _row_key(row)
+    if not task_aware:
+        return key[0], key[1], key[3]
+    task_id = row.get("task_id")
+    if task_id is None or not str(task_id).strip():
+        raise InteractionAnalysisError(
+            "task-aware matched rows must include a non-empty task_id"
+        )
+    return str(task_id), key[0], key[1], key[3]
+
+
+def _interaction_key(
+    row: Mapping[str, Any],
+    task_aware: bool,
+    *,
+    variant: str | None = None,
+) -> tuple[Any, ...]:
+    key = _row_key(row)
+    selected_variant = key[0] if variant is None else variant
+    if not task_aware:
+        return str(selected_variant), key[1], key[2], key[3]
+    task_id = row.get("task_id")
+    if task_id is None or not str(task_id).strip():
+        raise InteractionAnalysisError(
+            "task-aware matched rows must include a non-empty task_id"
+        )
+    return str(task_id), str(selected_variant), key[1], key[2], key[3]
 
 
 def _accuracy(row: Mapping[str, Any]) -> float | None:
