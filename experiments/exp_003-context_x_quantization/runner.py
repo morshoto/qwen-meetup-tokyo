@@ -291,6 +291,10 @@ def run_experiment(
         variant_ids=[variant.condition_id for variant in variants],
         conditions=conditions,
         repeats=run_repeats,
+        capability_repeats=int(phase_controls["capability_repeats"]),
+        timing_repeats=int(
+            phase_controls.get("timing_repeats", phase_controls["repeats"])
+        ),
         fixture_seed=fixture_seed,
         source_revisions=source_revisions,
     )
@@ -446,6 +450,10 @@ def run_experiment(
         conditions=conditions,
         repeats=run_repeats,
         results=load_trial_results(output_path),
+        capability_repeats=int(phase_controls["capability_repeats"]),
+        timing_repeats=int(
+            phase_controls.get("timing_repeats", phase_controls["repeats"])
+        ),
         fixture_seed=fixture_seed,
         catalog=catalog,
         catalog_path=catalog_path,
@@ -654,15 +662,25 @@ def _phase_controls(
         lengths = raw_controls["lengths"]
         positions = raw_controls["evidence_positions"]
         repeats = raw_controls["repeats"]
+        capability_repeats = raw_controls.get("capability_repeats", repeats)
+        timing_repeats = raw_controls.get("timing_repeats", repeats)
         backend = raw_controls["backend"]
     except KeyError as error:
         raise ValueError(f"phase {phase!r} is missing {error.args[0]!r}") from error
     if not isinstance(backend, str) or not backend.strip():
         raise ValueError(f"phase {phase!r} backend must be a non-empty string")
+    if int(repeats) < 1 or int(capability_repeats) < 1 or int(timing_repeats) < 1:
+        raise ValueError(f"phase {phase!r} repeat counts must be positive")
+    if int(capability_repeats) > int(repeats):
+        raise ValueError(
+            f"phase {phase!r} capability_repeats cannot exceed repeats"
+        )
     return {
         "context_lengths": lengths,
         "evidence_positions": positions,
         "repeats": repeats,
+        "capability_repeats": capability_repeats,
+        "timing_repeats": timing_repeats,
         "backend": backend,
     }
 
@@ -690,7 +708,7 @@ def _select_repeats(
     repeats: int | None,
     config: Mapping[str, Any] | None = None,
 ) -> int:
-    default = int(_phase_controls(phase, config)["repeats"])
+    default = int(_phase_controls(phase, config)["capability_repeats"])
     selected = default if repeats is None else int(repeats)
     if selected < 1 or selected > default:
         raise ValueError(f"repeats must be between 1 and {default} for {phase}")
@@ -719,6 +737,8 @@ def _run_fingerprint(
     conditions: Iterable[Condition],
     repeats: int,
     fixture_seed: int,
+    capability_repeats: int | None = None,
+    timing_repeats: int | None = None,
     source_revisions: Mapping[str, str] | None = None,
 ) -> str:
     payload = {
@@ -734,6 +754,8 @@ def _run_fingerprint(
             for condition in conditions
         ],
         "repeats": repeats,
+        "capability_repeats": capability_repeats or repeats,
+        "timing_repeats": timing_repeats or repeats,
         "fixture_seed": fixture_seed,
         "source_revisions": dict(
             _source_revisions() if source_revisions is None else source_revisions
@@ -832,6 +854,8 @@ def _run_manifest(
     catalog_path: Path | None = None,
     source_revisions: Mapping[str, str] | None = None,
     analysis_controls: Mapping[str, Any] | None = None,
+    capability_repeats: int | None = None,
+    timing_repeats: int | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     variant_list = list(variants)
@@ -929,6 +953,8 @@ def _run_manifest(
             condition.evidence_position for condition in condition_list
         ),
         "repeats": repeats,
+        "capability_repeats": capability_repeats or repeats,
+        "timing_repeats": timing_repeats or repeats,
         "analysis": dict(analysis_controls or {}),
         "effective_context": {
             "baseline_length": int(

@@ -36,7 +36,9 @@ Median stream-derived measurements were 71.1740 seconds TTFT, 115.7094
 prompt-tokens/second proxy, and 7.9671 completion-tokens/second proxy.
 Native prefill/decode counters are unavailable through this binding and remain
 `null`; these stream-derived values must not be treated as native kernel
-metrics.
+metrics. The historical sequential runner's RSS observations are process-local
+and are not used as a per-quantization memory comparison; use isolated child
+processes for that claim.
 
 ## Completion boundary
 

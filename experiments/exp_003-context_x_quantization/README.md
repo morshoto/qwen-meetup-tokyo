@@ -35,7 +35,7 @@ not relabel or reuse those historical scores as calibrated measurements.
 | Evidence position | 5%, 25%, 50%, 75%, 95% |
 | Quantization | Q8_0, Q6_K, Q5_K_M, Q4_K_M from exp_002 |
 | Task family | literal, semantic, multi-hop |
-| Repeats | 20 per cell where resources permit |
+| Capability repeats | 1 per independent task; timing repeats are a separate probe |
 | Sampling | greedy, `temperature: 0.0`, max 64 generated tokens |
 
 The committed config is the protocol. Artifact identity, model/tokenizer
@@ -50,9 +50,10 @@ context capacity and model path settings. The resolved exp_002 manifest is the
 source of truth for the v002 catalog, catalog hash, artifact identities, and
 `calibrated.v1` scorer policy.
 
-The runner loads phase lengths, evidence positions, repeats, backend, and the
-default quantization variants from `config.yaml`. Matching CLI flags are
-explicit overrides for a selected run.
+The runner loads phase lengths, evidence positions, the capability repeat
+count, backend, and the default quantization variants from `config.yaml`.
+The larger `repeats` value is retained as a timing/legacy envelope; matching
+CLI flags are explicit overrides for a selected run.
 
 ## Run phases
 
@@ -79,11 +80,13 @@ and coverage. It is not a Qwen measurement and must not be copied into
 results and are listed as exclusions with reasons rather than being silently
 dropped.
 
-The issue #21 main matrix is four quantization variants × four context lengths
-× five evidence positions × 30 independent tasks × 20 repeats = 48,000
-attempted trials before runtime exclusions. Q8_0 and Q4_K_M are the required
+The issue #21 main capability matrix is four quantization variants × four
+context lengths × five evidence positions × 30 independent tasks × one run =
+2,400 attempted trials before runtime exclusions. Q8_0 and Q4_K_M are the required
 matched comparison; Q6_K and Q5_K_M remain in the declared matrix for the same
-artifact-controlled interaction view.
+artifact-controlled interaction view. Repeating a deterministic greedy prompt
+does not add an independent capability observation; collect any timing repeats
+as a separate, explicitly labelled probe.
 
 After a model run, regenerate the verified task-level tables before opening the
 notebook:

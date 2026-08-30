@@ -61,15 +61,24 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/resolve_m
 Use the same raw output for the pilot and full run: the runner fingerprints
 the resolved manifest, appends only missing trial IDs, and rejects mismatched
 or out-of-scope records. The current `core.v002` protocol has 30 independent
-QA tasks. Its pilot is Q8_0 × 8,192 × 30 tasks × one repeat (30 trials); the
-complete matrix is 4 × 2 × 30 × 5 (1,200 trials). The checked-in resolved
-manifest is now the resolved v002 manifest. The measured v002 pilot is
+QA tasks. Its pilot is Q8_0 × 8,192 × 30 tasks × one capability run (30 trials);
+the capability matrix is 4 × 2 × 30 × 1 (240 trials) when resolved from the
+current template. The checked-in resolved manifest predates the explicit
+`capability_repeats` field (its legacy repeat envelope is five), so its pilot
+uses `--repeats 1` and must not be interpreted as five independent capability
+observations. The measured v002 pilot is
 recorded in `results/processed/pilot-v002-summary.csv` and
 `pilot-v002-report.md`; it covers only Q8_0 at 8,192 tokens with one repeat per
 task. Historical v001 evidence remains separate as
 `results/manifest.v001.json`, `results/processed/summary.v001.csv`, and
-`results/processed/pilot-v001-summary.csv`. The remaining 1,170 v002 trials
-must be measured before a cross-variant conclusion is reported.
+`results/processed/pilot-v001-summary.csv`. The remaining 210 v002 capability
+cells must be measured before a cross-variant conclusion is reported. Because
+the checked-in resolved manifest retains its legacy five-repeat envelope, its
+resume command may still schedule 1,170 execution slots; resolve a fresh
+manifest from the current template (or select `--repeats 1`) for the 240-cell
+capability matrix. If timing
+variance is important, collect separate timing probes and report their repeat
+count independently of capability accuracy.
 
 The committed pilot was regenerated under the current source-revision resume
 guard. Its raw JSONL is terminal evidence for this 30-trial condition and may
@@ -82,6 +91,15 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
   --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json
+
+# Capability pilot extension using one greedy execution per independent task.
+# For a formal full analysis, resolve a fresh manifest containing
+# capability_repeats: 1 before running all cells.
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/trials-v002.jsonl \
+  --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
+  --repeats 1
 ```
 
 ## Initial questions
@@ -93,6 +111,8 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 ## Fixed controls
 
 - Shared tasks: `data/tasks/core.v002.jsonl` (30 independent tasks).
+- The catalog is a controlled synthetic retrieval stress test, not a general
+  reasoning benchmark; repository transfer remains unmeasured.
 - Shared prompt: `data/prompts/prompt.qa.v001.txt` (`prompt.qa.v001`).
 - Context lengths: 8,192 and 32,768 input tokens. The prompt/template
   convention is explicit in the resolved manifest as
@@ -104,7 +124,10 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 - Runtime: the same `llama-cpp-python` version, ggml kernel options, context
   size, batch size, GPU-layer setting, and flash-attention setting for every
   variant.
-- Repeats: five per task/condition/context cell.
+- Capability repeats: one per independent task/condition/context cell under
+  greedy decoding. Timing probes, if collected, are reported separately.
+  `capability_repeats` and `timing_repeats` are explicit in newly resolved
+  manifests; historical manifests retain their original `repeats` field.
 
 ## Measurements
 
@@ -115,7 +138,10 @@ and the runner's calibrated policy/catalog/artifact provenance.
 The runner records:
 
 - weight/artifact footprint: the resolved GGUF file byte size;
-- peak memory: process peak RSS and its measurement method;
+- sampled RSS during each trial and its measurement method. This is a
+  process-local observation, not a cross-variant peak-memory claim when the
+  runner loads variants sequentially; use one child process per variant for a
+  definitive memory comparison;
 - stream TTFT: `stream_ttft_s`, from `generate` call until the first
   streamed chunk;
 - prompt-throughput proxy: `prompt_throughput_proxy_tok_s`, prompt tokens

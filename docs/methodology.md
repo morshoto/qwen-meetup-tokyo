@@ -56,6 +56,12 @@ For tasks with a deterministic expected answer:
 
 Deterministic decoding does **not** remove the need for multiple task instances. Variation should come from independently generated benchmark instances rather than repeatedly asking the exact same prompt where possible.
 
+For capability estimates, count each independent task instance once. A repeated
+greedy execution of the same task/context is a timing or stability probe, not a
+new independent accuracy observation. Experiment configs therefore expose
+`capability_repeats` separately from `timing_repeats`; task-level bootstrap or
+paired comparisons should use independent task IDs as the resampling unit.
+
 For agent tasks, if deterministic decoding leads to brittle single-trajectory behavior, introduce a controlled nonzero sampling condition only as a separate analysis.
 
 ### Seed policy

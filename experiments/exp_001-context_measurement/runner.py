@@ -364,7 +364,12 @@ def run_experiment(
     results: list[TrialResult] = []
     conditions = planned_conditions(phase, config=config)
     phase_config = config["phases"][phase]
-    repeats = int(phase_config["repeats"])
+    # Greedy repeats are not independent capability observations.  The phase
+    # may retain a larger ``repeats`` envelope for legacy/timing probes, while
+    # new capability runs explicitly use one run per independent task.
+    repeats = int(
+        phase_config.get("capability_repeats", phase_config["repeats"])
+    )
     context_provenance = _context_provenance(
         config_path=config_file,
         catalog_path=catalog_path,
@@ -600,6 +605,16 @@ def _manifest(
         "sampling": sampling_record,
         "model": _model_record(model) if model is not None else None,
         "repeats": repeats,
+        "capability_repeats": repeats,
+        "timing_repeats": (
+            int(
+                config.get("phases", {})
+                .get(phase, {})
+                .get("timing_repeats", repeats)
+            )
+            if isinstance(config, Mapping)
+            else repeats
+        ),
         "planned_condition_n": len(condition_list),
         "planned_cell_n": len(coverage),
         "planned_trial_n": len(condition_list) * len(catalog.tasks) * repeats,

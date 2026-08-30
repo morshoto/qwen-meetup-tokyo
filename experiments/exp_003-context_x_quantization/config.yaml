@@ -38,18 +38,24 @@ phases:
     lengths: [8192, 32768]
     evidence_positions: [0.05, 0.50]
     repeats: 1
+    capability_repeats: 1
+    timing_repeats: 1
     backend: fixture
     purpose: Validate matching, scoring, storage, and coverage only.
   pilot:
     lengths: [8192, 32768, 65536]
     evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
     repeats: 5
+    capability_repeats: 1
+    timing_repeats: 5
     backend: llama.cpp
     purpose: Estimate interaction effect and resource exclusions.
   main:
     lengths: [8192, 32768, 65536, 131072]
     evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
     repeats: 20
+    capability_repeats: 1
+    timing_repeats: 20
     backend: llama.cpp
     purpose: Produce the matched interaction measurements when resources permit.
 

@@ -22,7 +22,7 @@ additional variable.
 | Context length | 8K, 32K, 64K, 128K |
 | Evidence position | 5%, 25%, 50%, 75%, 95% |
 | Task family | literal, semantic, multi-hop; 10 independent tasks per family |
-| Repeats | 20 per cell where resources permit |
+| Capability repeats | 1 per independent task; timing repeats are a separate probe |
 | Sampling | temperature 0.0, max 32 generated tokens |
 
 The 8K reference condition is used for the 80% baseline-validity gate. Effective
@@ -63,6 +63,13 @@ The real-model command is intentionally not a download command. The required
 Transformers/Torch stack, Qwen weights, and hardware must already be available;
 otherwise the run is blocked and fixture output must not be substituted.
 
+The real-model path currently uses Transformers, while exp_002 and exp_003 use
+llama.cpp/GGUF. Those backends are an explicit confound and their absolute
+accuracy, latency, and memory values must not be compared as if they were one
+runtime. For an operational cross-experiment reference, use the matched Q8_0
+llama.cpp condition in exp_003; keep this exp_001 run as the Transformers
+baseline unless a separately provisioned Q8_0 llama.cpp baseline is collected.
+
 The fixture backend returns catalog answers by design. It validates task
 construction, evidence offsets, scoring, append-only storage, and coverage; it
 is not Qwen evidence and must not be copied into `docs/findings.md` as a model
@@ -71,7 +78,8 @@ independent-task trials as valid.
 The explicit `--overwrite-smoke` flag makes this deterministic fixture command
 safe to rerun against the committed artifact paths; other existing output paths
 fail closed so append-only trial data cannot be accidentally duplicated.
-The main matrix remains resource-dependent; runtime/OOM/timeout cells are kept
+The catalog is a controlled synthetic retrieval stress test, not a general
+reasoning benchmark. The main matrix remains resource-dependent; runtime/OOM/timeout cells are kept
 in raw JSONL and listed as exclusions with reasons in the phase manifest. The
 runner's `--resume` option uses deterministic trial IDs to fill only missing
 attempts. A model run writes its resolved sampling checkpoint before the first

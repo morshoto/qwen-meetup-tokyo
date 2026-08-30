@@ -34,14 +34,22 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
   --condition-id q8_0 --context-length 8192 --repeats 1
 ```
 
-Running the same command again resumes by deterministic trial ID. Running it
-without selectors, with the same `--output`, completes the full 1,200-trial
-matrix; duplicate or mismatched trial records are rejected. The v001 manifest,
+Running the same command again resumes by deterministic trial ID. Use the
+same `--output` and `--processed` paths plus `--repeats 1` to extend the
+capability pilot across the remaining variants and context length. A newly
+resolved manifest with `capability_repeats: 1` completes the full 240-trial
+capability matrix; the checked-in historical manifest still declares a
+five-repeat envelope and therefore reports 1,200 legacy trial IDs. Duplicate or
+mismatched trial records are rejected. The v001 manifest,
 summary, and historical raw path remain preserved separately. The committed
 `pilot-v002-summary.csv` is pilot evidence only; a full v002 `summary.csv` is
-not valid until all variants, contexts, tasks, and repeats have been measured.
+not valid until all variants, contexts, and tasks have been measured. The
+capability matrix uses one greedy run per independent task. Additional timing
+probes must use a separate output and denominator.
 The committed notebook has no cached outputs, and stale figures are removed;
-the two figures are regenerated only from the complete v002 summary.
+the two figures are regenerated from the selected calibrated phase. Pilot
+figures are explicitly pilot-only; a full comparison requires the complete
+v002 summary.
 The committed pilot was regenerated under the source-revision resume guard;
 extend its raw JSONL only when the manifest and recorded source revisions still
 match.

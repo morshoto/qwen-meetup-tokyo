@@ -260,7 +260,8 @@ git diff --check
 - The old v001 result is historical evidence and must remain identifiable as
   such after v002 files are published.
 - Reviewers should check all 30 task IDs across four variants, two context
-  lengths, and five repeats, then inspect runtime/invalid-output counts before
+  lengths, and the historical five-repeat envelope, then inspect
+  runtime/invalid-output counts before
   interpreting a quantization recommendation.
 
 ### Definition of Done

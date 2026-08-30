@@ -65,6 +65,8 @@ benchmark:
   context_length_semantics: input_tokens
   context_overhead_tokens: 256
   repeats: 5
+  capability_repeats: 1
+  timing_repeats: 5
 
 metrics:
   - scored_accuracy

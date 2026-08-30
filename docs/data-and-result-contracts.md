@@ -425,6 +425,12 @@ median_decode_tps
 peak_memory_bytes
 ```
 
+`peak_memory_bytes` is a sampled process-local RSS maximum when psutil is
+available (`psutil.Process.memory_info.rss_sampled`). The stdlib fallback is a
+process-lifetime `ru_maxrss` high-water mark. Do not compare sequentially loaded
+quantization variants as independent memory measurements unless each variant is
+run in an isolated process; always retain `memory_measurement` with the value.
+
 Agent/repository summaries add task-success and trajectory metrics.
 
 ## 16. Figure provenance

@@ -322,6 +322,8 @@
   "raw_results": "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl",
   "raw_results_sha256": "a77d222ee1700a9d298bfc76b011a45b4a76753cded7a3886772bfbc7164a199",
   "repeats": 1,
+  "capability_repeats": 1,
+  "timing_repeats": 1,
   "sampling": {
     "do_sample": false,
     "generation_seed_policy": "greedy-decoding-no-seed",

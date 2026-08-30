@@ -73,7 +73,7 @@ def expected_trial_count(manifest: QuantizationManifest) -> int:
         len(manifest.variants)
         * len(manifest.context_lengths)
         * len(manifest.task_ids)
-        * manifest.repeats
+        * (manifest.capability_repeats or manifest.repeats)
     )
 
 
@@ -95,9 +95,12 @@ def run_experiment(
     manifest = load_manifest(manifest_path)
     variants = _select_variants(manifest, condition_ids)
     lengths = _select_lengths(manifest, context_lengths)
-    run_repeats = manifest.repeats if repeats is None else repeats
-    if run_repeats < 1 or run_repeats > manifest.repeats:
-        raise ValueError("repeats must be between 1 and the manifest repeat count")
+    repeat_ceiling = manifest.capability_repeats or manifest.repeats
+    run_repeats = repeat_ceiling if repeats is None else repeats
+    if run_repeats < 1 or run_repeats > repeat_ceiling:
+        raise ValueError(
+            "repeats must be between 1 and the manifest capability repeat count"
+        )
     source_revisions = _source_revisions()
     fingerprint = _run_fingerprint(
         manifest, source_revisions=source_revisions

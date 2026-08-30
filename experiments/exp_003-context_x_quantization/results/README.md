@@ -14,7 +14,7 @@ results/
 │   ├── interaction.json          # direct gap and classification report
 │   └── effective-context.json    # variant/task effective context
 └── figures/
-    ├── context-x-quantization.png
+    ├── context-x-quantization-{literal_retrieval,semantic_retrieval,multi_hop}.png
     ├── position-x-context-q8_0.png
     ├── position-x-context-q6_k.png
     ├── position-x-context-q5_k_m.png
