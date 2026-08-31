@@ -59,6 +59,8 @@ PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
 # sampling checkpoint in the existing manifest.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase main --backend transformers --resume
+PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
+  --phase main --backend llama.cpp --resume
 
 # Regenerate tables from a completed, verified model manifest.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/analyze.py \

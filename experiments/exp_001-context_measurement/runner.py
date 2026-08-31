@@ -442,7 +442,7 @@ def run_experiment(
     if resume:
         _validate_resume_sampling(existing_results, sampling)
     existing_ids = {result.trial_id for result in existing_results}
-    if backend == "transformers" and not resume:
+    if backend in ("transformers", "llama.cpp") and not resume:
         _write_resume_checkpoint(
             manifest_path=manifest_path,
             phase=phase,

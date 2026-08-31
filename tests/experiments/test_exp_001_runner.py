@@ -226,6 +226,72 @@ class Exp001RunnerTests(unittest.TestCase):
                     config_path=ROOT / "experiments/exp_001-context_measurement/config.yaml",
                 )
 
+    def test_llama_cpp_model_run_writes_resume_checkpoint_before_first_trial(self) -> None:
+        class ByteTokenizer:
+            name = "checkpoint-test-tokenizer"
+
+            def encode(self, text: str) -> list[int]:
+                return list(text.encode("utf-8"))
+
+            def decode(self, tokens: list[int]) -> str:
+                return bytes(tokens).decode("utf-8")
+
+        class FakeLlamaRuntime:
+            name = "llama.cpp"
+
+            def load(self, model, config) -> None:
+                del model, config
+
+            def get_tokenizer(self) -> ByteTokenizer:
+                return ByteTokenizer()
+
+            def close(self) -> None:
+                return None
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output_path = root / "raw" / "smoke-trials.jsonl"
+            manifest_path = root / "manifests" / "smoke.json"
+            llama_options = {
+                "model_path": str(root / "q8_0.gguf"),
+                "version": "llama-test",
+                "n_ctx": 131392,
+                "n_batch": 128,
+                "n_gpu_layers": -1,
+                "flash_attn": True,
+                "verbose": False,
+                "_artifact_uri": "artifacts/q8_0.gguf",
+                "_artifact_sha256": "a" * 64,
+                "_artifact_size_bytes": 1,
+            }
+
+            with (
+                patch.object(runner, "LlamaCppRuntime", FakeLlamaRuntime),
+                patch.object(runner, "_llama_cpp_options", return_value=llama_options),
+                patch.object(
+                    runner,
+                    "EvaluationRunner",
+                    side_effect=RuntimeError("checkpoint sentinel"),
+                ),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "checkpoint sentinel"):
+                    runner.run_experiment(
+                        phase="smoke",
+                        backend="llama.cpp",
+                        output_path=output_path,
+                        manifest_path=manifest_path,
+                        config_path=ROOT / "experiments/exp_001-context_measurement/config.yaml",
+                    )
+
+            checkpoint = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual("in_progress", checkpoint["status"])
+            self.assertEqual("llama.cpp", checkpoint["backend"])
+            self.assertEqual(str(output_path), checkpoint["raw_results"])
+            self.assertEqual(
+                "greedy-decoding-no-seed",
+                checkpoint["sampling"]["generation_seed_policy"],
+            )
+
     def test_analysis_notebook_requires_calibrated_scorer(self) -> None:
         notebook = (ROOT / "experiments/exp_001-context_measurement/analysis.ipynb").read_text(
             encoding="utf-8"
