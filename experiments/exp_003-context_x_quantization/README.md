@@ -78,9 +78,9 @@ PYTHONPATH=src python3 experiments/exp_003-context_x_quantization/runner.py \
 
 The fixture backend validates matching, context construction, scoring, storage,
 and coverage. It is not a Qwen measurement and must not be copied into
-`docs/findings.md` as a model finding. Runtime/OOM/timeout cells remain in raw
-results and are listed as exclusions with reasons rather than being silently
-dropped.
+`docs/findings.md` as a model finding. Runtime/OOM/timeout trials remain in raw
+results and in the end-to-end denominator; a cell is excluded only when
+planned attempts are missing.
 
 The issue #21 main capability matrix is four quantization variants × four
 context lengths × five evidence positions × 30 independent tasks × one run =
@@ -101,6 +101,11 @@ PYTHONPATH=src python3 experiments/exp_003-context_x_quantization/analyze.py \
 This writes `summary.csv`, `relative-degradation.csv`, `interaction.json`, and
 `effective-context.json` only after source-manifest, catalog, raw-result,
 scorer, coverage, and matched-context validation succeeds.
+
+The primary degradation and interaction rates use end-to-end success over all
+attempted trials. Runtime and invalid-output failures remain in that
+denominator; `scored_n` and the exact/answer-bearing/format-valid metrics are
+reported separately for diagnosis.
 
 ## Analysis
 

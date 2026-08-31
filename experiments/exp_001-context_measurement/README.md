@@ -26,7 +26,7 @@ additional variable.
 | Sampling | temperature 0.0, max 32 generated tokens |
 
 The 8K reference condition is used for the 80% baseline-validity gate. Effective
-context uses the first sustained accuracy drop below `alpha × baseline`; no
+context uses the first sustained end-to-end-success drop below `alpha × baseline`; no
 crossing is reported as right-censored, not unlimited. Position comparisons use
 the requested position for the curve and retain actual token offsets in every
 trial. A task family below the 80% gate is marked `baseline-limited` and is not
@@ -86,8 +86,10 @@ The explicit `--overwrite-smoke` flag makes this deterministic fixture command
 safe to rerun against the committed artifact paths; other existing output paths
 fail closed so append-only trial data cannot be accidentally duplicated.
 The catalog is a controlled synthetic retrieval stress test, not a general
-reasoning benchmark. The main matrix remains resource-dependent; runtime/OOM/timeout cells are kept
-in raw JSONL and listed as exclusions with reasons in the phase manifest. The
+reasoning benchmark. The main matrix remains resource-dependent; runtime/OOM/timeout
+trials are kept in raw JSONL, counted in the end-to-end denominator, and listed
+by status in the phase manifest. A cell is excluded only when planned attempts
+are missing. The
 runner's `--resume` option uses deterministic trial IDs to fill only missing
 attempts. A model run writes its resolved sampling checkpoint before the first
 trial; resume requires that checkpoint and rejects changes to its effective

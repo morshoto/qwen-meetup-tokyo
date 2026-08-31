@@ -126,7 +126,7 @@ measurable dependent variable.
   at least 80% accuracy over the predeclared scored instances. If it misses
   that gate, classify the family as **baseline-limited** and do not rank its
   relative breakpoint against other families. Always show the absolute
-  accuracy curve, successes/attempted scored trials, and runtime-failure
+  accuracy curve, end-to-end successes/attempted trials, and runtime-failure
   status for baseline-limited families.
 - **Task correctness:** exact match or a deterministic structured grader for
   retrieval; task-specific answer keys for semantic and multi-hop tasks.
