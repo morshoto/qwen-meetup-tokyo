@@ -288,9 +288,10 @@ class Exp001RunnerTests(unittest.TestCase):
             self.assertEqual("llama.cpp", checkpoint["backend"])
             self.assertEqual(str(output_path), checkpoint["raw_results"])
             self.assertEqual(
-                "greedy-decoding-no-seed",
+                "configured-seed",
                 checkpoint["sampling"]["generation_seed_policy"],
             )
+            self.assertEqual(42, checkpoint["sampling"]["seed"])
 
     def test_analysis_notebook_requires_calibrated_scorer(self) -> None:
         notebook = (ROOT / "experiments/exp_001-context_measurement/analysis.ipynb").read_text(

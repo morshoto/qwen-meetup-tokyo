@@ -23,7 +23,7 @@ additional variable.
 | Evidence position | 5%, 25%, 50%, 75%, 95% |
 | Task family | literal, semantic, multi-hop; 10 independent tasks per family |
 | Capability repeats | 1 per independent task; timing repeats are a separate probe |
-| Sampling | temperature 0.0, max 32 generated tokens |
+| Sampling | temperature 0.0, seed 42, max 64 generated tokens |
 
 The 8K reference condition is used for the 80% baseline-validity gate. Effective
 context uses the first sustained end-to-end-success drop below `alpha × baseline`; no

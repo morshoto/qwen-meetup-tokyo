@@ -71,7 +71,9 @@ the same scorer and manifest, before making a cross-quantization claim.
 
 The committed exp_001 result is 180/180 fixture trials across 18 cells and is
 harness-only (raw SHA-256
-`a77d222ee1700a9d298bfc76b011a45b4a76753cded7a3886772bfbc7164a199`). The
+`e493461a7bf8f552b7a73792578daee1dffeea1a314dfc5a699c012e82847585`; the
+artifact was regenerated after pinning the sampling seed and output budget).
+The
 committed exp_003 result is a 48-trial legacy `expected.v1` llama.cpp smoke
 artifact (raw SHA-256
 `f97e23332b01039210c83af6e0dd61956ad0af656723a83436e65a720ed5c95d`); its flat

@@ -60,8 +60,8 @@ phases:
 
 sampling:
   temperature: 0.0
-  max_new_tokens: 32
-  generation_seed: record-at-run-time
+  max_new_tokens: 64
+  generation_seed: 42
 
 effective_context:
   baseline_length: 8192
