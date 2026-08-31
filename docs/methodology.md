@@ -214,10 +214,10 @@ Purpose: test state tracking and useful accumulated context.
 
 The project distinguishes **maximum accepted context** from **effective context**.
 
-For task family `T`, define a short-context baseline accuracy:
+For task family `T`, define a short-context baseline capability rate:
 
 ```text
-A_baseline(T) = accuracy at baseline context condition
+A_baseline(T) = end-to-end success at baseline context condition
 ```
 
 ### Baseline validity and absolute reporting

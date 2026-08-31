@@ -113,8 +113,8 @@ reported separately for diagnosis.
 run manifest. It fails loudly when measured inputs are missing or incomplete and
 produces:
 
-1. context × quantization accuracy/degradation heatmaps by task type;
-2. position × context accuracy heatmaps for each quantization;
+1. context × quantization end-to-end-success/degradation heatmaps by task type;
+2. position × context end-to-end-success heatmaps for each quantization;
 3. matched quantization gap versus context with sample counts;
 4. effective context separately for every quantization/task type.
 
