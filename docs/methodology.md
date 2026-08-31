@@ -224,13 +224,14 @@ A_baseline(T) = accuracy at baseline context condition
 
 The relative breakpoint is meaningful only when the task family is already
 usable at the short-context reference. The primary gate is at least `0.80`
-accuracy at the 8,192-token reference-precision baseline, measured over the
-predeclared scored instances. Declare a different gate before collecting a
-phase if the task family requires it.
+end-to-end success at the 8,192-token reference-precision baseline, measured
+over the predeclared attempted instances. Runtime and invalid-output failures
+remain failed attempts in this denominator. Declare a different gate before
+collecting a phase if the task family requires it.
 
 If a family misses the gate, classify it as **baseline-limited** and do not
 report or rank a relative effective-context breakpoint for that family. Still
-report its absolute accuracy curve, successes/attempted scored trials, and
+report its absolute accuracy curve, end-to-end successes/attempted trials, and
 runtime-failure status at every tested length. Relative breakpoints never
 replace the absolute curves.
 
