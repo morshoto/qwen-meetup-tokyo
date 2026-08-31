@@ -110,6 +110,14 @@ def position_gap_rows(
         output.append(
             {
                 "task_type": task_type,
+                "metric": (
+                    "end_to_end_success"
+                    if all(
+                        "end_to_end_success" in cells[position]
+                        for position in required_positions
+                    )
+                    else "scored_accuracy"
+                ),
                 "target_context_tokens": context_tokens,
                 "edge_positions": list(edge_positions),
                 "middle_position": middle_position,
@@ -225,7 +233,8 @@ def _effective_context_for_rows(
     alpha: float,
     minimum_baseline_accuracy: float,
 ) -> dict[str, Any]:
-    points = _weighted_context_points(rows)
+    row_list = [dict(row) for row in rows]
+    points = _weighted_context_points(row_list)
     baseline = next(
         (point for point in points if point["context_tokens"] == baseline_context_tokens),
         None,
@@ -238,6 +247,11 @@ def _effective_context_for_rows(
     threshold = alpha * baseline_accuracy if baseline_accuracy is not None else None
     result: dict[str, Any] = {
         "task_type": task_type,
+        "capability_metric": (
+            "end_to_end_success"
+            if row_list and all("end_to_end_success" in row for row in row_list)
+            else "scored_accuracy"
+        ),
         "baseline_context_tokens": baseline_context_tokens,
         "baseline_accuracy": baseline_accuracy,
         "baseline_valid": (

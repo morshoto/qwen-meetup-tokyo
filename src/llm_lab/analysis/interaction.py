@@ -256,6 +256,11 @@ def interaction_report(
                 "task_type": task_type,
                 "variant_condition_id": variant,
                 "reference_variant": reference_variant,
+                "metric": (
+                    "end_to_end_success"
+                    if any("end_to_end_success" in row for row in rows)
+                    else "scored_accuracy"
+                ),
                 "context_points": points,
                 "shortest_context_tokens": points[0]["context_tokens"] if points else None,
                 "largest_context_tokens": points[-1]["context_tokens"] if points else None,
