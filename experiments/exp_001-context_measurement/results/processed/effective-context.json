@@ -4,6 +4,7 @@
     "baseline_accuracy": 1.0,
     "baseline_context_tokens": 8192,
     "baseline_valid": true,
+    "capability_metric": "end_to_end_success",
     "crossing_context_tokens": null,
     "effective_context_tokens": null,
     "largest_tested_context_tokens": 32768,
@@ -11,11 +12,13 @@
     "points": [
       {
         "accuracy": 1.0,
+        "attempted_n": 30,
         "context_tokens": 8192,
         "scored_n": 30
       },
       {
         "accuracy": 1.0,
+        "attempted_n": 30,
         "context_tokens": 32768,
         "scored_n": 30
       }
@@ -29,6 +32,7 @@
     "baseline_accuracy": 1.0,
     "baseline_context_tokens": 8192,
     "baseline_valid": true,
+    "capability_metric": "end_to_end_success",
     "crossing_context_tokens": null,
     "effective_context_tokens": null,
     "largest_tested_context_tokens": 32768,
@@ -36,11 +40,13 @@
     "points": [
       {
         "accuracy": 1.0,
+        "attempted_n": 30,
         "context_tokens": 8192,
         "scored_n": 30
       },
       {
         "accuracy": 1.0,
+        "attempted_n": 30,
         "context_tokens": 32768,
         "scored_n": 30
       }
@@ -54,6 +60,7 @@
     "baseline_accuracy": 1.0,
     "baseline_context_tokens": 8192,
     "baseline_valid": true,
+    "capability_metric": "end_to_end_success",
     "crossing_context_tokens": null,
     "effective_context_tokens": null,
     "largest_tested_context_tokens": 32768,
@@ -61,11 +68,13 @@
     "points": [
       {
         "accuracy": 1.0,
+        "attempted_n": 30,
         "context_tokens": 8192,
         "scored_n": 30
       },
       {
         "accuracy": 1.0,
+        "attempted_n": 30,
         "context_tokens": 32768,
         "scored_n": 30
       }

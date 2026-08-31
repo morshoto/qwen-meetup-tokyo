@@ -4,9 +4,15 @@ import json
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
-from llm_lab.evaluation import TrialResult, TrialStatus, make_trial_id
+from llm_lab.evaluation import (
+    TrialResult,
+    TrialStatus,
+    load_trial_results,
+    make_trial_id,
+)
 from llm_lab.evaluation.storage import JsonlResultWriter
 
 
@@ -70,7 +76,13 @@ def trial(
     )
 
 
-def write_manifest(root: Path, raw_path: Path, *, backend: str = "llama.cpp") -> Path:
+def write_manifest(
+    root: Path,
+    raw_path: Path,
+    *,
+    backend: str = "llama.cpp",
+    q8_baseline_scored_n: int = 2,
+) -> Path:
     source_manifest = ROOT / "experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json"
     coverage = [
         {
@@ -80,7 +92,11 @@ def write_manifest(root: Path, raw_path: Path, *, backend: str = "llama.cpp") ->
             "target_context_tokens": context_tokens,
             "requested_evidence_position": 0.50,
             "trial_n": 2,
-            "scored_n": 2,
+            "scored_n": (
+                q8_baseline_scored_n
+                if variant == "q8_0" and context_tokens == 8192
+                else 2
+            ),
             "independent_task_n": 2,
             "expected_trial_n": 2,
             "status": "valid",
@@ -168,6 +184,36 @@ class Exp003AnalysisTests(unittest.TestCase):
             summary = (root / "processed/summary.csv").read_text(encoding="utf-8")
             self.assertIn("task_id", summary)
             self.assertIn("scorer_version", summary)
+
+    def test_regeneration_keeps_complete_attempted_cell_with_runtime_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw_path = self._write_raw(root)
+            records = load_trial_results(raw_path)
+            failed = replace(
+                records[0],
+                status=TrialStatus.RUNTIME_ERROR,
+                score={"scorer": "calibrated.v1"},
+                error={"type": "MemoryError", "message": "simulated"},
+            )
+            raw_path.unlink()
+            writer = JsonlResultWriter(raw_path)
+            for record in [failed, *records[1:]]:
+                writer.append(record)
+            manifest_path = write_manifest(root, raw_path, q8_baseline_scored_n=1)
+
+            result = analysis.regenerate(manifest_path)
+
+            failed_row = next(
+                row
+                for row in result["summary_rows"]
+                if row["variant_condition_id"] == "q8_0"
+                and row["task_id"] == TASK_IDS[0]
+                and row["target_context_tokens"] == 8192
+            )
+            self.assertEqual(1, failed_row["attempted_n"])
+            self.assertEqual(0, failed_row["scored_n"])
+            self.assertEqual(0.0, failed_row["end_to_end_success"])
 
     def test_regeneration_rejects_fixture_without_explicit_opt_in(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
