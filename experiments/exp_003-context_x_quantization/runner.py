@@ -896,10 +896,11 @@ def _run_manifest(
                 )
                 independent_task_n = independent_task_n_by_type[task_type]
                 expected_trial_n = independent_task_n * repeats
-                is_complete = (
-                    len(cell_results) == expected_trial_n
-                    and scored_n == expected_trial_n
-                )
+                # Coverage is complete when every planned attempt is recorded.
+                # Runtime and invalid-output failures remain in the attempted
+                # denominator and must not turn an otherwise complete cell
+                # into an excluded cell.
+                is_complete = len(cell_results) == expected_trial_n
                 coverage.append(
                     {
                         "variant_condition_id": variant.condition_id,
@@ -915,7 +916,7 @@ def _run_manifest(
                         "status": "valid" if is_complete else "excluded",
                         "exclusion_reason": None
                         if is_complete
-                        else "not all planned trials produced scored outputs; see raw results",
+                        else "not all planned trials were recorded; see raw results",
                     }
                 )
     return {

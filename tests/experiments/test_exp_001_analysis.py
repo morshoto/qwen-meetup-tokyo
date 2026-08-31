@@ -67,8 +67,11 @@ class Exp001AnalysisTests(unittest.TestCase):
                 "task_type": "literal_retrieval",
                 "target_context_tokens": context_tokens,
                 "requested_evidence_position": position,
-                "status": "excluded" if context_tokens == 32768 and position == 0.50 else "valid",
-                "reason": "simulated runtime failure" if context_tokens == 32768 and position == 0.50 else None,
+                # A complete attempted cell remains valid even when one
+                # trial fails at runtime; the failure stays in the primary
+                # end-to-end denominator.
+                "status": "valid",
+                "reason": None,
                 "expected_trial_n": 2,
                 "trial_n": 2,
                 "scored_n": 1 if context_tokens == 32768 and position == 0.50 else 2,
@@ -142,19 +145,20 @@ class Exp001AnalysisTests(unittest.TestCase):
             self.assertIn("attempted_n", summary)
             self.assertIn("runtime_error_n", summary)
             self.assertIn("analysis_status", summary)
-            self.assertEqual(
-                "unavailable",
-                next(
-                    row["analysis_status"]
-                    for row in result["summary_rows"]
-                    if row["target_context_tokens"] == 32768
-                    and row["requested_evidence_position"] == 0.50
-                ),
+            failed_cell = next(
+                row
+                for row in result["summary_rows"]
+                if row["target_context_tokens"] == 32768
+                and row["requested_evidence_position"] == 0.50
             )
+            self.assertEqual("available", failed_cell["analysis_status"])
+            self.assertEqual(2, failed_cell["attempted_n"])
+            self.assertEqual(1, failed_cell["scored_n"])
+            self.assertEqual(0.0, failed_cell["end_to_end_success"])
             gaps = json.loads(
                 (root / "processed/effective-context.json").read_text(encoding="utf-8")
             )
-            self.assertEqual("right_censored", gaps[0]["status"])
+            self.assertEqual("provisional", gaps[0]["status"])
 
     def test_regeneration_rejects_raw_hash_mismatch_before_writing(self) -> None:
         with TemporaryDirectory() as directory:

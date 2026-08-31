@@ -190,20 +190,21 @@ def _validate_coverage(
         coverage_scored_n = _non_negative_int(coverage, "scored_n", key)
         summary_trial_n = _summary_trial_n(summary, key)
         summary_scored_n = _non_negative_int(summary, "scored_n", key)
-        if status == "valid" and (
-            coverage_trial_n != expected_trial_n
-            or coverage_scored_n != expected_trial_n
-        ):
+        if status == "valid" and coverage_trial_n != expected_trial_n:
             raise AnalysisInputError(
                 f"manifest marks incomplete cell valid: {key}; "
                 f"expected_trial_n={expected_trial_n}, "
+                f"trial_n={coverage_trial_n}, scored_n={coverage_scored_n}"
+            )
+        if coverage_scored_n > coverage_trial_n:
+            raise AnalysisInputError(
+                f"manifest scored_n exceeds attempted trials for {key}: "
                 f"trial_n={coverage_trial_n}, scored_n={coverage_scored_n}"
             )
 
         available = (
             status == "valid"
             and coverage_trial_n == expected_trial_n
-            and coverage_scored_n == expected_trial_n
             and summary_trial_n == coverage_trial_n
             and summary_scored_n == coverage_scored_n
         )

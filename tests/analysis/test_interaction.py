@@ -154,6 +154,51 @@ class InteractionAnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(0.7, q4_long["accuracy_degradation"])
         self.assertAlmostEqual(0.7 / 0.9, q4_long["relative_degradation"])
 
+    def test_primary_degradation_keeps_runtime_failures_in_attempted_denominator(self) -> None:
+        rows = complete_rows(
+            {8192: 1.0, 32768: 1.0, 65536: 1.0},
+            {8192: 1.0, 32768: 0.5, 65536: 0.0},
+            positions=(0.50,),
+        )
+        for row in rows:
+            row["attempted_n"] = 10
+            row["scored_n"] = 10 if row["variant_condition_id"] == "q8_0" else 5
+            row["end_to_end_success"] = (
+                row["accuracy"]
+                if row["variant_condition_id"] == "q8_0"
+                else row["accuracy"] * 0.5
+            )
+
+        degradation = relative_degradation_rows(rows)
+        q4_long = next(
+            row
+            for row in degradation
+            if row["variant_condition_id"] == "q4_k_m"
+            and row["target_context_tokens"] == 65536
+        )
+        self.assertEqual(0.5, q4_long["short_context_baseline_accuracy"])
+        self.assertEqual(0.5, q4_long["accuracy_degradation"])
+
+    def test_interaction_gap_uses_end_to_end_success_when_present(self) -> None:
+        rows = complete_rows(
+            {8192: 1.0, 32768: 1.0, 65536: 1.0},
+            {8192: 1.0, 32768: 1.0, 65536: 1.0},
+            positions=(0.50,),
+        )
+        for row in rows:
+            row["attempted_n"] = 10
+            row["scored_n"] = 10
+            row["end_to_end_success"] = (
+                1.0
+                if row["variant_condition_id"] == "q8_0"
+                else (0.9 if row["target_context_tokens"] == 8192 else 0.4)
+            )
+
+        [report] = interaction_report(rows, reference_variant="q8_0")
+        self.assertAlmostEqual(0.1, report["shortest_context_gap"])
+        self.assertAlmostEqual(0.6, report["largest_context_gap"])
+        self.assertEqual(30, report["matched_n"])
+
     def test_interaction_report_identifies_context_dependent_gap(self) -> None:
         rows = complete_rows(
             {8192: 1.0, 32768: 1.0, 65536: 1.0},
@@ -179,6 +224,31 @@ class InteractionAnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(0.8, report["largest_context_gap"])
         self.assertAlmostEqual(0.7, report["gap_change"])
         self.assertEqual(3 * 10, report["matched_n"])
+
+    def test_interaction_uses_end_to_end_success_and_attempted_n(self) -> None:
+        rows = complete_rows(
+            {8192: 1.0, 32768: 1.0, 65536: 1.0},
+            {8192: 0.9, 32768: 0.8, 65536: 0.2},
+            positions=(0.50,),
+        )
+        for row in rows:
+            row["attempted_n"] = 20
+            row["end_to_end_success"] = row["accuracy"]
+
+        [report] = interaction_report(
+            matched_cell_rows(
+                rows,
+                variant_ids=VARIANTS,
+                context_lengths=CONTEXT_LENGTHS,
+                evidence_positions=(0.50,),
+                task_types=TASK_TYPES,
+            ),
+            reference_variant="q8_0",
+            approx_constant_gap_tolerance=0.10,
+        )
+
+        self.assertEqual("q4_k_m", report["variant_condition_id"])
+        self.assertEqual(3 * 20, report["matched_n"])
 
     def test_effective_context_is_grouped_by_variant_and_task(self) -> None:
         rows = complete_rows(

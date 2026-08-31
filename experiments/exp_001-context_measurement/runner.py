@@ -604,7 +604,6 @@ def _manifest(
                     "status": (
                         "valid"
                         if len(cell_results) == expected_trial_n
-                        and scored_n == expected_trial_n
                         else "excluded"
                     ),
                     "exclusion_reason": _exclusion_reason(
@@ -1031,7 +1030,10 @@ def _exclusion_reason(
     scored_n: int,
     statuses: Mapping[str, int],
 ) -> str | None:
-    if trial_n == expected_trial_n and scored_n == expected_trial_n:
+    # A complete attempted cell is valid even when some trials fail at
+    # runtime or produce invalid output. Those failures are part of the
+    # end-to-end denominator and are reported by the aggregate counters.
+    if trial_n == expected_trial_n:
         return None
     reasons: list[str] = []
     if trial_n != expected_trial_n:
