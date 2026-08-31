@@ -62,6 +62,14 @@ def tradeoff_rows(
                 f"{variant.condition_id} has no attempted measurements"
             )
         scored_accuracy = correct_n / scored_n if scored_n else None
+        exact_correct_n = _optional_count(condition_rows, "exact_correct_n")
+        exact_scored_n = _optional_count(condition_rows, "exact_scored_n")
+        # Older summaries used correct_n/scored_n for the exact outcome. Keep
+        # that fallback while exposing an explicit calibrated exact metric.
+        if exact_correct_n is None:
+            exact_correct_n = int(correct_n)
+        if exact_scored_n is None:
+            exact_scored_n = scored_n
         answer_bearing_correct_n = _optional_count(
             condition_rows, "answer_bearing_correct_n"
         )
@@ -89,6 +97,11 @@ def tradeoff_rows(
                 "scored_n": scored_n,
                 "correct_n": correct_n,
                 "failure_n": failure_n,
+                "exact_correct_n": exact_correct_n,
+                "exact_scored_n": exact_scored_n,
+                "exact_accuracy": (
+                    exact_correct_n / exact_scored_n if exact_scored_n else None
+                ),
                 "scored_accuracy": scored_accuracy,
                 "answer_bearing_correct_n": answer_bearing_correct_n,
                 "answer_bearing_scored_n": answer_bearing_scored_n,

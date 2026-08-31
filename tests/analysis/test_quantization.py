@@ -127,6 +127,8 @@ class QuantizationAnalysisTests(unittest.TestCase):
         self.assertEqual(100, q8["artifact_size_bytes"])
         self.assertEqual(0.9333333333333333, q8["accuracy"])
         self.assertEqual(30, q8["scored_n"])
+        self.assertEqual(30, q8["exact_scored_n"])
+        self.assertEqual(0.9333333333333333, q8["exact_accuracy"])
         self.assertEqual(200, q8["median_peak_memory_bytes"])
 
     def test_tradeoff_rows_groups_context_scoped_execution_conditions_by_variant(self) -> None:
@@ -263,6 +265,7 @@ class QuantizationAnalysisTests(unittest.TestCase):
             "accuracy_vs_memory",
             "speed_vs_memory",
             "end_to_end_success",
+            "exact_accuracy",
             "prompt_throughput_proxy_tok_s",
             "post_first_chunk_output_tok_s",
             "artifact-size-by-variant.png",
