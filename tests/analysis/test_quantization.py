@@ -265,6 +265,8 @@ class QuantizationAnalysisTests(unittest.TestCase):
             "end_to_end_success",
             "prompt_throughput_proxy_tok_s",
             "post_first_chunk_output_tok_s",
+            "artifact-size-by-variant.png",
+            "rss-by-variant.png",
             "success-vs-artifact-size.png",
             "accuracy-vs-rss.png",
             "ttft-vs-context.png",
