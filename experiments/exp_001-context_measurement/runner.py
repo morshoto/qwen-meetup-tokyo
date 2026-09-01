@@ -397,10 +397,10 @@ def run_experiment(
         }
         tokenizer_id = model.tokenizer_id or model.model_id
         revision = model.tokenizer_revision or "embedded"
-        context_tokenizer = InferenceTokenizer(
-            backend=runtime.get_tokenizer(),
-            name=f"llama.cpp:{tokenizer_id}@{revision}",
-        )
+        # ``runtime.get_tokenizer()`` already returns the llama.cpp-specific
+        # adapter.  Do not wrap it in the Transformers adapter, whose
+        # ``add_special_tokens`` call is not part of the llama.cpp surface.
+        context_tokenizer = runtime.get_tokenizer()
     else:
         raise ValueError(f"unsupported backend: {backend!r}")
 
