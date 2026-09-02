@@ -14,7 +14,7 @@ Do not copy hypotheses, expected plots, vendor benchmarks, community anecdotes, 
 exp_001: calibrated real-model reduced baseline measured (Q8_0 x 8,192/32,768 x p50 x 30 tasks); full matrix pending
 exp_002: calibrated real-model pilot measured (Q8_0 x 8,192 x 30 tasks x 1 capability run); full matrix pending
 exp_003: calibrated matched pilot measured (Q8_0/Q4_K_M x 8,192/32,768 x p50 x 30 tasks); full matrix pending
-exp_004: not yet measured
+exp_004: calibrated real-model reduced pilot measured (Q8_0/Q4_K_M x trajectory 4/8/16/32 x p50 x 10 tasks); full position/repeat matrix pending
 exp_005: not yet measured
 ```
 
@@ -73,6 +73,56 @@ Next check:
 Run the declared positions and 64K/128K cells only after the baseline task set
 and runtime budget are confirmed; do not promote this reduced pilot to a full
 effective-context or position-bias conclusion.
+
+## 2026-09-02 — exp_004 reduced agent pilot: runtime stable, tool planning is not
+
+Experiments:
+- exp_004
+
+Result manifest:
+- `experiments/exp_004-agent_context_growth/results/manifests/fast-matched.json`
+- raw SHA-256: `0075408def4b86a2b94fbd80f7a5a9c4034cc80e2e6169376a2695ef2532012d`
+
+Conditions:
+- model/runtime: Qwen/Qwen3.8-27B through llama.cpp/GGUF on the recorded arm64/macOS environment
+- quantization: Q8_0 and Q4_K_M
+- agent catalog: `data/tasks/agent.v002.jsonl`, 10 independent tasks
+- trajectory lengths: 4, 8, 16, and 32 tool observations
+- critical-information position: 50% only
+- one greedy run per task/cell; 80 attempted trials, all cells complete
+- source manifest: the committed exp_003 matched pilot, SHA-256 recorded in the manifest
+
+Measured result (final task success; `n=10` per cell):
+
+| quantization | traj 4 | traj 8 | traj 16 | traj 32 |
+| --- | ---: | ---: | ---: | ---: |
+| Q8_0 | 6/10 | 8/10 | 5/10 | 9/10 |
+| Q4_K_M | 7/10 | 7/10 | 4/10 | 4/10 |
+
+Critical-fact reuse matched final-task success in every cell. Tool-call validity
+was 100% for calls that were emitted, while 30/80 attempted trials ended as
+`invalid_output` after `ActionParseError` retries and were classified as
+`tool_planning`; 50/80 ended successfully. No runtime errors were observed.
+
+Interpretation:
+
+The pilot separates runtime stability from agent completion: a valid tool call
+and a discovered fact do not guarantee a successful final state. Neither
+quantization showed a monotonic trajectory-length trend in this run (Q8:
+60%/80%/50%/90%; Q4: 70%/70%/40%/40%).
+
+Alternative explanations / limitations:
+
+This is a reduced pilot with one critical-information position, one greedy run
+per independent task, and no repeated positions or 5/20-repeat variance
+estimate. The 30 planning failures are model/output observations, not runtime
+failures. The result does not establish a general Lost-in-the-Agent law,
+position bias, or repository-task transfer.
+
+Next check:
+
+Repeat the same task and environment across declared critical positions and
+additional independent runs before making a trajectory or quantization claim.
 
 ## 2026-09-02 — exp_003 matched pilot: a descriptive context-dependent gap
 
