@@ -70,6 +70,25 @@ class Exp001RunnerTests(unittest.TestCase):
                     }
                 )
 
+    def test_llama_cpp_options_scales_context_to_selected_phase(self) -> None:
+        with TemporaryDirectory() as directory:
+            artifact = Path(directory) / "q8_0.gguf"
+            artifact.write_bytes(b"q8 fixture artifact")
+            options = runner._llama_cpp_options(
+                {
+                    "context": {"lengths": [8192, 131072]},
+                    "runtime": {
+                        "llama_cpp": {
+                            "model_path": str(artifact),
+                            "n_ctx": 131392,
+                        }
+                    },
+                },
+                max_context_tokens=32768,
+            )
+
+        self.assertEqual(33088, options["n_ctx"])
+
     def test_checked_in_smoke_artifact_covers_expanded_catalog(self) -> None:
         manifest = json.loads(
             (

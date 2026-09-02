@@ -336,6 +336,10 @@ def run_experiment(
     temporary_manifest = _temporary_sibling(manifest_path) if overwrite_smoke else None
     working_output_path = temporary_output or output_path
     catalog = TaskCatalog.from_jsonl(catalog_path)
+    conditions = planned_conditions(phase, config=config)
+    max_context_tokens = max(
+        condition.target_context_tokens for condition in conditions
+    )
     context_tokenizer: ContextTokenizer | None = None
     runtime_options: dict[str, Any] = {}
     runtime_record: dict[str, Any] = {}
@@ -373,7 +377,10 @@ def run_experiment(
         )
     elif backend == "llama.cpp":
         runtime = LlamaCppRuntime()
-        resolved_runtime = _llama_cpp_options(config)
+        resolved_runtime = _llama_cpp_options(
+            config,
+            max_context_tokens=max_context_tokens,
+        )
         runtime_version = resolved_runtime.pop("version", None)
         artifact_record = {
             "uri": resolved_runtime.pop("_artifact_uri"),
@@ -406,7 +413,6 @@ def run_experiment(
 
     working_output_path.parent.mkdir(parents=True, exist_ok=True)
     results: list[TrialResult] = []
-    conditions = planned_conditions(phase, config=config)
     phase_config = config["phases"][phase]
     # Greedy repeats are not independent capability observations.  The phase
     # may retain a larger ``repeats`` envelope for legacy/timing probes, while
@@ -786,7 +792,11 @@ def _sampling_from_config(
     return sampling, policy
 
 
-def _llama_cpp_options(config: Mapping[str, Any]) -> dict[str, Any]:
+def _llama_cpp_options(
+    config: Mapping[str, Any],
+    *,
+    max_context_tokens: int | None = None,
+) -> dict[str, Any]:
     """Resolve and verify the operational Q8_0 llama.cpp reference artifact."""
 
     runtime = config.get("runtime", {})
@@ -821,9 +831,26 @@ def _llama_cpp_options(config: Mapping[str, Any]) -> dict[str, Any]:
                 "llama.cpp model artifact SHA-256 mismatch: "
                 f"expected {expected_sha256}, found {actual_sha256}"
             )
+    configured_n_ctx = int(values.get("n_ctx", 131392))
+    effective_n_ctx = configured_n_ctx
+    if max_context_tokens is not None:
+        context_config = config.get("context", {})
+        declared_lengths = (
+            context_config.get("lengths", ())
+            if isinstance(context_config, Mapping)
+            else ()
+        )
+        try:
+            declared_max_context = max(int(value) for value in declared_lengths)
+        except (TypeError, ValueError):
+            declared_max_context = 0
+        configured_overhead = max(0, configured_n_ctx - declared_max_context)
+        effective_n_ctx = int(max_context_tokens) + configured_overhead
+        if effective_n_ctx <= int(max_context_tokens):
+            effective_n_ctx = int(max_context_tokens) + 1
     options: dict[str, Any] = {
         "model_path": str(model_path),
-        "n_ctx": int(values.get("n_ctx", 131392)),
+        "n_ctx": effective_n_ctx,
         "n_batch": int(values.get("n_batch", 512)),
         "n_gpu_layers": int(values.get("n_gpu_layers", -1)),
         "flash_attn": bool(values.get("flash_attn", True)),
