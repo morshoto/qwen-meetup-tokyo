@@ -1,0 +1,155 @@
+{
+  "actual_trial_n": 300,
+  "backend": "llama.cpp",
+  "effective_runtime": {
+    "name": "llama.cpp",
+    "options": {
+      "flash_attn": true,
+      "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf",
+      "n_batch": 128,
+      "n_ctx": 33088,
+      "n_gpu_layers": -1,
+      "timing_semantics": "stream_ttft_and_post_first_chunk_elapsed",
+      "timing_source": "first_stream_chunk",
+      "verbose": false
+    },
+    "version": "llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3"
+  },
+  "expected_trial_n": 300,
+  "experiment_id": "exp_004",
+  "fixture_only": false,
+  "phase": "recheck",
+  "protocol": {
+    "condition_ids": [
+      "traj0001:p050",
+      "traj0004:p050",
+      "traj0008:p050",
+      "traj0016:p050",
+      "traj0032:p050"
+    ],
+    "config": "experiments/exp_004-agent_context_growth/config.yaml",
+    "critical_positions": [
+      0.5
+    ],
+    "fixture_seed": 42,
+    "independent_task_n": 10,
+    "one_turn_control": {
+      "critical_position": 0.5,
+      "semantics": "zero distractor observations; discovery and answer stages remain unchanged",
+      "trajectory_length": 1
+    },
+    "output_policy": {
+      "format": "single_json_object",
+      "markdown_allowed": false,
+      "max_new_tokens": 128
+    },
+    "repeats": 3,
+    "retry_policy": {
+      "backoff_seconds": 0.0,
+      "max_attempts": 3,
+      "name": "fixed_action_attempts",
+      "retry_on": [
+        "empty_output",
+        "action_parse_error",
+        "invalid_tool_action"
+      ]
+    },
+    "sampling": {
+      "do_sample": false,
+      "generation_seed_policy": "configured-seed",
+      "max_new_tokens": 128,
+      "seed": 42,
+      "temperature": 0.0,
+      "top_k": null,
+      "top_p": 1.0
+    },
+    "task_catalog": "data/tasks/agent.v002.jsonl",
+    "task_ids": [
+      "task.agent.000001",
+      "task.agent.000002",
+      "task.agent.000003",
+      "task.agent.000004",
+      "task.agent.000005",
+      "task.agent.000006",
+      "task.agent.000007",
+      "task.agent.000008",
+      "task.agent.000009",
+      "task.agent.000010"
+    ],
+    "task_types": [
+      "agent_state_tracking"
+    ],
+    "trajectory_lengths": [
+      1,
+      4,
+      8,
+      16,
+      32
+    ]
+  },
+  "raw_result_sha256": "0f11903a95f55e5714b1a8f218fcf07da7bc123bf7b7abe030c4e93bc618aa24",
+  "run_fingerprint": "e859d0e75c8eeb381c1b8edc8c60298cb04ddcb08d3f78473dfdf3654098e7f5",
+  "schema_version": 1,
+  "skipped_trial_n": 300,
+  "source_manifest": {
+    "experiment_id": "exp_003",
+    "model": {
+      "id": "Qwen/Qwen3.8-27B",
+      "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "tokenizer_id": "Qwen/Qwen3.8-27B",
+      "tokenizer_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+    },
+    "path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_003-context_x_quantization/results/manifests/fast-matched.json",
+    "runtime": {
+      "name": "llama.cpp",
+      "options": {
+        "flash_attn": true,
+        "n_batch": 128,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "verbose": false
+      },
+      "version": "llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3"
+    },
+    "sha256": "a72b0b21ecd5b8d7dca4c6e5415aa243e7002b23dada0fb9f3a571bd4f7a2e5d",
+    "variants": [
+      {
+        "artifact": {
+          "artifact_sha256": "6cb70620c7811dce01e1a622fe0a4f9ac445e31c569640c36ecfac85c4609b6c",
+          "artifact_size_bytes": 29047084256,
+          "artifact_uri": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf",
+          "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf Q8_0 8",
+          "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+          "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+          "source_uri": "hf://Qwen/Qwen3.8-27B"
+        },
+        "bits": 8,
+        "condition_id": "q8_0",
+        "format": "GGUF",
+        "label": "Q8_0",
+        "quantization_type": "Q8_0",
+        "runtime_kernel": "ggml"
+      },
+      {
+        "artifact": {
+          "artifact_sha256": "8b259e30f860c924fa1fd12d459343e8c2520eb12741f943ad5dcea5d1c4d120",
+          "artifact_size_bytes": 16810714336,
+          "artifact_uri": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf",
+          "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf Q4_K_M 8",
+          "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+          "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+          "source_uri": "hf://Qwen/Qwen3.8-27B"
+        },
+        "bits": 4,
+        "condition_id": "q4_k_m",
+        "format": "GGUF",
+        "label": "Q4_K_M",
+        "quantization_type": "Q4_K_M",
+        "runtime_kernel": "ggml"
+      }
+    ]
+  },
+  "status_counts": {
+    "completed": 300
+  }
+}

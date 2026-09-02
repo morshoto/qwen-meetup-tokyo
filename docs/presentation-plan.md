@@ -4,12 +4,12 @@
 
 This is a **presentation plan**, not the final slide deck. The narrative should change if the experiments produce a different strongest finding.
 
-As of 2026-09-02 this should be presented as an intermediate measurement
+As of 2026-09-03 this should be presented as an intermediate measurement
 report. exp_001 has fixture evidence plus a reduced real-model baseline,
 exp_002 has a complete calibrated capability matrix but incomplete timing
-probes, exp_003 has a calibrated matched pilot, and exp_004 has a reduced agent
-pilot. The context/position/agent main matrices remain incomplete, and no
-repository-transfer claim is frozen.
+probes, exp_003 has a calibrated matched pilot, and exp_004 has a fixed-policy
+agent recheck with a one-turn control and three repeats. The full position matrix
+and repository-transfer claim remain incomplete.
 
 ## 1. Audience promise
 
@@ -76,10 +76,11 @@ Use this shorter sequence until the main matrices are measured:
 7. exp_003 matched pilot: a descriptive interaction observation, with the
    64K/128K and all-position matrix still `insufficient_data`;
 8. agent transition: static context versus self-generated history;
-9. exp_004 observed end-state/tool-validity split;
-10. what is known and unknown, including backend and synthetic-task limits;
-11. measurement quality gate and claim-evidence provenance;
-12. next measurements and conclusion.
+9. exp_004 fixed-policy recheck: 300/300 completed with no history-length degradation;
+10. compare the earlier parse-failure pilot with the fixed-policy recheck;
+11. what is known and unknown, including backend and synthetic-task limits;
+12. measurement quality gate and claim-evidence provenance;
+13. next measurements and conclusion.
 
 Do not use a Q4/Q8 quality ranking, an effective-context number, a position-bias
 claim, or a 262K capability claim until the corresponding calibrated matrix is

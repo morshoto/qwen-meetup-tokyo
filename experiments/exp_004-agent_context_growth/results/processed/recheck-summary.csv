@@ -1,0 +1,11 @@
+attempted_n,completed_n,correct_n,critical_fact_reuse_rate,critical_fact_reused_n,error_n,experiment_id,failure_category_counts,final_task_success,n,planning_error_n,recovery_n,repeated_action_n,requested_critical_position,scored_accuracy,scored_n,task_type,tool_call_n,tool_call_validity,total_input_tokens,trajectory_context_tokens,trajectory_length,valid_tool_call_n,variant_condition_id
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,16479,321,1,30,q4_k_m
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,19101,371,4,30,q4_k_m
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,22593,455,8,30,q4_k_m
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,29097,608,16,30,q4_k_m
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,42243,900,32,30,q4_k_m
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,16545,320,1,30,q8_0
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,19353,376,4,30,q8_0
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,22578,449,8,30,q8_0
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,28899,593,16,30,q8_0
+30,30,30,1.0,30,0,exp_004,{'success': 30},1.0,30,0,0,0,0.5,1.0,30,agent_state_tracking,30,1.0,42264,896,32,30,q8_0

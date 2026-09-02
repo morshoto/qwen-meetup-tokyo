@@ -14,7 +14,7 @@ Do not copy hypotheses, expected plots, vendor benchmarks, community anecdotes, 
 exp_001: calibrated real-model reduced baseline measured (Q8_0 x 8,192/32,768 x p50 x 30 tasks); full matrix pending
 exp_002: calibrated real-model capability matrix measured (Q8_0/Q6_K/Q5_K_M/Q4_K_M x 8,192/32,768 x 30 tasks); separate timing matrix incomplete
 exp_003: calibrated matched pilot measured (Q8_0/Q4_K_M x 8,192/32,768 x p50 x 30 tasks); full matrix pending
-exp_004: calibrated real-model reduced pilot measured (Q8_0/Q4_K_M x trajectory 4/8/16/32 x p50 x 10 tasks); full position/repeat matrix pending
+exp_004: fixed-policy real-model recheck measured (Q8_0/Q4_K_M x trajectory 1/4/8/16/32 x p50 x 10 tasks x 3 repeats); full position matrix pending
 exp_005: not yet measured
 ```
 
@@ -122,6 +122,60 @@ Next check:
 Run the declared positions and 64K/128K cells only after the baseline task set
 and runtime budget are confirmed; do not promote this reduced pilot to a full
 effective-context or position-bias conclusion.
+
+## 2026-09-03 — exp_004 fixed-policy recheck: output failures do not recur
+
+Experiments:
+- exp_004
+
+Result artifacts:
+- raw: `experiments/exp_004-agent_context_growth/results/raw/recheck-trials.jsonl`
+- processed: `experiments/exp_004-agent_context_growth/results/processed/recheck-summary.csv`
+- manifest: `experiments/exp_004-agent_context_growth/results/manifests/recheck.json`
+- figures: `experiments/exp_004-agent_context_growth/results/figures/reliability-vs-trajectory-length-recheck.png`, `experiments/exp_004-agent_context_growth/results/figures/reliability-vs-critical-position-recheck.png`
+- raw SHA-256: `0f11903a95f55e5714b1a8f218fcf07da7bc123bf7b7abe030c4e93bc618aa24`
+
+Conditions:
+- model/runtime: Qwen/Qwen3.8-27B through llama.cpp/GGUF on the recorded arm64/macOS environment
+- quantization: Q8_0 and Q4_K_M
+- agent catalog: `data/tasks/agent.v002.jsonl`, 10 independent tasks
+- trajectory lengths: 1, 4, 8, 16, and 32 tool observations; length 1 is the zero-distractor one-turn control
+- critical-information position: 50% requested position (actual position is 0.0 for the length-1 control)
+- fixed output policy: one JSON object, 128 maximum new tokens, markdown disallowed
+- fixed retry policy: three action attempts, zero backoff
+- three greedy repeats per task/cell; 300/300 attempted trials completed
+
+Measured result (final task success; `n=30` per cell):
+
+| quantization | traj 1 control | traj 4 | traj 8 | traj 16 | traj 32 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Q8_0 | 30/30 | 30/30 | 30/30 | 30/30 | 30/30 |
+| Q4_K_M | 30/30 | 30/30 | 30/30 | 30/30 | 30/30 |
+
+Critical-fact reuse and final-task success were 300/300. Tool-call validity was
+300/300, with zero planning errors, retries, invalid outputs, or runtime errors.
+All 30 variant × length cells have three repeats and identical 100% success.
+
+Interpretation:
+
+Under the fixed 128-token JSON/retry protocol, this run shows no trajectory-length
+degradation and no Q8/Q4 difference for this synthetic task catalog. The earlier
+pilot's parse failures do not recur, so those failures are consistent with an
+output-budget/protocol effect; this comparison is not a causal ablation because
+the earlier run used a different protocol.
+
+Alternative explanations / limitations:
+
+The recheck uses one requested position, greedy decoding, and a synthetic
+state-tracking catalog. It does not establish a general absence of Lost-in-the-Agent,
+position effects, or repository-task transfer. The three repeats are deterministic
+greedy repeats, so they demonstrate protocol stability rather than sampling variance.
+
+Next check:
+
+If position effects are required, run the declared 5-position matrix under this same
+fixed policy. Otherwise use this recheck as the bounded agent result and retain the
+earlier pilot as a protocol-diagnostic comparison.
 
 ## 2026-09-02 — exp_004 reduced agent pilot: runtime stable, tool planning is not
 

@@ -47,11 +47,11 @@ re-running `exp_002`. The source manifest's task IDs describe the upstream
 context/quantization study; exp_004's agent task IDs come from its own committed
 agent catalog.
 
-Real pilot/main runs require that source manifest, local artifacts, and a
+Real pilot/recheck/main runs require that source manifest, local artifacts, and a
 compatible `llama-cpp-python` runtime. The runner verifies artifact paths for
 non-fixture execution and records the effective runtime options. The committed
-pilot outputs are a historical two-task run and are not evidence for the
-expanded catalog.
+pilot outputs include a historical protocol run; the `recheck` outputs are the
+current ten-task, fixed-policy measurements used for the presentation boundary.
 
 ## Smoke, pilot, recheck, and main
 
