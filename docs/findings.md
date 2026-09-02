@@ -12,7 +12,7 @@ Do not copy hypotheses, expected plots, vendor benchmarks, community anecdotes, 
 
 ```text
 exp_001: calibrated real-model reduced baseline measured (Q8_0 x 8,192/32,768 x p50 x 30 tasks); full matrix pending
-exp_002: calibrated real-model pilot measured (Q8_0 x 8,192 x 30 tasks x 1 capability run); full matrix pending
+exp_002: calibrated real-model capability matrix measured (Q8_0/Q6_K/Q5_K_M/Q4_K_M x 8,192/32,768 x 30 tasks); separate timing matrix incomplete
 exp_003: calibrated matched pilot measured (Q8_0/Q4_K_M x 8,192/32,768 x p50 x 30 tasks); full matrix pending
 exp_004: calibrated real-model reduced pilot measured (Q8_0/Q4_K_M x trajectory 4/8/16/32 x p50 x 10 tasks); full position/repeat matrix pending
 exp_005: not yet measured
@@ -20,6 +20,55 @@ exp_005: not yet measured
 
 The measured exp_002 pilot is documented in
 [`pilot-v002-report.md`](../experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-report.md).
+
+## 2026-09-02 — exp_002 full capability matrix: footprint shrinks, quality remains task-shaped
+
+Experiments:
+- exp_002
+
+Inputs:
+- raw: `experiments/exp_002-quantization_llama_cpp_gguf/results/raw/full-capability.jsonl`
+- processed: `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv`
+- control manifest: `experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json`
+- raw SHA-256: `0d222dfe0ff801c93d39f8d24d367dd013c02a860f982bf711dab0b77107c092`
+
+Conditions:
+- model/runtime: Qwen/Qwen3.8-27B through the same recorded llama.cpp/GGUF path
+- quantization: Q8_0, Q6_K, Q5_K_M, and Q4_K_M
+- contexts: 8,192 and 32,768 input tokens; evidence position 50%
+- task catalog: `data/tasks/core.v002.jsonl`, 30 independent tasks
+- one greedy capability run per task/cell; 240/240 attempted trials completed with zero runtime errors
+- scorer: `calibrated.v1`
+
+Measured result (end-to-end success over 60 attempted trials per variant):
+
+| quantization | artifact size | end-to-end success | answer-bearing | format-valid |
+| --- | ---: | ---: | ---: | ---: |
+| Q8_0 | 29.05 GB | 32/60 (53.3%) | 60/60 | 42/60 |
+| Q6_K | 22.43 GB | 32/60 (53.3%) | 60/60 | 42/60 |
+| Q5_K_M | 19.54 GB | 32/60 (53.3%) | 60/60 | 42/60 |
+| Q4_K_M | 16.81 GB | 27/60 (45.0%) | 59/60 | 37/60 |
+
+Interpretation:
+
+The full capability matrix shows a 42.1% Q8_0-to-Q4_K_M artifact-size
+reduction. In this catalog and protocol, Q8_0/Q6_K/Q5_K_M have the same
+aggregate end-to-end count, while Q4_K_M is lower; this is a bounded
+descriptive observation, not a general quantization-quality ranking.
+
+Alternative explanations / limitations:
+
+The capability matrix uses one greedy run per independent task and a synthetic
+retrieval catalog. Answer-bearing outputs remain much higher than format-valid
+end-to-end success, so scorer/output-format behavior contributes to the gap.
+The separate timing matrix has only 474/1,200 attempted probes; stream TTFT and
+throughput values are proxies, and sequential sampled RSS is not a definitive
+cross-variant memory comparison.
+
+Next check:
+
+Complete the separate 3–5-repeat timing matrix only if systems-cost claims are
+needed; keep capability and timing conclusions separate.
 
 ## 2026-09-02 — exp_001 reduced real-model baseline: task-specific baseline limits
 
