@@ -138,7 +138,8 @@ Conditions:
 - agent catalog: `data/tasks/agent.v002.jsonl`, 10 independent tasks
 - trajectory lengths: 4, 8, 16, and 32 tool observations
 - critical-information position: 50% only
-- one greedy run per task/cell; 80 attempted trials, all cells complete
+- one greedy run per task/cell; 80 attempted trials, all cells have `n=10`
+  (50 `completed`, 30 `invalid_output`)
 - source manifest: the committed exp_003 matched pilot, SHA-256 recorded in the manifest
 
 Measured result (final task success; `n=10` per cell):
