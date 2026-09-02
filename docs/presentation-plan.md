@@ -6,9 +6,10 @@ This is a **presentation plan**, not the final slide deck. The narrative should 
 
 As of 2026-09-02 this should be presented as an intermediate measurement
 report. exp_001 has fixture evidence plus a reduced real-model baseline,
-exp_002 has a calibrated Q8_0 pilot condition, exp_003 has a calibrated
-matched pilot, and exp_004 has a reduced agent pilot. These do not substitute
-for the declared full matrices, and no repository-transfer claim is frozen.
+exp_002 has a complete calibrated capability matrix but incomplete timing
+probes, exp_003 has a calibrated matched pilot, and exp_004 has a reduced agent
+pilot. The context/position/agent main matrices remain incomplete, and no
+repository-transfer claim is frozen.
 
 ## 1. Audience promise
 
@@ -69,7 +70,8 @@ Use this shorter sequence until the main matrices are measured:
 2. break definition: capability, systems cost, and trajectory reliability;
 3. experiment map: what is measured, pilot, harness-only, or unrun;
 4. scorer calibration: exact, answer-bearing, and format-valid outcomes;
-5. exp_002 artifact footprint (Q8_0 29.05 GB → Q4_K_M 16.81 GB);
+5. exp_002 capability matrix and artifact footprint (Q8_0 29.05 GB → Q4_K_M
+   16.81 GB); timing probes remain incomplete;
 6. long-input cost: stream TTFT is a proxy, not a native kernel counter;
 7. exp_003 matched pilot: a descriptive interaction observation, with the
    64K/128K and all-position matrix still `insufficient_data`;
