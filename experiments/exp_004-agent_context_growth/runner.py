@@ -16,7 +16,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from llm_lab.agents import AgentHarness, AgentTask, TrajectoryControl  # noqa: E402
-from llm_lab.analysis import aggregate_jsonl, write_summary_csv  # noqa: E402
+from llm_lab.analysis import aggregate_agent_trials, write_summary_csv  # noqa: E402
 from llm_lab.evaluation import (  # noqa: E402
     TrialResult,
     TrialStatus,
@@ -476,7 +476,7 @@ def run_experiment(
                 runtime.close()
     finally:
         all_results = load_trial_results(output_path)
-    summaries = aggregate_jsonl(output_path)
+    summaries = aggregate_agent_trials(all_results)
     write_summary_csv(processed_path, summaries)
     manifest = _build_manifest(
         config=config,

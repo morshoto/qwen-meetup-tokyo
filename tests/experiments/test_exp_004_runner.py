@@ -241,6 +241,9 @@ class Exp004RunnerTests(unittest.TestCase):
                 self.assertTrue(matched_trials[0].score["correct"])
                 self.assertGreater(len(matched_trials[0].input["trajectory"]), 0)
             self.assertTrue(summary_path.is_file())
+            summary_header = summary_path.read_text(encoding="utf-8").splitlines()[0]
+            self.assertIn("final_task_success", summary_header)
+            self.assertIn("failure_category_counts", summary_header)
             self.assertTrue(all(instance.closed for instance in FakeRuntime.instances))
 
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
