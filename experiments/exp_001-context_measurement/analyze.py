@@ -134,6 +134,7 @@ def regenerate(
         "trial_n": len(trials),
         "summary_row_n": len(summaries),
         "summary_rows": summaries,
+        "position_gap_rows": gaps,
         "position_gap_row_n": len(gaps),
         "baseline_limited_task_types": [
             row["task_type"] for row in effective if row["status"] == "baseline_limited"
