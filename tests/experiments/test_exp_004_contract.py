@@ -145,6 +145,14 @@ class Exp004ContractTests(unittest.TestCase):
             {record["input"]["retry_policy"]["max_attempts"] for record in records},
         )
         self.assertTrue(all(record["status"] == "completed" for record in records))
+        self.assertLessEqual(
+            max(
+                response["completion_tokens"]
+                for record in records
+                for response in record["generation"]["responses"]
+            ),
+            128,
+        )
         summary_header = (results / "processed/recheck-summary.csv").read_text(
             encoding="utf-8"
         ).splitlines()[0]

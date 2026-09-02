@@ -155,6 +155,9 @@ Measured result (final task success; `n=30` per cell):
 Critical-fact reuse and final-task success were 300/300. Tool-call validity was
 300/300, with zero planning errors, retries, invalid outputs, or runtime errors.
 All 30 variant × length cells have three repeats and identical 100% success.
+In the preceding reduced pilot, all 30 `invalid_output` trials reached the old
+64-token completion limit; in this recheck the largest final response was 109
+tokens under the fixed 128-token budget.
 
 Interpretation:
 
