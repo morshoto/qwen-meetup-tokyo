@@ -4,10 +4,11 @@
 
 This is a **presentation plan**, not the final slide deck. The narrative should change if the experiments produce a different strongest finding.
 
-As of 2026-08-31 this should be presented as an intermediate measurement
-report. exp_001 is fixture/harness-only, exp_002 has one calibrated Q8_0 pilot
-condition, and exp_003 has only a legacy smoke audit; no full capability or
-repository-transfer claim is frozen.
+As of 2026-09-02 this should be presented as an intermediate measurement
+report. exp_001 has fixture evidence plus a reduced real-model baseline in
+progress, exp_002 has a calibrated Q8_0 pilot condition, and exp_003 has a
+calibrated matched pilot. None of these substitutes for the declared full
+matrices, and no repository-transfer claim is frozen.
 
 ## 1. Audience promise
 
@@ -70,7 +71,8 @@ Use this shorter sequence until the main matrices are measured:
 4. scorer calibration: exact, answer-bearing, and format-valid outcomes;
 5. exp_002 artifact footprint (Q8_0 29.05 GB → Q4_K_M 16.81 GB);
 6. long-input cost: stream TTFT is a proxy, not a native kernel counter;
-7. exp_003 legacy smoke: `insufficient_data`, not an interaction result;
+7. exp_003 matched pilot: a descriptive interaction observation, with the
+   64K/128K and all-position matrix still `insufficient_data`;
 8. agent transition: static context versus self-generated history;
 9. exp_004 observed end-state/tool-validity split;
 10. what is known and unknown, including backend and synthetic-task limits;
