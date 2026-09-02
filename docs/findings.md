@@ -11,15 +11,67 @@ Do not copy hypotheses, expected plots, vendor benchmarks, community anecdotes, 
 ## Status
 
 ```text
-exp_001: fixture smoke measured (harness-only); real-model baseline pending
+exp_001: fixture smoke measured (harness-only); reduced real-model baseline rerun pending
 exp_002: calibrated real-model pilot measured (Q8_0 x 8,192 x 30 tasks x 1 capability run); full matrix pending
-exp_003: legacy expected.v1 smoke audit only; calibrated interaction pending
+exp_003: calibrated matched pilot measured (Q8_0/Q4_K_M x 8,192/32,768 x p50 x 30 tasks); full matrix pending
 exp_004: not yet measured
 exp_005: not yet measured
 ```
 
 The measured exp_002 pilot is documented in
 [`pilot-v002-report.md`](../experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-report.md).
+
+## 2026-09-02 — exp_003 matched pilot: a descriptive context-dependent gap
+
+Experiments:
+- exp_003
+
+Result manifests:
+- `experiments/exp_003-context_x_quantization/results/manifests/fast-matched.json`
+- raw SHA-256: `2bcc89b3e7f14d3bb71947cef4c2f1cd1a992ed6df6ba815a62dc6491cba9212`
+
+Conditions:
+- model/runtime: Qwen/Qwen3.8-27B through llama.cpp/GGUF on the recorded arm64/macOS environment
+- quantization: Q8_0 and Q4_K_M
+- task catalog: `data/tasks/core.v002.jsonl`, 30 independent tasks (10 per family)
+- contexts: 8,192 and 32,768 input tokens
+- evidence position: 50%
+- capability runs: one per task/cell; 120 attempted trials, all completed
+- scorer: `calibrated.v1`
+
+Measured result (end-to-end success, `n=10` per task family/cell):
+
+| task family | Q8 8K | Q8 32K | Q4 8K | Q4 32K |
+| --- | ---: | ---: | ---: | ---: |
+| literal | 2/10 | 6/10 | 2/10 | 4/10 |
+| semantic | 4/10 | 3/10 | 3/10 | 3/10 |
+| multi-hop | 8/10 | 9/10 | 7/10 | 8/10 |
+
+Answer-bearing correctness was 10/10 in every cell except Q4 multi-hop at 32K
+(9/10). Format validity ranged from 2/10 to 9/10 across these cells. The
+descriptive Q4-minus-Q8 end-to-end gap was classified as `context_dependent`
+for literal retrieval (0.0 at 8K to 0.2 at 32K), and
+`approximately_constant` for semantic retrieval (0.1 to 0.0) and multi-hop
+(0.1 to 0.1) under the configured 0.10 tolerance.
+
+Interpretation:
+
+In this matched pilot, quantization did not produce one uniform capability
+ordering. The literal gap widened at 32K, while the other two task families
+showed no larger-than-tolerance change in the Q4/Q8 gap.
+
+Alternative explanations / limitations:
+
+This is a reduced pilot: one evidence position, two context lengths, one greedy
+run per independent task, and no 64K/128K cells. The interaction labels are
+descriptive rather than significance tests. Exact, answer-bearing, and format
+metrics remain separate, and the synthetic retrieval catalog does not establish
+repository-task transfer.
+
+Next check:
+
+Repeat the calibrated matched design across all declared context lengths and
+positions before promoting the result to a full interaction conclusion.
 
 ## 2026-08-31 — exp_002 pilot: answer-bearing output exceeds exact output
 

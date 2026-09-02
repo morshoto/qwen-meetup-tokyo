@@ -1,0 +1,83 @@
+[
+  {
+    "approx_constant_gap_tolerance": 0.1,
+    "classification": "context_dependent",
+    "context_points": [
+      {
+        "context_tokens": 8192,
+        "matched_n": 10,
+        "quantization_gap": 0.0
+      },
+      {
+        "context_tokens": 32768,
+        "matched_n": 10,
+        "quantization_gap": 0.2
+      }
+    ],
+    "gap_change": 0.2,
+    "gap_range": 0.2,
+    "largest_context_gap": 0.2,
+    "largest_context_tokens": 32768,
+    "matched_n": 20,
+    "metric": "end_to_end_success",
+    "reference_variant": "q8_0",
+    "shortest_context_gap": 0.0,
+    "shortest_context_tokens": 8192,
+    "task_type": "literal_retrieval",
+    "variant_condition_id": "q4_k_m"
+  },
+  {
+    "approx_constant_gap_tolerance": 0.1,
+    "classification": "approximately_constant",
+    "context_points": [
+      {
+        "context_tokens": 8192,
+        "matched_n": 10,
+        "quantization_gap": 0.1
+      },
+      {
+        "context_tokens": 32768,
+        "matched_n": 10,
+        "quantization_gap": 0.1
+      }
+    ],
+    "gap_change": 0.0,
+    "gap_range": 0.0,
+    "largest_context_gap": 0.1,
+    "largest_context_tokens": 32768,
+    "matched_n": 20,
+    "metric": "end_to_end_success",
+    "reference_variant": "q8_0",
+    "shortest_context_gap": 0.1,
+    "shortest_context_tokens": 8192,
+    "task_type": "multi_hop",
+    "variant_condition_id": "q4_k_m"
+  },
+  {
+    "approx_constant_gap_tolerance": 0.1,
+    "classification": "approximately_constant",
+    "context_points": [
+      {
+        "context_tokens": 8192,
+        "matched_n": 10,
+        "quantization_gap": 0.1
+      },
+      {
+        "context_tokens": 32768,
+        "matched_n": 10,
+        "quantization_gap": 0.0
+      }
+    ],
+    "gap_change": -0.1,
+    "gap_range": 0.1,
+    "largest_context_gap": 0.0,
+    "largest_context_tokens": 32768,
+    "matched_n": 20,
+    "metric": "end_to_end_success",
+    "reference_variant": "q8_0",
+    "shortest_context_gap": 0.1,
+    "shortest_context_tokens": 8192,
+    "task_type": "semantic_retrieval",
+    "variant_condition_id": "q4_k_m"
+  }
+]
