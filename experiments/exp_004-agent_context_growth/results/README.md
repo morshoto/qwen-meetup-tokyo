@@ -17,3 +17,9 @@ outputs validate plumbing and are never Qwen measurements.
 The committed pilot files are historical outputs from the two-task pilot
 catalog. Current runs load the 10-task `agent.v002.jsonl` catalog; repeat counts
 remain separate from this independent-task count.
+
+The presentation-focused `recheck` protocol is 300 attempted trials:
+Q8/Q4 × trajectory length 1/4/8/16/32 × 10 tasks × 3 repeats at critical
+position 50%. Length 1 is the zero-distractor one-turn control. Its resolved
+manifest must record the fixed 128-token JSON output budget and three-attempt,
+zero-backoff retry policy.

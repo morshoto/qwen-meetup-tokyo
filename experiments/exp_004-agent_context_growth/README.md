@@ -23,7 +23,11 @@ presentation-ready task instances. Repeats in the pilot/main protocol are
 additional measurements of those independent tasks, not additional task
 definitions.
 
-The model emits strict JSON actions:
+The model emits strict JSON actions. The recheck run fixes the output budget at
+128 new tokens, requires one JSON object without markdown, and uses exactly
+three action attempts with zero backoff. These controls are copied into each
+trial and the resolved manifest so a planning failure cannot be confused with
+a runtime failure.
 
 ```json
 {"action":"tool","name":"discover_fact","arguments":{}}
@@ -49,12 +53,19 @@ non-fixture execution and records the effective runtime options. The committed
 pilot outputs are a historical two-task run and are not evidence for the
 expanded catalog.
 
-## Smoke, pilot, and main
+## Smoke, pilot, recheck, and main
 
 Smoke uses the deterministic fixture backend and is a harness check only. It
 must never be copied into `docs/findings.md` as model evidence. Pilot and main
 use the selected source artifacts when available. Runtime failures stay in raw
 results and attempted denominators.
+
+The `recheck` phase is the presentation-focused real-model protocol: Q8/Q4,
+trajectory lengths 1, 4, 8, 16, and 32, critical position 50%, and three
+repeats over the ten independent tasks. Length 1 is the one-turn control: it
+contains zero distractor observations while retaining the same discovery and
+answer generation stages. The comparison tests whether failures grow with
+history after the fixed output/retry policy is held constant.
 
 Example smoke command:
 
@@ -65,6 +76,17 @@ PYTHONPATH=src python3 experiments/exp_004-agent_context_growth/runner.py \
   --manifest experiments/exp_004-agent_context_growth/results/manifests/smoke.json \
   --processed experiments/exp_004-agent_context_growth/results/processed/smoke-summary.csv \
   --phase smoke --backend fixture
+```
+
+Example recheck command:
+
+```bash
+PYTHONPATH=src python3 experiments/exp_004-agent_context_growth/runner.py \
+  --source-manifest experiments/exp_003-context_x_quantization/results/manifests/fast-matched.json \
+  --output experiments/exp_004-agent_context_growth/results/raw/recheck-trials.jsonl \
+  --manifest experiments/exp_004-agent_context_growth/results/manifests/recheck.json \
+  --processed experiments/exp_004-agent_context_growth/results/processed/recheck-summary.csv \
+  --phase recheck --backend llama.cpp
 ```
 
 ## Analysis

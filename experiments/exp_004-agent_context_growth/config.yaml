@@ -16,7 +16,13 @@
     "backend": "llama.cpp",
     "binding": "llama-cpp-python",
     "kernel": "ggml",
-    "max_action_attempts": 3
+    "max_action_attempts": 3,
+    "retry_policy": {
+      "name": "fixed_action_attempts",
+      "max_attempts": 3,
+      "retry_on": ["empty_output", "action_parse_error", "invalid_tool_action"],
+      "backoff_seconds": 0
+    }
   },
   "quantization": {
     "variants": ["q8_0", "q4_k_m"],
@@ -25,6 +31,11 @@
   },
   "trajectory": {
     "lengths": [4, 8, 16, 32],
+    "one_turn_control": {
+      "trajectory_length": 1,
+      "critical_position": 0.50,
+      "semantics": "zero distractor observations; discovery and answer stages remain unchanged"
+    },
     "critical_positions": [0.05, 0.25, 0.50, 0.75, 0.95],
     "length_semantics": "tool_observations_including_critical_fact",
     "matching": "same-task-seed-control-and-deterministic-observations"
@@ -44,6 +55,13 @@
       "backend": "llama.cpp",
       "purpose": "Estimate reliability, variance, and resource exclusions."
     },
+    "recheck": {
+      "lengths": [1, 4, 8, 16, 32],
+      "critical_positions": [0.50],
+      "repeats": 3,
+      "backend": "llama.cpp",
+      "purpose": "Separate one-turn baseline and structured-output failures from history-length effects."
+    },
     "main": {
       "lengths": [4, 8, 16, 32],
       "critical_positions": [0.05, 0.25, 0.50, 0.75, 0.95],
@@ -55,7 +73,8 @@
   "sampling": {
     "temperature": 0.0,
     "top_p": 1.0,
-    "max_new_tokens": 64,
+    "max_new_tokens": 128,
+    "output_format": "single_json_object",
     "generation_seed": 42,
     "orchestration_seed": 42
   },

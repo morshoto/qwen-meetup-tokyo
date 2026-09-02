@@ -25,6 +25,13 @@ class Exp004ContractTests(unittest.TestCase):
         self.assertEqual(["q8_0", "q4_k_m"], config["quantization"]["variants"])
         self.assertEqual([4, 8, 16, 32], config["trajectory"]["lengths"])
         self.assertEqual(
+            {"trajectory_length": 1, "critical_position": 0.5},
+            {
+                key: config["trajectory"]["one_turn_control"][key]
+                for key in ("trajectory_length", "critical_position")
+            },
+        )
+        self.assertEqual(
             [0.05, 0.25, 0.5, 0.75, 0.95],
             config["trajectory"]["critical_positions"],
         )
@@ -32,6 +39,20 @@ class Exp004ContractTests(unittest.TestCase):
         self.assertIn("fixture", readme.lower())
         self.assertIn("provenance", readme.lower())
         self.assertIn("exp_003", readme)
+        self.assertEqual(
+            [1, 4, 8, 16, 32],
+            config["phases"]["recheck"]["lengths"],
+        )
+        self.assertEqual([0.5], config["phases"]["recheck"]["critical_positions"])
+        self.assertEqual(3, config["phases"]["recheck"]["repeats"])
+        self.assertEqual("single_json_object", config["sampling"]["output_format"])
+        self.assertEqual(128, config["sampling"]["max_new_tokens"])
+        self.assertEqual(3, config["runtime"]["max_action_attempts"])
+        self.assertEqual(
+            config["runtime"]["max_action_attempts"],
+            config["runtime"]["retry_policy"]["max_attempts"],
+        )
+        self.assertEqual(0, config["runtime"]["retry_policy"]["backoff_seconds"])
 
     def test_results_contract_and_notebook_are_measured_data_only(self) -> None:
         results_readme = (EXPERIMENT / "results" / "README.md").read_text(
@@ -58,6 +79,9 @@ class Exp004ContractTests(unittest.TestCase):
             "final_task_success",
             "failure_category_counts",
             "trajectory_context_tokens",
+            "output_policy",
+            "retry_policy",
+            "one_turn_control",
         ):
             self.assertIn(required, source)
         self.assertIn("source_manifest", source)
