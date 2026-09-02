@@ -5,10 +5,10 @@
 This is a **presentation plan**, not the final slide deck. The narrative should change if the experiments produce a different strongest finding.
 
 As of 2026-09-02 this should be presented as an intermediate measurement
-report. exp_001 has fixture evidence plus a reduced real-model baseline in
-progress, exp_002 has a calibrated Q8_0 pilot condition, and exp_003 has a
-calibrated matched pilot. None of these substitutes for the declared full
-matrices, and no repository-transfer claim is frozen.
+report. exp_001 has fixture evidence plus a reduced real-model baseline,
+exp_002 has a calibrated Q8_0 pilot condition, exp_003 has a calibrated
+matched pilot, and exp_004 has a reduced agent pilot. These do not substitute
+for the declared full matrices, and no repository-transfer claim is frozen.
 
 ## 1. Audience promise
 
