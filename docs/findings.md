@@ -61,6 +61,9 @@ answer-bearing results, while 131,072 and 262,144 did not complete within the
 protocol-bounded feasibility boundary, not a general effective-context limit,
 model capability limit, or position-bias result. The probe uses one position,
 one repeat, and three tasks, so it cannot estimate task or position variance.
+If monotonic input-processing cost is assumed for a presentation-level forecast,
+the 900-second practical boundary is plausibly between 65,536 and 131,072
+tokens; this interpolation is exploratory and not a model hard-limit estimate.
 
 Next check:
 

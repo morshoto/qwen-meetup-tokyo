@@ -177,6 +177,7 @@ style: |
 <div class="highlight">64Kでは、exact/formatではなく<strong>answer-bearing correctness</strong>で3タスクとも通過。</div>
 <div class="warning">Q8・p50・固定3タスク・各1回・900秒timeoutの結果。262Kの一般的なeffective contextを意味しない。</div>
 </div>
+<div class="warning" style="margin-top:18px;">探索的予測：この単調な処理コストを仮定すると、900秒以内の実用境界は64Kと128Kの間。モデル固有のhard limitではない。</div>
 <p class="source">exp_001 feasibility manifest + raw JSONL · 9/9 attempted · source revision 67941cd · calibrated.v1</p>
 
 ---
