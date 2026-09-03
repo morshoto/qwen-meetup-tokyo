@@ -201,7 +201,7 @@ style: |
 <tr><td>Q5</td><td>32/60</td><td>60/60</td></tr>
 <tr><td>Q4</td><td>27/60</td><td>59/60</td></tr>
 </tbody></table>
-<div class="warning" style="margin-top:18px;">このsynthetic catalog・1 greedy runでは、Q4/Q8の一般的な品質同等性は確定しない。timing probesも474/1,200と未完。</div>
+<div class="warning" style="margin-top:18px;">paired equivalence（95% CI、±10pp）：answer-bearingは同等範囲内。exact/end-to-endとformat-validは同等性未確定。timing probesは474/1,200。</div>
 </div>
 </div>
 <p class="source">240/240 completed · Q8_0/Q6_K/Q5_K_M/Q4_K_M · 8K/32K · p50</p>
@@ -255,7 +255,7 @@ style: |
 
 <div class="claim-list">
 <div class="claim"><strong><span class="status pilot">境界を観測</span> 262Kまで有効に使える？</strong><span>このQ8環境では64Kは通過、128K/262Kは900秒timeout。一般的なeffective contextではない。</span></div>
-<div class="claim"><strong><span class="status pilot">限定的</span> Q4とQ8は同等？</strong><span>answer-bearingでは近いが、exact/formatまで同等とは言わない。</span></div>
+<div class="claim"><strong><span class="status pilot">指標限定</span> Q4とQ8は同等？</strong><span>answer-bearingは−1.7pp（95% CI −5.0〜0.0pp）で±10pp内。exact/formatは同等性未確定。</span></div>
 <div class="claim"><strong><span class="status pending">未確認</span> position bias？</strong><span>p50のみ測定。全position sweepが必要。</span></div>
 <div class="claim"><strong><span class="status measured">支持せず</span> 履歴が長いほど悪化？</strong><span>固定ポリシーのrecheckでは300/300。普遍則ではない。</span></div>
 <div class="claim"><strong><span class="status pending">未測定</span> repositoryでも再現？</strong><span>exp_005のcurated vs broad pilotが次の検証。</span></div>
