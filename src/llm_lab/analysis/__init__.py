@@ -43,6 +43,12 @@ from .agent_reliability import (
     validate_complete_matrix,
 )
 from .uncertainty import UncertaintyAnalysisError, task_level_wilson, wilson_interval
+from .feasibility import (
+    FEASIBILITY_CLASSIFICATIONS,
+    FeasibilityAnalysisError,
+    classify_feasibility,
+    classify_feasibility_by_length,
+)
 
 __all__ = [
     "ContextAnalysisError",
@@ -82,4 +88,8 @@ __all__ = [
     "UncertaintyAnalysisError",
     "task_level_wilson",
     "wilson_interval",
+    "FEASIBILITY_CLASSIFICATIONS",
+    "FeasibilityAnalysisError",
+    "classify_feasibility",
+    "classify_feasibility_by_length",
 ]

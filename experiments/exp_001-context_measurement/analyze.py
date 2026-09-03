@@ -24,6 +24,7 @@ from llm_lab.analysis import (  # noqa: E402
     missing_context_cells,
     position_gap_rows,
     write_summary_csv,
+    classify_feasibility_by_length,
 )
 from llm_lab.evaluation import load_trial_results  # noqa: E402
 
@@ -40,6 +41,7 @@ def regenerate(
     position_gap_path: str | Path | None = None,
     effective_context_path: str | Path | None = None,
     effective_context_by_position_path: str | Path | None = None,
+    feasibility_summary_path: str | Path | None = None,
     allow_fixture: bool = False,
 ) -> dict[str, Any]:
     """Validate a run and regenerate all tabular effective-context outputs.
@@ -98,7 +100,40 @@ def regenerate(
         position_gap_path=position_gap_path,
         effective_context_path=effective_context_path,
         effective_context_by_position_path=effective_context_by_position_path,
+        feasibility_summary_path=feasibility_summary_path,
     )
+    if manifest.get("phase") == "feasibility":
+        probe = manifest.get("probe")
+        if not isinstance(probe, Mapping):
+            raise AnalysisInputError("feasibility manifest must include probe metadata")
+        task_ids = probe.get("task_ids")
+        if not isinstance(task_ids, list) or not task_ids:
+            raise AnalysisInputError("feasibility manifest must include probe task_ids")
+        if probe.get("record_hash_required", False):
+            _validate_record_hashes(trials)
+        feasibility_rows = classify_feasibility_by_length(
+            trials,
+            expected_task_ids=task_ids,
+        )
+        write_summary_csv(outputs["summary"], summaries)
+        _write_rows_csv(outputs["feasibility_summary"], feasibility_rows)
+        return {
+            "backend": backend,
+            "phase": manifest.get("phase"),
+            "raw_results": str(raw_file),
+            "raw_results_sha256": actual_hash,
+            "trial_n": len(trials),
+            "summary_row_n": len(summaries),
+            "summary_rows": summaries,
+            "feasibility_rows": feasibility_rows,
+            "feasibility_row_n": len(feasibility_rows),
+            "excluded_cell_n": len(
+                [row for row in manifest.get("coverage", []) if row.get("status") == "excluded"]
+            ),
+            "baseline_limited_task_types": [],
+            "outputs": {key: str(path) for key, path in outputs.items()},
+        }
+
     gaps = _position_gap_rows_for_declared_positions(
         summaries,
         evidence_positions=evidence_positions,
@@ -383,15 +418,25 @@ def _output_paths(
     position_gap_path: str | Path | None,
     effective_context_path: str | Path | None,
     effective_context_by_position_path: str | Path | None,
+    feasibility_summary_path: str | Path | None,
 ) -> dict[str, Path]:
     results_root = manifest_file.parent.parent
+    # Keep a feasibility probe's aggregate table separate from the main
+    # baseline output.  A probe is intentionally bounded and must not
+    # overwrite the established baseline summary when it is regenerated.
+    phase = _load_manifest(manifest_file).get("phase")
+    default_summary = (
+        "feasibility-aggregate.csv" if phase == "feasibility" else "summary.csv"
+    )
     values = {
-        "summary": summary_path or results_root / "processed/summary.csv",
+        "summary": summary_path or results_root / f"processed/{default_summary}",
         "position_gap": position_gap_path or results_root / "processed/position-gap.csv",
         "effective_context": effective_context_path
         or results_root / "processed/effective-context.json",
         "effective_context_by_position": effective_context_by_position_path
         or results_root / "processed/effective-context-by-position.json",
+        "feasibility_summary": feasibility_summary_path
+        or results_root / "processed/feasibility-summary.csv",
     }
     return {key: Path(value).resolve() for key, value in values.items()}
 
@@ -400,8 +445,9 @@ def _write_rows_csv(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
     materialized = []
     for row in rows:
         item = dict(row)
-        if isinstance(item.get("edge_positions"), list):
-            item["edge_positions"] = json.dumps(item["edge_positions"])
+        for key, value in tuple(item.items()):
+            if isinstance(value, (list, dict)):
+                item[key] = json.dumps(value, ensure_ascii=False, sort_keys=True)
         materialized.append(item)
     if not materialized:
         raise AnalysisInputError(f"cannot write empty output: {path}")
@@ -416,6 +462,34 @@ def _write_rows_csv(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _validate_record_hashes(trials: Iterable[Any]) -> None:
+    """Verify the per-record hash attached by the feasibility runner."""
+
+    for trial in trials:
+        record = json.loads(json.dumps(trial.to_record(), ensure_ascii=False, sort_keys=True))
+        input_metadata = record.get("input")
+        if not isinstance(input_metadata, dict):
+            raise AnalysisInputError(f"trial {trial.trial_id} is missing input provenance")
+        provenance = input_metadata.get("provenance")
+        if not isinstance(provenance, dict):
+            raise AnalysisInputError(
+                f"trial {trial.trial_id} is missing raw_record_sha256"
+            )
+        expected = provenance.get("raw_record_sha256")
+        if not isinstance(expected, str) or len(expected) != 64:
+            raise AnalysisInputError(
+                f"trial {trial.trial_id} has invalid raw_record_sha256"
+            )
+        provenance.pop("raw_record_sha256", None)
+        actual = hashlib.sha256(
+            json.dumps(record, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+        if actual != expected:
+            raise AnalysisInputError(
+                f"trial {trial.trial_id} raw record SHA-256 does not match"
+            )
 
 
 def _sha256(path: Path) -> str:

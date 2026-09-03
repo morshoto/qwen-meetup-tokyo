@@ -130,6 +130,166 @@ class Exp001RunnerTests(unittest.TestCase):
         self.assertEqual(20, len(main))
         self.assertEqual("baseline:ctx008192:p005", smoke[0].condition_id)
         self.assertEqual("baseline:ctx131072:p095", main[-1].condition_id)
+        feasibility = runner.planned_conditions("feasibility")
+        self.assertEqual(3, len(feasibility))
+        self.assertEqual("feasibility:ctx262144:p050", feasibility[-1].condition_id)
+
+    def test_feasibility_phase_declares_lengths_timeout_and_shared_tasks(self) -> None:
+        feasibility = runner.load_config()["phases"]["feasibility"]
+
+        self.assertEqual([65536, 131072, 262144], feasibility["lengths"])
+        self.assertEqual([0.50], feasibility["evidence_positions"])
+        self.assertEqual(1, feasibility["repeats"])
+        self.assertEqual(900, feasibility["timeout_seconds"])
+        self.assertEqual(
+            [
+                "task.literal.000001",
+                "task.semantic.000001",
+                "task.multihop.000001",
+            ],
+            feasibility["task_ids"],
+        )
+
+    def test_feasibility_task_selection_is_explicit_and_bounded(self) -> None:
+        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")
+        selected = runner.select_probe_tasks(
+            catalog,
+            [
+                "task.literal.000001",
+                "task.semantic.000001",
+                "task.multihop.000001",
+            ],
+        )
+
+        self.assertEqual(
+            [
+                "task.literal.000001",
+                "task.semantic.000001",
+                "task.multihop.000001",
+            ],
+            [task.task_id for task in selected.tasks],
+        )
+        with self.assertRaisesRegex(ValueError, "between one and three"):
+            runner.select_probe_tasks(catalog, [])
+        with self.assertRaisesRegex(ValueError, "between one and three"):
+            runner.select_probe_tasks(catalog, list(catalog.ids[:4]))
+
+    def test_feasibility_trial_preserves_timeout_metrics_and_record_hash(self) -> None:
+        catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")
+        definition = catalog.get("task.literal.000001")
+        condition = runner.planned_conditions("feasibility")[0]
+        result = runner._trial_from_probe(
+            runner.ProbeOutcome(
+                value=None,
+                timed_out=True,
+                exit_code=-15,
+                peak_memory_bytes=123456,
+                memory_measurement="psutil.child_rss_sampled",
+                termination_reason="timeout",
+                error={"type": "TimeoutError", "message": "simulated"},
+            ),
+            definition=definition,
+            condition=condition,
+            model=runner.qwen38_model_spec(),
+            runtime_version="llama-test",
+            runtime_options={"n_ctx": 262404},
+            sampling=runner.SamplingConfig(max_new_tokens=64),
+            timeout_seconds=900,
+            fixture_seed=42,
+        )
+
+        self.assertEqual(TrialStatus.TIMEOUT, result.status)
+        self.assertEqual(900, result.input["feasibility_probe"]["timeout_seconds"])
+        self.assertEqual(-15, result.runtime["config"]["probe_exit_code"])
+        self.assertEqual(123456, result.memory["rss_peak_bytes"])
+        self.assertIsNone(result.timing["ttft_s"])
+        self.assertEqual("calibrated.v1", result.score["scorer"])
+        self.assertEqual(
+            64,
+            len(result.input["provenance"]["raw_record_sha256"]),
+        )
+
+    def test_feasibility_run_writes_manifest_and_all_probe_trials(self) -> None:
+        def fake_probe(worker, payload, *, timeout_seconds):
+            del worker, timeout_seconds
+            task = payload["task_definition"]
+            condition = payload["condition"]
+            length = int(condition["target_context_tokens"])
+            position = float(condition["evidence_position"])
+            task_id = str(task["id"])
+            task_type = str(task["type"])
+            trial_result = TrialResult(
+                trial_id=(
+                    f"exp_001:{task_id}:feasibility:ctx{length:06d}:"
+                    "p050:run01"
+                ),
+                experiment_id="exp_001",
+                task_id=task_id,
+                status=TrialStatus.COMPLETED,
+                input={
+                    "task_type": task_type,
+                    "condition_id": f"feasibility:ctx{length:06d}:p050",
+                    "target_context_tokens": length,
+                    "requested_evidence_position": position,
+                    "sampling": payload["sampling"],
+                },
+                score={
+                    "correct": True,
+                    "answer_bearing_correct": True,
+                    "exact_correct": True,
+                    "format_valid": True,
+                    "scorer": "calibrated.v1",
+                },
+                timing={"ttft_s": 0.1},
+            )
+            return runner.ProbeOutcome(
+                value=trial_result.to_record(),
+                timed_out=False,
+                exit_code=0,
+                peak_memory_bytes=100,
+                memory_measurement="test",
+                termination_reason=None,
+            )
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            options = {
+                "model_path": str(root / "q8_0.gguf"),
+                "version": "llama-test",
+                "n_ctx": 262404,
+                "n_batch": 128,
+                "n_gpu_layers": 0,
+                "flash_attn": False,
+                "verbose": False,
+                "_artifact_uri": "artifacts/q8_0.gguf",
+                "_artifact_sha256": "a" * 64,
+                "_artifact_size_bytes": 1,
+            }
+            with patch.object(runner, "_llama_cpp_options", return_value=options):
+                with patch.object(runner, "run_isolated_probe", side_effect=fake_probe):
+                    manifest = runner.run_experiment(
+                        phase="feasibility",
+                        backend="llama.cpp",
+                        output_path=root / "raw" / "feasibility.jsonl",
+                        manifest_path=root / "manifests" / "feasibility.json",
+                        config_path=ROOT / "experiments/exp_001-context_measurement/config.yaml",
+                    )
+
+            self.assertEqual(9, manifest["planned_trial_n"])
+            self.assertEqual(9, manifest["actual_trial_n"])
+            self.assertEqual(900, manifest["probe"]["timeout_seconds"])
+            self.assertEqual([65536, 131072, 262144], manifest["context_lengths"])
+            self.assertEqual(
+                ["accepted_and_useful"] * 3,
+                [row["classification"] for row in manifest["feasibility"]["classifications"]],
+            )
+            persisted = load_trial_results(root / "raw" / "feasibility.jsonl")
+            self.assertEqual(9, len(persisted))
+            self.assertEqual(
+                manifest["context_provenance"]["config_sha256"],
+                persisted[0].input["provenance"]["config_sha256"],
+            )
+            self.assertTrue(manifest["raw_results_sha256"])
 
     def test_build_tasks_records_context_provenance_and_evidence_offsets(self) -> None:
         catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")
@@ -318,6 +478,8 @@ class Exp001RunnerTests(unittest.TestCase):
         )
 
         self.assertIn("expected_scorer='calibrated.v1'", notebook)
+        self.assertIn("EXP001_PHASE=feasibility", notebook)
+        self.assertIn("feasibility_rows", notebook)
 
     def test_manifest_records_dimensions_and_exclusion_reason(self) -> None:
         catalog = TaskCatalog.from_jsonl(ROOT / "data/tasks/core.v002.jsonl")

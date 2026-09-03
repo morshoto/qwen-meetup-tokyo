@@ -206,6 +206,107 @@ class Exp001AnalysisTests(unittest.TestCase):
                 all(row["position_gap"] is None for row in result["position_gap_rows"])
             )
 
+    def test_feasibility_regeneration_writes_bounded_classifications(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw_path = root / "raw" / "feasibility-trials.jsonl"
+            writer = JsonlResultWriter(raw_path)
+            task_ids = (
+                "task.literal.000001",
+                "task.semantic.000001",
+                "task.multihop.000001",
+            )
+            task_types = {
+                task_ids[0]: "literal_retrieval",
+                task_ids[1]: "semantic_retrieval",
+                task_ids[2]: "multi_hop",
+            }
+            for length in (65536, 131072, 262144):
+                for task_id in task_ids:
+                    failed = length == 131072 and task_id == task_ids[1]
+                    timed_out = length == 262144 and task_id == task_ids[2]
+                    status = TrialStatus.TIMEOUT if timed_out else TrialStatus.COMPLETED
+                    score = {
+                        "scorer": "calibrated.v1",
+                        "correct": not failed if not timed_out else None,
+                        "answer_bearing_correct": not failed if not timed_out else None,
+                        "exact_correct": not failed if not timed_out else None,
+                        "format_valid": True if not timed_out else None,
+                    }
+                    writer.append(
+                        TrialResult(
+                            trial_id=f"exp_001:{task_id}:feasibility:ctx{length}:run01",
+                            experiment_id="exp_001",
+                            task_id=task_id,
+                            status=status,
+                            input={
+                                "task_type": task_types[task_id],
+                                "condition_id": f"feasibility:ctx{length:06d}:p050",
+                                "target_context_tokens": length,
+                                "requested_evidence_position": 0.50,
+                            },
+                            score=score,
+                            error=(
+                                {"type": "TimeoutError", "message": "simulated"}
+                                if timed_out
+                                else None
+                            ),
+                        )
+                    )
+            coverage = [
+                {
+                    "task_type": task_type,
+                    "condition_id": f"feasibility:ctx{length:06d}:p050",
+                    "target_context_tokens": length,
+                    "requested_evidence_position": 0.50,
+                    "expected_trial_n": 1,
+                    "trial_n": 1,
+                    "scored_n": 0 if length == 262144 and task_type == "multi_hop" else 1,
+                    "status": "valid",
+                    "exclusion_reason": None,
+                }
+                for length in (65536, 131072, 262144)
+                for task_type in task_types.values()
+            ]
+            manifest_path = root / "manifests" / "feasibility.json"
+            manifest_path.parent.mkdir(parents=True)
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "experiment_id": "exp_001",
+                        "phase": "feasibility",
+                        "backend": "llama.cpp",
+                        "scorer_version": "calibrated.v1",
+                        "raw_results": str(raw_path),
+                        "raw_results_sha256": hashlib.sha256(raw_path.read_bytes()).hexdigest(),
+                        "context_lengths": [65536, 131072, 262144],
+                        "evidence_positions": [0.50],
+                        "task_types": list(task_types.values()),
+                        "probe": {"task_ids": list(task_ids), "timeout_seconds": 900},
+                        "coverage": coverage,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
+            result = analysis.regenerate(manifest_path)
+
+            self.assertEqual(3, result["feasibility_row_n"])
+            classifications = {
+                row["target_context_tokens"]: row["classification"]
+                for row in result["feasibility_rows"]
+            }
+            self.assertEqual("accepted_and_useful", classifications[65536])
+            self.assertEqual("accepted_but_not_useful", classifications[131072])
+            self.assertEqual("operational_failure", classifications[262144])
+            output = root / "processed" / "feasibility-summary.csv"
+            self.assertTrue(output.is_file())
+            self.assertIn("classification", output.read_text(encoding="utf-8"))
+            self.assertTrue((root / "processed" / "feasibility-aggregate.csv").is_file())
+            self.assertFalse((root / "processed" / "summary.csv").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

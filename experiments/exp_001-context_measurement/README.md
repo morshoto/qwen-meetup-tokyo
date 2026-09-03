@@ -48,6 +48,11 @@ PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase main --backend llama.cpp
 
+# Time-boxed Q8 feasibility probe (64K/128K/262K, three shared tasks).
+# Each task runs in a fresh child process with the configured hard timeout.
+PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
+  --phase feasibility --backend llama.cpp
+
 # A full-precision comparison is optional and uses the local Transformers backend.
 python3 -m pip install -e '.[transformers,analysis]'
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
@@ -65,6 +70,10 @@ PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
 # Regenerate tables from a completed, verified model manifest.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/analyze.py \
   --manifest experiments/exp_001-context_measurement/results/manifests/main.json
+
+# Regenerate the bounded feasibility table after the probe completes.
+PYTHONPATH=src python3 experiments/exp_001-context_measurement/analyze.py \
+  --manifest experiments/exp_001-context_measurement/results/manifests/feasibility.json
 ```
 
 The real-model command is intentionally not a download command. The resolved
@@ -151,3 +160,29 @@ Set `EXP001_PHASE=smoke EXP001_ALLOW_FIXTURE=1` only to validate the harness
 path. The default is `EXP001_PHASE=main` and fixture-only input is rejected.
 No Qwen model finding is claimed until a pilot/main manifest contains measured
 Qwen trials and the resulting processed tables and figures are reviewed.
+
+## Feasibility probe and interpretation boundary
+
+The optional `feasibility` phase is a separate, bounded probe rather than a
+replacement for the full context matrix. It measures the pinned Q8_0 GGUF at
+64K, 128K, and 262K using the three explicitly configured task IDs and one
+fixed middle-position prompt per task. The default hard timeout is 900 seconds
+per child process. The parent process terminates a child that exceeds the
+timeout and records the timeout, child exit code, peak child RSS, and missing
+TTFT explicitly; no failed attempt is removed from the denominator.
+
+Each length is classified conservatively in
+`results/processed/feasibility-summary.csv`; its aggregate trial table is
+`results/processed/feasibility-aggregate.csv` so it cannot overwrite the main
+baseline summary:
+
+- `accepted_and_useful`: every selected task completed and was
+  `answer_bearing_correct`;
+- `accepted_but_not_useful`: every process completed, but at least one task was
+  not answer-bearing (including invalid output);
+- `operational_failure`: any timeout, runtime/OOM/input/scorer/cancellation
+  failure, missing task record, or unexpected task record.
+
+The classification is bounded to the recorded model artifact, runtime,
+hardware, task catalog, prompt construction, and timeout protocol. It does not
+establish a general 262K effective-context limit or capability claim.

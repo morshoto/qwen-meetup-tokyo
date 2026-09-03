@@ -1,0 +1,351 @@
+{
+  "actual_trial_n": 9,
+  "backend": "llama.cpp",
+  "capability_repeats": 1,
+  "context_lengths": [
+    65536,
+    131072,
+    262144
+  ],
+  "context_provenance": {
+    "conditions": [
+      {
+        "condition_id": "feasibility:ctx065536:p050",
+        "evidence_position": 0.5,
+        "target_context_tokens": 65536
+      },
+      {
+        "condition_id": "feasibility:ctx131072:p050",
+        "evidence_position": 0.5,
+        "target_context_tokens": 131072
+      },
+      {
+        "condition_id": "feasibility:ctx262144:p050",
+        "evidence_position": 0.5,
+        "target_context_tokens": 262144
+      }
+    ],
+    "config_path": "experiments/exp_001-context_measurement/config.yaml",
+    "config_sha256": "7d53bb0d5c2bb03c6aa375765928990392c5a12b107ab29e443b0b5c80854a6e",
+    "fixture_seed": 42,
+    "repeats": 1,
+    "source_revision": "67941cda909cc85f88a4b625f24d179399a48484",
+    "task_catalog": "data/tasks/core.v002.jsonl",
+    "task_catalog_sha256": "7631adc23aab29b0a1b06fae51267a940aa9f86d58dbe830724a3a2bc8703512",
+    "task_ids": [
+      "task.literal.000001",
+      "task.semantic.000001",
+      "task.multihop.000001"
+    ],
+    "task_types": [
+      "literal_retrieval",
+      "semantic_retrieval",
+      "multi_hop"
+    ]
+  },
+  "coverage": [
+    {
+      "condition_id": "feasibility:ctx065536:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 65536,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "feasibility:ctx065536:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 65536,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "feasibility:ctx065536:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 1,
+      "status": "valid",
+      "statuses": {
+        "completed": 1
+      },
+      "target_context_tokens": 65536,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "feasibility:ctx131072:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 0,
+      "status": "valid",
+      "statuses": {
+        "timeout": 1
+      },
+      "target_context_tokens": 131072,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "feasibility:ctx131072:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 0,
+      "status": "valid",
+      "statuses": {
+        "timeout": 1
+      },
+      "target_context_tokens": 131072,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "feasibility:ctx131072:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 0,
+      "status": "valid",
+      "statuses": {
+        "timeout": 1
+      },
+      "target_context_tokens": 131072,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "feasibility:ctx262144:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 0,
+      "status": "valid",
+      "statuses": {
+        "timeout": 1
+      },
+      "target_context_tokens": 262144,
+      "task_type": "literal_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "feasibility:ctx262144:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 0,
+      "status": "valid",
+      "statuses": {
+        "timeout": 1
+      },
+      "target_context_tokens": 262144,
+      "task_type": "semantic_retrieval",
+      "trial_n": 1
+    },
+    {
+      "condition_id": "feasibility:ctx262144:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 1,
+      "independent_task_n": 1,
+      "requested_evidence_position": 0.5,
+      "scored_n": 0,
+      "status": "valid",
+      "statuses": {
+        "timeout": 1
+      },
+      "target_context_tokens": 262144,
+      "task_type": "multi_hop",
+      "trial_n": 1
+    }
+  ],
+  "effective_context": {
+    "alpha": 0.9,
+    "baseline_accuracy_gate": 0.8,
+    "baseline_length": 8192,
+    "crossing": "first-sustained-below-threshold",
+    "sensitivity_alphas": [
+      0.85,
+      0.95
+    ]
+  },
+  "environment": {
+    "git_sha": "fcdbe3106bdfc3f7e403d752a82cf43dcb00b8df",
+    "machine": "arm64",
+    "os": "Darwin",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python_version": "3.11.15"
+  },
+  "evidence_positions": [
+    0.5
+  ],
+  "excluded_cells": [],
+  "experiment_id": "exp_001",
+  "feasibility": {
+    "classification_rule": "all selected tasks must complete and be answer-bearing correct; runtime/scorer/input/timeout/OOM/cancel/missing failures are operational",
+    "classifications": [
+      {
+        "answer_bearing_n": 3,
+        "attempted_n": 3,
+        "classification": "accepted_and_useful",
+        "completed_n": 3,
+        "expected_task_n": 3,
+        "invalid_output_n": 0,
+        "missing_task_ids": [],
+        "reason": null,
+        "runtime_failure_n": 0,
+        "scored_n": 3,
+        "status_counts": {
+          "completed": 3
+        },
+        "target_context_tokens": 65536,
+        "timeout_n": 0,
+        "unexpected_task_ids": []
+      },
+      {
+        "answer_bearing_n": 0,
+        "attempted_n": 3,
+        "classification": "operational_failure",
+        "completed_n": 0,
+        "expected_task_n": 3,
+        "invalid_output_n": 0,
+        "missing_task_ids": [],
+        "reason": "operational statuses: timeout",
+        "runtime_failure_n": 3,
+        "scored_n": 0,
+        "status_counts": {
+          "timeout": 3
+        },
+        "target_context_tokens": 131072,
+        "timeout_n": 3,
+        "unexpected_task_ids": []
+      },
+      {
+        "answer_bearing_n": 0,
+        "attempted_n": 3,
+        "classification": "operational_failure",
+        "completed_n": 0,
+        "expected_task_n": 3,
+        "invalid_output_n": 0,
+        "missing_task_ids": [],
+        "reason": "operational statuses: timeout",
+        "runtime_failure_n": 3,
+        "scored_n": 0,
+        "status_counts": {
+          "timeout": 3
+        },
+        "target_context_tokens": 262144,
+        "timeout_n": 3,
+        "unexpected_task_ids": []
+      }
+    ],
+    "record_hash_required": true,
+    "scope": "environment-and-protocol-bounded",
+    "task_ids": [
+      "task.literal.000001",
+      "task.semantic.000001",
+      "task.multihop.000001"
+    ],
+    "timeout_seconds": 900.0,
+    "worker": "llm_lab.evaluation.isolated_probe:run_exp001_qwen_probe"
+  },
+  "fixture_seed": 42,
+  "independent_task_n_by_type": {
+    "literal_retrieval": 1,
+    "multi_hop": 1,
+    "semantic_retrieval": 1
+  },
+  "interpretation": "Feasibility classifications are bounded to the recorded model, runtime, hardware, task set, and timeout protocol; they are not a general effective-context claim.",
+  "manifest_path": "experiments/exp_001-context_measurement/results/manifests/feasibility.json",
+  "model": {
+    "id": "Qwen/Qwen3.8-27B",
+    "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "tokenizer_id": "Qwen/Qwen3.8-27B",
+    "tokenizer_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+  },
+  "phase": "feasibility",
+  "planned_cell_n": 9,
+  "planned_condition_n": 3,
+  "planned_trial_n": 9,
+  "probe": {
+    "classification_rule": "all selected tasks must complete and be answer-bearing correct; runtime/scorer/input/timeout/OOM/cancel/missing failures are operational",
+    "record_hash_required": true,
+    "scope": "environment-and-protocol-bounded",
+    "task_ids": [
+      "task.literal.000001",
+      "task.semantic.000001",
+      "task.multihop.000001"
+    ],
+    "timeout_seconds": 900.0,
+    "worker": "llm_lab.evaluation.isolated_probe:run_exp001_qwen_probe"
+  },
+  "raw_record_normalization": {
+    "normalized_records": 6,
+    "reason": "Added calibrated.v1 scorer marker to parent-generated operational-failure placeholders; no scored outputs changed.",
+    "schema_revision": "c08fd3b"
+  },
+  "raw_results": "experiments/exp_001-context_measurement/results/raw/feasibility-trials.jsonl",
+  "raw_results_sha256": "7b58322e06d149bd438e7d9a0dbaf78ffe5a4163f90db4c9006e01cc50af551e",
+  "repeats": 1,
+  "runtime": {
+    "artifact": {
+      "sha256": "6cb70620c7811dce01e1a622fe0a4f9ac445e31c569640c36ecfac85c4609b6c",
+      "size_bytes": 29047084256,
+      "uri": "artifacts/q8_0.gguf"
+    },
+    "name": "llama.cpp",
+    "options": {
+      "flash_attn": true,
+      "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf",
+      "n_batch": 128,
+      "n_ctx": 262464,
+      "n_gpu_layers": -1,
+      "verbose": false
+    },
+    "version": "llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3"
+  },
+  "sampling": {
+    "do_sample": false,
+    "generation_seed_policy": "configured-seed",
+    "max_new_tokens": 64,
+    "seed": 42,
+    "temperature": 0.0,
+    "top_k": null,
+    "top_p": 1.0
+  },
+  "schema_version": 1,
+  "scorer_version": "calibrated.v1",
+  "task_catalog": "data/tasks/core.v002.jsonl",
+  "task_ids": [
+    "task.literal.000001",
+    "task.semantic.000001",
+    "task.multihop.000001"
+  ],
+  "task_types": [
+    "literal_retrieval",
+    "semantic_retrieval",
+    "multi_hop"
+  ],
+  "timing_repeats": 1
+}
