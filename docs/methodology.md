@@ -56,6 +56,15 @@ For tasks with a deterministic expected answer:
 
 Deterministic decoding does **not** remove the need for multiple task instances. Variation should come from independently generated benchmark instances rather than repeatedly asking the exact same prompt where possible.
 
+For capability estimates, count each independent task instance once. A repeated
+greedy execution of the same task/context is a timing or stability probe, not a
+new independent accuracy observation. Experiment configs therefore expose
+`capability_repeats` separately from `timing_repeats`; task-level bootstrap or
+paired comparisons should use independent task IDs as the resampling unit.
+The experiment notebooks report 95% Wilson intervals for binary exact,
+answer-bearing, and format-valid task rates; deterministic repeated task IDs
+are rejected as additional capability observations.
+
 For agent tasks, if deterministic decoding leads to brittle single-trajectory behavior, introduce a controlled nonzero sampling condition only as a separate analysis.
 
 ### Seed policy
@@ -205,23 +214,24 @@ Purpose: test state tracking and useful accumulated context.
 
 The project distinguishes **maximum accepted context** from **effective context**.
 
-For task family `T`, define a short-context baseline accuracy:
+For task family `T`, define a short-context baseline capability rate:
 
 ```text
-A_baseline(T) = accuracy at baseline context condition
+A_baseline(T) = end-to-end success at baseline context condition
 ```
 
 ### Baseline validity and absolute reporting
 
 The relative breakpoint is meaningful only when the task family is already
 usable at the short-context reference. The primary gate is at least `0.80`
-accuracy at the 8,192-token reference-precision baseline, measured over the
-predeclared scored instances. Declare a different gate before collecting a
-phase if the task family requires it.
+end-to-end success at the 8,192-token reference-precision baseline, measured
+over the predeclared attempted instances. Runtime and invalid-output failures
+remain failed attempts in this denominator. Declare a different gate before
+collecting a phase if the task family requires it.
 
 If a family misses the gate, classify it as **baseline-limited** and do not
 report or rank a relative effective-context breakpoint for that family. Still
-report its absolute accuracy curve, successes/attempted scored trials, and
+report its absolute accuracy curve, end-to-end successes/attempted trials, and
 runtime-failure status at every tested length. Relative breakpoints never
 replace the absolute curves.
 

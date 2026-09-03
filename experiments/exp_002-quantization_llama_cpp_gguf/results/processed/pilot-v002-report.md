@@ -36,12 +36,17 @@ Median stream-derived measurements were 71.1740 seconds TTFT, 115.7094
 prompt-tokens/second proxy, and 7.9671 completion-tokens/second proxy.
 Native prefill/decode counters are unavailable through this binding and remain
 `null`; these stream-derived values must not be treated as native kernel
-metrics.
+metrics. The historical sequential runner's RSS observations are process-local
+and are not used as a per-quantization memory comparison; use isolated child
+processes for that claim.
 
 ## Completion boundary
 
-The declared v002 matrix is 4 variants × 2 context lengths × 30 tasks × 5
-repeats = 1,200 trials. Only the Q8_0 × 8,192 × 30-task × one-repeat pilot
-(30 trials) is measured here. The remaining 1,170 trials are unrun. No
-cross-variant capability or systems-cost conclusion is valid until the main
-matrix is completed with the same manifest and raw JSONL output.
+The declared v002 capability matrix is 4 variants × 2 context lengths × 30
+tasks × 1 capability repeat = 240 task trials. Timing probes are a separate
+systems-cost matrix with 3–5 repeats per cell and never enter the capability
+denominator. Only the Q8_0 × 8,192 × 30-task × one-repeat capability pilot (30
+trials) is measured here; the remaining 210 capability cells and all separate
+timing probes are unrun. No cross-variant capability or systems-cost conclusion
+is valid until both matrices are completed with the same manifest and recorded
+raw paths.

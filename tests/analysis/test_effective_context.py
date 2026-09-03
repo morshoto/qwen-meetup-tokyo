@@ -70,6 +70,46 @@ class EffectiveContextTests(unittest.TestCase):
         self.assertEqual(20, gap["edge_scored_n"])
         self.assertEqual(0, gap["middle_scored_n"])
 
+    def test_position_gap_keeps_runtime_failures_in_primary_denominator(self) -> None:
+        rows = []
+        for position, rate in ((0.05, 0.8), (0.50, 1.0), (0.95, 0.6)):
+            row = summary("literal_retrieval", 8192, position, 1.0, scored_n=8)
+            row.update(
+                {
+                    "n": 10,
+                    "attempted_n": 10,
+                    "completed_n": 8,
+                    "end_to_end_success": rate,
+                }
+            )
+            rows.append(row)
+
+        [gap] = position_gap_rows(rows)
+
+        self.assertAlmostEqual(0.7, gap["edge_accuracy"])
+        self.assertAlmostEqual(1.0, gap["middle_accuracy"])
+        self.assertAlmostEqual(-0.3, gap["position_gap"])
+        self.assertEqual(20, gap["edge_attempted_n"])
+        self.assertEqual(10, gap["middle_attempted_n"])
+
+    def test_position_gap_uses_attempted_end_to_end_success_denominator(self) -> None:
+        rows = [
+            summary("literal_retrieval", 8192, 0.05, 1.0),
+            summary("literal_retrieval", 8192, 0.50, 1.0),
+            summary("literal_retrieval", 8192, 0.95, 1.0),
+        ]
+        rows[0].update({"attempted_n": 2, "end_to_end_success": 0.5})
+        rows[1].update({"attempted_n": 2, "end_to_end_success": 0.0})
+        rows[2].update({"attempted_n": 2, "end_to_end_success": 1.0})
+
+        [gap] = position_gap_rows(rows)
+
+        self.assertEqual(4, gap["edge_attempted_n"])
+        self.assertEqual(2, gap["middle_attempted_n"])
+        self.assertAlmostEqual(0.75, gap["edge_accuracy"])
+        self.assertAlmostEqual(0.0, gap["middle_accuracy"])
+        self.assertAlmostEqual(0.75, gap["position_gap"])
+
     def test_position_gap_requires_all_required_cells_to_be_available(self) -> None:
         rows = [
             summary("literal_retrieval", 8192, 0.05, 1.0),
@@ -154,6 +194,21 @@ class EffectiveContextTests(unittest.TestCase):
         self.assertEqual(1.0, literal["baseline_accuracy"])
         self.assertEqual("baseline_limited", semantic["status"])
         self.assertIsNone(semantic["effective_context_tokens"])
+
+    def test_effective_context_uses_attempted_end_to_end_success(self) -> None:
+        rows = []
+        for context_tokens, rate in ((8192, 1.0), (32768, 0.5), (65536, 0.0)):
+            for position in (0.05, 0.50, 0.95):
+                row = summary("literal_retrieval", context_tokens, position, 1.0)
+                row.update({"attempted_n": 2, "scored_n": 0, "end_to_end_success": rate})
+                rows.append(row)
+
+        [result] = effective_context_by_task(rows)
+
+        self.assertEqual(1.0, result["baseline_accuracy"])
+        self.assertEqual(6, result["points"][0]["attempted_n"])
+        self.assertEqual(0, result["points"][-1]["scored_n"])
+        self.assertEqual("estimated", result["status"])
 
     def test_effective_context_marks_no_crossing_as_right_censored(self) -> None:
         rows = [

@@ -23,6 +23,8 @@ class Exp001ExperimentContractTests(unittest.TestCase):
         self.assertIn("baseline_accuracy_gate: 0.80", config)
         self.assertIn("position_gap", config)
         self.assertIn("effective_context", config)
+        self.assertIn("reference_backend: llama.cpp", config)
+        self.assertIn("artifact_sha256:", config)
 
     def test_results_contract_names_regenerable_baseline_outputs(self) -> None:
         results_readme = (EXPERIMENT / "results/README.md").read_text(
@@ -59,6 +61,8 @@ class Exp001ExperimentContractTests(unittest.TestCase):
             "baseline-limited",
             "--resume",
             "real-model",
+            "llama.cpp",
+            "capability_repeats",
         ):
             self.assertIn(required, notebook + readme)
 

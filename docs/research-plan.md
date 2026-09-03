@@ -123,10 +123,11 @@ measurable dependent variable.
   separate evidence for positional bias.
 - **Baseline-validity gate:** report a relative effective-context breakpoint for
   a task family only when its 8,192-token reference-precision baseline reaches
-  at least 80% accuracy over the predeclared scored instances. If it misses
+  at least 80% end-to-end success over the predeclared attempted instances.
+  Runtime and invalid-output failures remain in this denominator. If it misses
   that gate, classify the family as **baseline-limited** and do not rank its
   relative breakpoint against other families. Always show the absolute
-  accuracy curve, successes/attempted scored trials, and runtime-failure
+  accuracy curve, end-to-end successes/attempted trials, and runtime-failure
   status for baseline-limited families.
 - **Task correctness:** exact match or a deterministic structured grader for
   retrieval; task-specific answer keys for semantic and multi-hop tasks.

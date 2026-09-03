@@ -99,7 +99,10 @@ def regenerate(
         effective_context_path=effective_context_path,
         effective_context_by_position_path=effective_context_by_position_path,
     )
-    gaps = position_gap_rows(summaries)
+    gaps = _position_gap_rows_for_declared_positions(
+        summaries,
+        evidence_positions=evidence_positions,
+    )
     effective_options = manifest.get("effective_context", {})
     if not isinstance(effective_options, Mapping):
         raise AnalysisInputError("manifest effective_context must be an object")
@@ -131,6 +134,7 @@ def regenerate(
         "trial_n": len(trials),
         "summary_row_n": len(summaries),
         "summary_rows": summaries,
+        "position_gap_rows": gaps,
         "position_gap_row_n": len(gaps),
         "baseline_limited_task_types": [
             row["task_type"] for row in effective if row["status"] == "baseline_limited"
@@ -140,6 +144,59 @@ def regenerate(
         ),
         "outputs": {key: str(path) for key, path in outputs.items()},
     }
+
+
+def _position_gap_rows_for_declared_positions(
+    summaries: Iterable[Mapping[str, Any]],
+    *,
+    evidence_positions: Iterable[float],
+) -> list[dict[str, Any]]:
+    """Return valid gaps or explicit insufficient-data rows for a pilot.
+
+    A reduced pilot may intentionally measure only the middle position. The
+    strict shared helper remains unchanged for full beginning/middle/end
+    comparisons; this adapter keeps the pilot analyzable without fabricating
+    edge values.
+    """
+
+    rows = [dict(row) for row in summaries]
+    declared = tuple(sorted({float(value) for value in evidence_positions}))
+    required = {0.05, 0.50, 0.95}
+    if required.issubset(set(declared)):
+        return position_gap_rows(rows)
+
+    grouped: dict[tuple[str, int], list[Mapping[str, Any]]] = {}
+    for row in rows:
+        task_type = str(row.get("task_type"))
+        context_tokens = int(row.get("target_context_tokens"))
+        grouped.setdefault((task_type, context_tokens), []).append(row)
+    return [
+        {
+            "task_type": task_type,
+            "metric": (
+                "end_to_end_success"
+                if all("end_to_end_success" in row for row in group)
+                else "scored_accuracy"
+            ),
+            "target_context_tokens": context_tokens,
+            "edge_positions": [0.05, 0.95],
+            "middle_position": 0.50,
+            "edge_accuracy": None,
+            "middle_accuracy": None,
+            "position_gap": None,
+            "edge_scored_n": 0,
+            "middle_scored_n": 0,
+            "edge_attempted_n": 0,
+            "middle_attempted_n": 0,
+            "available_positions": list(declared),
+            "status": "insufficient_data",
+            "reason": (
+                "beginning/middle/end positions are required; "
+                f"declared positions={list(declared)!r}"
+            ),
+        }
+        for (task_type, context_tokens), group in sorted(grouped.items())
+    ]
 
 
 def _validate_coverage(
@@ -190,20 +247,21 @@ def _validate_coverage(
         coverage_scored_n = _non_negative_int(coverage, "scored_n", key)
         summary_trial_n = _summary_trial_n(summary, key)
         summary_scored_n = _non_negative_int(summary, "scored_n", key)
-        if status == "valid" and (
-            coverage_trial_n != expected_trial_n
-            or coverage_scored_n != expected_trial_n
-        ):
+        if status == "valid" and coverage_trial_n != expected_trial_n:
             raise AnalysisInputError(
                 f"manifest marks incomplete cell valid: {key}; "
                 f"expected_trial_n={expected_trial_n}, "
+                f"trial_n={coverage_trial_n}, scored_n={coverage_scored_n}"
+            )
+        if coverage_scored_n > coverage_trial_n:
+            raise AnalysisInputError(
+                f"manifest scored_n exceeds attempted trials for {key}: "
                 f"trial_n={coverage_trial_n}, scored_n={coverage_scored_n}"
             )
 
         available = (
             status == "valid"
             and coverage_trial_n == expected_trial_n
-            and coverage_scored_n == expected_trial_n
             and summary_trial_n == coverage_trial_n
             and summary_scored_n == coverage_scored_n
         )

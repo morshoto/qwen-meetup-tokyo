@@ -62,6 +62,22 @@ def tradeoff_rows(
                 f"{variant.condition_id} has no attempted measurements"
             )
         scored_accuracy = correct_n / scored_n if scored_n else None
+        exact_correct_n = _optional_count(condition_rows, "exact_correct_n")
+        exact_scored_n = _optional_count(condition_rows, "exact_scored_n")
+        # Older summaries used correct_n/scored_n for the exact outcome. Keep
+        # that fallback while exposing an explicit calibrated exact metric.
+        if exact_correct_n is None:
+            exact_correct_n = int(correct_n)
+        if exact_scored_n is None:
+            exact_scored_n = scored_n
+        answer_bearing_correct_n = _optional_count(
+            condition_rows, "answer_bearing_correct_n"
+        )
+        answer_bearing_scored_n = _optional_count(
+            condition_rows, "answer_bearing_scored_n"
+        )
+        format_valid_n = _optional_count(condition_rows, "format_valid_n")
+        format_scored_n = _optional_count(condition_rows, "format_scored_n")
         metrics = {
             key: _required_median(condition_rows, key, variant.condition_id)
             for key in REQUIRED_TRADEOFF_METRICS
@@ -81,7 +97,27 @@ def tradeoff_rows(
                 "scored_n": scored_n,
                 "correct_n": correct_n,
                 "failure_n": failure_n,
+                "exact_correct_n": exact_correct_n,
+                "exact_scored_n": exact_scored_n,
+                "exact_accuracy": (
+                    exact_correct_n / exact_scored_n if exact_scored_n else None
+                ),
                 "scored_accuracy": scored_accuracy,
+                "answer_bearing_correct_n": answer_bearing_correct_n,
+                "answer_bearing_scored_n": answer_bearing_scored_n,
+                "answer_bearing_accuracy": (
+                    answer_bearing_correct_n / answer_bearing_scored_n
+                    if answer_bearing_correct_n is not None
+                    and answer_bearing_scored_n
+                    else None
+                ),
+                "format_valid_n": format_valid_n,
+                "format_scored_n": format_scored_n,
+                "format_validity": (
+                    format_valid_n / format_scored_n
+                    if format_valid_n is not None and format_scored_n
+                    else None
+                ),
                 "end_to_end_success": correct_n / attempted_n,
                 "failure_rate": failure_n / attempted_n,
                 "accuracy": scored_accuracy,
@@ -109,6 +145,7 @@ def validate_complete_quantization_matrix(
         for task_id in resolved_manifest.task_ids
     }
     observed: set[tuple[str, int, str]] = set()
+    context_identity: dict[tuple[int, str], tuple[str, str]] = {}
     for row in summaries:
         variant_id = row.get("variant_condition_id")
         task_id = row.get("task_id")
@@ -137,10 +174,36 @@ def validate_complete_quantization_matrix(
             raise QuantizationAnalysisError(
                 f"summary contains duplicate quantization matrix cell: {key}"
             )
-        if attempted_n != resolved_manifest.repeats:
+        context_instance_id = row.get("context_instance_id")
+        context_sha256 = row.get("context_sha256")
+        if not isinstance(context_instance_id, str) or not context_instance_id.strip():
+            raise QuantizationAnalysisError(
+                f"{key} is missing context_instance_id for matched comparison"
+            )
+        if not isinstance(context_sha256, str) or not context_sha256.strip():
+            raise QuantizationAnalysisError(
+                f"{key} is missing context_sha256 for matched comparison"
+            )
+        identity_key = (context_length, task_id)
+        identity = (context_instance_id, context_sha256)
+        previous = context_identity.setdefault(identity_key, identity)
+        if previous != identity:
+            raise QuantizationAnalysisError(
+                "quantization variants do not share one context instance: "
+                f"context={context_length}, task_id={task_id}"
+            )
+        expected_repeats = (
+            resolved_manifest.capability_repeats or resolved_manifest.repeats
+        )
+        if attempted_n != expected_repeats:
+            repeat_label = (
+                "manifest capability repeats"
+                if resolved_manifest.capability_repeats is not None
+                else "manifest repeats"
+            )
             raise QuantizationAnalysisError(
                 f"{key} has attempted_n={attempted_n}; "
-                f"expected manifest repeats={resolved_manifest.repeats}"
+                f"expected {repeat_label}={expected_repeats}"
             )
         observed.add(key)
 
@@ -269,6 +332,17 @@ def _required_median(
             f"{condition_id} is missing measured {key}"
         )
     return float(median(values))
+
+
+def _optional_count(
+    rows: Iterable[Mapping[str, Any]], key: str
+) -> int | None:
+    """Sum a calibrated metric when every contributing row records it."""
+
+    values = [row.get(key) for row in rows]
+    if not values or any(not isinstance(value, int) or value < 0 for value in values):
+        return None
+    return sum(values)
 
 
 def _is_number(value: Any) -> bool:

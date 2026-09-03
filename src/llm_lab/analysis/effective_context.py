@@ -59,10 +59,12 @@ def position_gap_rows(
 ) -> list[dict[str, Any]]:
     """Calculate the declared edge-minus-middle position gap by context.
 
-    ``A_edge`` is the scored accuracy pooled across the beginning and end
-    positions. The pooling is weighted by scored trial count so a runtime
-    exclusion cannot be mistaken for a zero-accuracy observation. A complete
-    beginning/middle/end triplet is required for every task/context group.
+    ``A_edge`` is the primary capability rate pooled across the beginning and
+    end positions. New aggregates use end-to-end success weighted by attempted
+    trials, so runtime and invalid-output failures remain failures in the
+    denominator. Older scored-only summaries fall back to scored accuracy. A
+    complete beginning/middle/end triplet is required for every task/context
+    group.
     """
 
     if len(edge_positions) != 2 or edge_positions[0] >= edge_positions[1]:
@@ -91,19 +93,31 @@ def position_gap_rows(
         required_available = all(
             _is_available(cells[position]) for position in required_positions
         )
+        edge_attempted_n = sum(
+            _metric_n(cells[position]) for position in edge_positions
+        )
+        middle_attempted_n = _metric_n(cells[middle_position])
         edge_scored_n = sum(_scored_n(cells[position]) for position in edge_positions)
         middle_scored_n = _scored_n(cells[middle_position])
-        edge_accuracy = _weighted_accuracy(
+        edge_accuracy = _weighted_metric_rate(
             (cells[position] for position in edge_positions),
-            edge_scored_n,
+            edge_attempted_n,
         )
-        middle_accuracy = _weighted_accuracy(
+        middle_accuracy = _weighted_metric_rate(
             (cells[middle_position],),
-            middle_scored_n,
+            middle_attempted_n,
         )
         output.append(
             {
                 "task_type": task_type,
+                "metric": (
+                    "end_to_end_success"
+                    if all(
+                        "end_to_end_success" in cells[position]
+                        for position in required_positions
+                    )
+                    else "scored_accuracy"
+                ),
                 "target_context_tokens": context_tokens,
                 "edge_positions": list(edge_positions),
                 "middle_position": middle_position,
@@ -118,6 +132,8 @@ def position_gap_rows(
                 ),
                 "edge_scored_n": edge_scored_n,
                 "middle_scored_n": middle_scored_n,
+                "edge_attempted_n": edge_attempted_n,
+                "middle_attempted_n": middle_attempted_n,
                 "status": (
                     "valid"
                     if required_available
@@ -139,8 +155,9 @@ def effective_context_by_task(
 ) -> list[dict[str, Any]]:
     """Calculate task-specific effective context using the project rule.
 
-    Accuracy is weighted by scored trial count across evidence positions. A
-    baseline below the declared gate is ``baseline_limited``. Otherwise the
+    The primary capability rate is weighted by attempted trials across
+    evidence positions. A baseline below the declared gate is
+    ``baseline_limited``. Otherwise the
     first below-threshold context with the next tested context also below the
     threshold is the sustained crossing. A final, unconfirmed drop is marked
     ``provisional``; no observed drop is ``right_censored``.
@@ -216,7 +233,8 @@ def _effective_context_for_rows(
     alpha: float,
     minimum_baseline_accuracy: float,
 ) -> dict[str, Any]:
-    points = _weighted_context_points(rows)
+    row_list = [dict(row) for row in rows]
+    points = _weighted_context_points(row_list)
     baseline = next(
         (point for point in points if point["context_tokens"] == baseline_context_tokens),
         None,
@@ -229,6 +247,11 @@ def _effective_context_for_rows(
     threshold = alpha * baseline_accuracy if baseline_accuracy is not None else None
     result: dict[str, Any] = {
         "task_type": task_type,
+        "capability_metric": (
+            "end_to_end_success"
+            if row_list and all("end_to_end_success" in row for row in row_list)
+            else "scored_accuracy"
+        ),
         "baseline_context_tokens": baseline_context_tokens,
         "baseline_accuracy": baseline_accuracy,
         "baseline_valid": (
@@ -290,7 +313,9 @@ def _effective_context_for_rows(
 
 
 def _weighted_context_points(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    grouped: dict[int, dict[str, float]] = defaultdict(lambda: {"scored_n": 0.0, "successes": 0.0})
+    grouped: dict[int, dict[str, float]] = defaultdict(
+        lambda: {"attempted_n": 0.0, "scored_n": 0.0, "successes": 0.0}
+    )
     unavailable_contexts: set[int] = set()
     for row in rows:
         context_tokens = int(row["target_context_tokens"])
@@ -298,16 +323,18 @@ def _weighted_context_points(rows: Iterable[Mapping[str, Any]]) -> list[dict[str
             unavailable_contexts.add(context_tokens)
             continue
         scored_n = _scored_n(row)
-        accuracy = row.get("accuracy")
         if scored_n < 0:
             raise ContextAnalysisError("scored_n cannot be negative")
-        if scored_n and accuracy is None:
+        metric_rate = _metric_rate(row)
+        metric_n = _metric_n(row)
+        if metric_n and metric_rate is None:
             raise ContextAnalysisError(
-                f"accuracy is required when scored_n is positive for context {context_tokens}"
+                f"capability rate is required when attempts are positive for context {context_tokens}"
             )
-        if scored_n:
-            grouped[context_tokens]["scored_n"] += scored_n
-            grouped[context_tokens]["successes"] += float(accuracy) * scored_n
+        grouped[context_tokens]["scored_n"] += scored_n
+        grouped[context_tokens]["attempted_n"] += metric_n
+        if metric_n:
+            grouped[context_tokens]["successes"] += float(metric_rate) * metric_n
 
     return [
         {
@@ -317,12 +344,17 @@ def _weighted_context_points(rows: Iterable[Mapping[str, Any]]) -> list[dict[str
                 if context_tokens in unavailable_contexts
                 else int(values["scored_n"])
             ),
+            "attempted_n": (
+                0
+                if context_tokens in unavailable_contexts
+                else int(values["attempted_n"])
+            ),
             "accuracy": (
                 None
                 if context_tokens in unavailable_contexts
                 else (
-                    values["successes"] / values["scored_n"]
-                    if values["scored_n"]
+                    values["successes"] / values["attempted_n"]
+                    if values["attempted_n"]
                     else None
                 )
             ),
@@ -344,21 +376,42 @@ def _is_available(row: Mapping[str, Any]) -> bool:
     return row.get("analysis_status", "available") == "available"
 
 
-def _weighted_accuracy(
+def _weighted_metric_rate(
     rows: Iterable[Mapping[str, Any]],
-    scored_n: int,
+    metric_n: int,
 ) -> float | None:
-    if scored_n == 0:
+    if metric_n == 0:
         return None
     successes = 0.0
     for row in rows:
-        row_n = _scored_n(row)
-        accuracy = row.get("accuracy")
+        row_n = _metric_n(row)
+        accuracy = _metric_rate(row)
         if row_n and accuracy is None:
-            raise ContextAnalysisError("accuracy is required when scored_n is positive")
+            raise ContextAnalysisError("capability rate is required when attempts are positive")
         if row_n:
             successes += float(accuracy) * row_n
-    return successes / scored_n
+    return successes / metric_n
+
+
+def _metric_rate(row: Mapping[str, Any]) -> float | None:
+    """Return end-to-end success, falling back to legacy scored accuracy."""
+
+    value = row.get("end_to_end_success", row.get("accuracy"))
+    return None if value is None else float(value)
+
+
+def _metric_n(row: Mapping[str, Any]) -> int:
+    """Return the denominator for the selected capability metric."""
+
+    if "end_to_end_success" in row:
+        value = row.get("attempted_n", row.get("n"))
+    else:
+        value = row.get("scored_n", row.get("n"))
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ContextAnalysisError("capability denominator must be numeric")
+    if int(value) != value or value < 0:
+        raise ContextAnalysisError("capability denominator must be a non-negative integer")
+    return int(value)
 
 
 def _cell_key(row: Mapping[str, Any]) -> tuple[str, int, float]:

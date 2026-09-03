@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import importlib.util
 import json
 import sys
@@ -21,6 +22,73 @@ SPEC.loader.exec_module(runner)
 
 
 class Exp001RunnerTests(unittest.TestCase):
+    def test_llama_cpp_options_verifies_and_records_reference_artifact(self) -> None:
+        with TemporaryDirectory() as directory:
+            artifact = Path(directory) / "q8_0.gguf"
+            artifact.write_bytes(b"q8 fixture artifact")
+            digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            size = artifact.stat().st_size
+            options = runner._llama_cpp_options(
+                {
+                    "runtime": {
+                        "llama_cpp": {
+                            "model_path": str(artifact),
+                            "artifact_sha256": digest,
+                            "artifact_size_bytes": size,
+                            "version": "llama-test",
+                            "n_ctx": 8192,
+                            "n_batch": 128,
+                            "n_gpu_layers": 0,
+                            "flash_attn": False,
+                            "verbose": True,
+                        }
+                    }
+                }
+            )
+
+        self.assertEqual(str(artifact), options["model_path"])
+        self.assertEqual(str(artifact), options["_artifact_uri"])
+        self.assertEqual("llama-test", options["version"])
+        self.assertEqual(digest, options["_artifact_sha256"])
+        self.assertEqual(size, options["_artifact_size_bytes"])
+        self.assertEqual(8192, options["n_ctx"])
+        self.assertFalse(options["flash_attn"])
+
+    def test_llama_cpp_options_rejects_reference_artifact_hash_mismatch(self) -> None:
+        with TemporaryDirectory() as directory:
+            artifact = Path(directory) / "q8_0.gguf"
+            artifact.write_bytes(b"q8 fixture artifact")
+            with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+                runner._llama_cpp_options(
+                    {
+                        "runtime": {
+                            "llama_cpp": {
+                                "model_path": str(artifact),
+                                "artifact_sha256": "0" * 64,
+                            }
+                        }
+                    }
+                )
+
+    def test_llama_cpp_options_scales_context_to_selected_phase(self) -> None:
+        with TemporaryDirectory() as directory:
+            artifact = Path(directory) / "q8_0.gguf"
+            artifact.write_bytes(b"q8 fixture artifact")
+            options = runner._llama_cpp_options(
+                {
+                    "context": {"lengths": [8192, 131072]},
+                    "runtime": {
+                        "llama_cpp": {
+                            "model_path": str(artifact),
+                            "n_ctx": 131392,
+                        }
+                    },
+                },
+                max_context_tokens=32768,
+            )
+
+        self.assertEqual(33088, options["n_ctx"])
+
     def test_checked_in_smoke_artifact_covers_expanded_catalog(self) -> None:
         manifest = json.loads(
             (
@@ -164,6 +232,85 @@ class Exp001RunnerTests(unittest.TestCase):
             self.assertEqual(180, len({result.trial_id for result in persisted}))
             self.assertTrue(all(result.score["scorer"] == "calibrated.v1" for result in persisted))
             self.assertTrue(all("answer_bearing_correct" in result.score for result in persisted))
+
+    def test_fixture_backend_is_rejected_outside_smoke_phase(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaisesRegex(ValueError, "fixture backend is harness-only"):
+                runner.run_experiment(
+                    phase="main",
+                    backend="fixture",
+                    output_path=root / "raw" / "trials.jsonl",
+                    manifest_path=root / "manifests" / "main.json",
+                    config_path=ROOT / "experiments/exp_001-context_measurement/config.yaml",
+                )
+
+    def test_llama_cpp_model_run_writes_resume_checkpoint_before_first_trial(self) -> None:
+        class ByteTokenizer:
+            name = "checkpoint-test-tokenizer"
+
+            def encode(self, text: str) -> list[int]:
+                return list(text.encode("utf-8"))
+
+            def decode(self, tokens: list[int]) -> str:
+                return bytes(tokens).decode("utf-8")
+
+        class FakeLlamaRuntime:
+            name = "llama.cpp"
+
+            def load(self, model, config) -> None:
+                del model, config
+
+            def get_tokenizer(self) -> ByteTokenizer:
+                return ByteTokenizer()
+
+            def close(self) -> None:
+                return None
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output_path = root / "raw" / "smoke-trials.jsonl"
+            manifest_path = root / "manifests" / "smoke.json"
+            llama_options = {
+                "model_path": str(root / "q8_0.gguf"),
+                "version": "llama-test",
+                "n_ctx": 131392,
+                "n_batch": 128,
+                "n_gpu_layers": -1,
+                "flash_attn": True,
+                "verbose": False,
+                "_artifact_uri": "artifacts/q8_0.gguf",
+                "_artifact_sha256": "a" * 64,
+                "_artifact_size_bytes": 1,
+            }
+
+            with (
+                patch.object(runner, "LlamaCppRuntime", FakeLlamaRuntime),
+                patch.object(runner, "_llama_cpp_options", return_value=llama_options),
+                patch.object(
+                    runner,
+                    "EvaluationRunner",
+                    side_effect=RuntimeError("checkpoint sentinel"),
+                ),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "checkpoint sentinel"):
+                    runner.run_experiment(
+                        phase="smoke",
+                        backend="llama.cpp",
+                        output_path=output_path,
+                        manifest_path=manifest_path,
+                        config_path=ROOT / "experiments/exp_001-context_measurement/config.yaml",
+                    )
+
+            checkpoint = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual("in_progress", checkpoint["status"])
+            self.assertEqual("llama.cpp", checkpoint["backend"])
+            self.assertEqual(str(output_path), checkpoint["raw_results"])
+            self.assertEqual(
+                "configured-seed",
+                checkpoint["sampling"]["generation_seed_policy"],
+            )
+            self.assertEqual(42, checkpoint["sampling"]["seed"])
 
     def test_analysis_notebook_requires_calibrated_scorer(self) -> None:
         notebook = (ROOT / "experiments/exp_001-context_measurement/analysis.ipynb").read_text(

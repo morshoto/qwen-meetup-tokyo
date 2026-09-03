@@ -20,7 +20,7 @@ class Exp003ExperimentContractTests(unittest.TestCase):
         self.assertIn("id: exp_003", config)
         self.assertIn("name: context_x_quantization", config)
         self.assertIn(
-            "source_manifest: ../exp_002-quantization_llama_cpp_gguf/results/manifest.json",
+            "source_manifest: ../exp_002-quantization_llama_cpp_gguf/results/manifest.full.json",
             config,
         )
         self.assertIn("task_catalog: data/tasks/core.v002.jsonl", config)
@@ -56,6 +56,7 @@ class Exp003ExperimentContractTests(unittest.TestCase):
         self.assertIn("`calibrated.v1`", readme)
         self.assertIn("selected task IDs", readme)
         self.assertNotIn("explicit legacy exception", readme)
+        self.assertIn("manifest.full.json", config)
 
     def test_main_declares_issue_21_matrix(self) -> None:
         protocol = yaml.safe_load(

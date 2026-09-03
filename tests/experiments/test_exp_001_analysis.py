@@ -59,7 +59,13 @@ def trial(
 
 
 class Exp001AnalysisTests(unittest.TestCase):
-    def _manifest(self, root: Path, raw_path: Path) -> Path:
+    def _manifest(
+        self,
+        root: Path,
+        raw_path: Path,
+        *,
+        positions: tuple[float, ...] = (0.05, 0.50, 0.95),
+    ) -> Path:
         manifest_path = root / "manifests" / "main.json"
         manifest_path.parent.mkdir(parents=True)
         coverage = [
@@ -67,14 +73,17 @@ class Exp001AnalysisTests(unittest.TestCase):
                 "task_type": "literal_retrieval",
                 "target_context_tokens": context_tokens,
                 "requested_evidence_position": position,
-                "status": "excluded" if context_tokens == 32768 and position == 0.50 else "valid",
-                "reason": "simulated runtime failure" if context_tokens == 32768 and position == 0.50 else None,
+                # A complete attempted cell remains valid even when one
+                # trial fails at runtime; the failure stays in the primary
+                # end-to-end denominator.
+                "status": "valid",
+                "reason": None,
                 "expected_trial_n": 2,
                 "trial_n": 2,
                 "scored_n": 1 if context_tokens == 32768 and position == 0.50 else 2,
             }
             for context_tokens in (8192, 32768)
-            for position in (0.05, 0.50, 0.95)
+            for position in positions
         ]
         manifest_path.write_text(
             json.dumps(
@@ -87,7 +96,7 @@ class Exp001AnalysisTests(unittest.TestCase):
                     "raw_results": str(raw_path),
                     "raw_results_sha256": hashlib.sha256(raw_path.read_bytes()).hexdigest(),
                     "context_lengths": [8192, 32768],
-                    "evidence_positions": [0.05, 0.50, 0.95],
+                    "evidence_positions": list(positions),
                     "task_types": ["literal_retrieval"],
                     "effective_context": {
                         "baseline_length": 8192,
@@ -142,19 +151,20 @@ class Exp001AnalysisTests(unittest.TestCase):
             self.assertIn("attempted_n", summary)
             self.assertIn("runtime_error_n", summary)
             self.assertIn("analysis_status", summary)
-            self.assertEqual(
-                "unavailable",
-                next(
-                    row["analysis_status"]
-                    for row in result["summary_rows"]
-                    if row["target_context_tokens"] == 32768
-                    and row["requested_evidence_position"] == 0.50
-                ),
+            failed_cell = next(
+                row
+                for row in result["summary_rows"]
+                if row["target_context_tokens"] == 32768
+                and row["requested_evidence_position"] == 0.50
             )
+            self.assertEqual("available", failed_cell["analysis_status"])
+            self.assertEqual(2, failed_cell["attempted_n"])
+            self.assertEqual(1, failed_cell["scored_n"])
+            self.assertEqual(0.0, failed_cell["end_to_end_success"])
             gaps = json.loads(
                 (root / "processed/effective-context.json").read_text(encoding="utf-8")
             )
-            self.assertEqual("right_censored", gaps[0]["status"])
+            self.assertEqual("provisional", gaps[0]["status"])
 
     def test_regeneration_rejects_raw_hash_mismatch_before_writing(self) -> None:
         with TemporaryDirectory() as directory:
@@ -171,6 +181,30 @@ class Exp001AnalysisTests(unittest.TestCase):
                 analysis.regenerate(manifest_path)
 
             self.assertFalse((root / "processed/summary.csv").exists())
+
+    def test_reduced_position_pilot_is_explicitly_insufficient(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw_path = root / "raw" / "pilot-trials.jsonl"
+            writer = JsonlResultWriter(raw_path)
+            for context_tokens in (8192, 32768):
+                writer.append(
+                    trial("literal_retrieval", context_tokens, 0.50, 1, correct=True)
+                )
+                writer.append(
+                    trial("literal_retrieval", context_tokens, 0.50, 2, correct=False)
+                )
+            manifest_path = self._manifest(root, raw_path, positions=(0.50,))
+
+            result = analysis.regenerate(manifest_path)
+
+            self.assertEqual(2, result["position_gap_row_n"])
+            self.assertTrue(
+                all(row["status"] == "insufficient_data" for row in result["position_gap_rows"])
+            )
+            self.assertTrue(
+                all(row["position_gap"] is None for row in result["position_gap_rows"])
+            )
 
 
 if __name__ == "__main__":

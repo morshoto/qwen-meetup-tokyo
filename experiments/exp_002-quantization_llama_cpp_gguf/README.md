@@ -58,18 +58,21 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/resolve_m
   --command 'q4_k_m=COMPLETE_CONVERSION_AND_QUANTIZATION_COMMAND'
 ```
 
-Use the same raw output for the pilot and full run: the runner fingerprints
-the resolved manifest, appends only missing trial IDs, and rejects mismatched
-or out-of-scope records. The current `core.v002` protocol has 30 independent
-QA tasks. Its pilot is Q8_0 × 8,192 × 30 tasks × one repeat (30 trials); the
-complete matrix is 4 × 2 × 30 × 5 (1,200 trials). The checked-in resolved
-manifest is now the resolved v002 manifest. The measured v002 pilot is
+The runner fingerprints the resolved manifest, appends only missing trial IDs,
+and rejects mismatched or out-of-scope records. The current `core.v002` protocol has 30 independent
+QA tasks. Its pilot is Q8_0 × 8,192 × 30 tasks × one capability run (30 trials);
+the capability matrix is 4 × 2 × 30 × 1 (240 trials) when resolved from the
+current template. `results/manifest.json` is the historical pilot manifest;
+`results/manifest.full.json` is the resolved full-run control manifest with
+explicit `capability_repeats: 1` and `timing_repeats: 5`. The measured v002 pilot is
 recorded in `results/processed/pilot-v002-summary.csv` and
 `pilot-v002-report.md`; it covers only Q8_0 at 8,192 tokens with one repeat per
 task. Historical v001 evidence remains separate as
 `results/manifest.v001.json`, `results/processed/summary.v001.csv`, and
-`results/processed/pilot-v001-summary.csv`. The remaining 1,170 v002 trials
-must be measured before a cross-variant conclusion is reported.
+`results/processed/pilot-v001-summary.csv`. The remaining 210 v002 capability
+cells must be measured before a cross-variant conclusion is reported. Full runs
+using `manifest.full.json` should use new raw paths; the historical pilot raw
+file is terminal evidence for its original manifest.
 
 The committed pilot was regenerated under the current source-revision resume
 guard. Its raw JSONL is terminal evidence for this 30-trial condition and may
@@ -82,6 +85,24 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 
 PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
   --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json
+
+# Full capability matrix: one greedy execution per independent task, with the
+# committed full-run control manifest and a separate raw path from the pilot.
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/full-capability.jsonl \
+  --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
+  --repeats 1
+
+# Collect timing probes separately from capability observations. This requires
+# the same full-run manifest and a separate timing raw output.
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/full-capability.jsonl \
+  --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
+  --timing-output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/timing-v002.jsonl \
+  --timing-processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/timing-summary.csv \
+  --repeats 1 --timing-repeats 5
 ```
 
 ## Initial questions
@@ -93,6 +114,8 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 ## Fixed controls
 
 - Shared tasks: `data/tasks/core.v002.jsonl` (30 independent tasks).
+- The catalog is a controlled synthetic retrieval stress test, not a general
+  reasoning benchmark; repository transfer remains unmeasured.
 - Shared prompt: `data/prompts/prompt.qa.v001.txt` (`prompt.qa.v001`).
 - Context lengths: 8,192 and 32,768 input tokens. The prompt/template
   convention is explicit in the resolved manifest as
@@ -104,18 +127,30 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
 - Runtime: the same `llama-cpp-python` version, ggml kernel options, context
   size, batch size, GPU-layer setting, and flash-attention setting for every
   variant.
-- Repeats: five per task/condition/context cell.
+- Capability repeats: one per independent task/condition/context cell under
+  greedy decoding. Timing probes are collected into a separate JSONL/CSV pair
+  with `--timing-output` and `--timing-processed`; their 3–5 repeat count
+  never enters the capability denominator. `capability_repeats` and
+  `timing_repeats` are explicit in newly resolved manifests; historical
+  manifests retain their original `repeats` field and must be resolved again
+  before separate timing probes can run.
 
 ## Measurements
 
 The runner records one task-level raw trial for every selected
-variant/context/task/repeat cell. Processed summaries retain those task IDs
-and the runner's calibrated policy/catalog/artifact provenance.
+variant/context/task/capability-repeat cell. When timing probes are requested,
+it records a second task-level raw trial set with the same prompts and
+variant/context cells, tagged as timing samples and repeated independently.
+Processed summaries retain those task IDs and the runner's calibrated
+policy/catalog/artifact provenance.
 
 The runner records:
 
 - weight/artifact footprint: the resolved GGUF file byte size;
-- peak memory: process peak RSS and its measurement method;
+- sampled RSS during each trial and its measurement method. This is a
+  process-local observation, not a cross-variant peak-memory claim when the
+  runner loads variants sequentially; use one child process per variant for a
+  definitive memory comparison;
 - stream TTFT: `stream_ttft_s`, from `generate` call until the first
   streamed chunk;
 - prompt-throughput proxy: `prompt_throughput_proxy_tok_s`, prompt tokens
@@ -138,16 +173,18 @@ do not remove failed cells from the denominator without explanation.
 ## Analysis
 
 Run `analysis.ipynb` only after a resolved manifest and processed summary CSV
-are present under `results/`. It produces end-to-end-success-vs-memory and
-separate prompt-throughput-proxy/post-first-chunk-output-vs-memory
-comparisons. It keeps capability outcomes (`scored_accuracy`,
-`end_to_end_success`, and `failure_rate`) separate from systems costs
-(artifact size, peak memory, stream TTFT, and stream throughput proxies), then
+are present under `results/`. It produces separate success-vs-artifact-size,
+success-vs-sampled-RSS, stream-TTFT, and throughput-proxy figures. It keeps
+capability outcomes (`scored_accuracy`, `end_to_end_success`, and
+`failure_rate`) separate from systems costs (artifact size, sampled peak RSS,
+stream TTFT, and stream throughput proxies), then
 recommends the smallest measured artifact within the declared tolerance of the
 best measured end-to-end success. A condition with runtime or invalid-output
 failures cannot hide those failures by reporting only scored rows.
 With missing artifacts, missing cells, or missing metrics it fails loudly.
 
-The notebook is an analysis surface, not the benchmark runner. No conclusion
-or recommendation is valid until it is based on measured raw trials tied to a
-resolved manifest.
+The notebook is an analysis surface, not the benchmark runner. A full
+quantization recommendation requires both the complete capability summary and
+a separate timing summary with the manifest-declared 3–5 timing repeats. No
+conclusion or recommendation is valid until it is based on measured raw trials
+tied to a resolved manifest.

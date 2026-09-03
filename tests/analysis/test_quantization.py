@@ -101,6 +101,8 @@ def complete_matrix_summaries() -> list[dict[str, object]]:
                     "task_id": "task.literal.000001",
                     "target_context_tokens": context_length,
                     "variant_condition_id": condition_id,
+                    "context_instance_id": f"task.literal.000001:ctx{context_length}",
+                    "context_sha256": "a" * 64,
                 }
             )
             rows.append(row)
@@ -125,6 +127,8 @@ class QuantizationAnalysisTests(unittest.TestCase):
         self.assertEqual(100, q8["artifact_size_bytes"])
         self.assertEqual(0.9333333333333333, q8["accuracy"])
         self.assertEqual(30, q8["scored_n"])
+        self.assertEqual(30, q8["exact_scored_n"])
+        self.assertEqual(0.9333333333333333, q8["exact_accuracy"])
         self.assertEqual(200, q8["median_peak_memory_bytes"])
 
     def test_tradeoff_rows_groups_context_scoped_execution_conditions_by_variant(self) -> None:
@@ -238,6 +242,13 @@ class QuantizationAnalysisTests(unittest.TestCase):
         ):
             validate_complete_quantization_matrix(summaries, manifest())
 
+    def test_complete_quantization_matrix_requires_matched_context_identity(self) -> None:
+        summaries = complete_matrix_summaries()
+        summaries[2]["context_sha256"] = "b" * 64
+
+        with self.assertRaisesRegex(QuantizationAnalysisError, "do not share one context"):
+            validate_complete_quantization_matrix(summaries, manifest())
+
     def test_notebook_contains_required_analysis_sections(self) -> None:
         notebook_path = Path(
             "experiments/exp_002-quantization_llama_cpp_gguf/analysis.ipynb"
@@ -249,13 +260,20 @@ class QuantizationAnalysisTests(unittest.TestCase):
 
         for required in (
             "SUMMARY_PATH = RESULTS_DIR / 'processed/summary.csv'",
-            "MANIFEST_PATH = RESULTS_DIR / 'manifest.json'",
+            "'manifest.full.json' if PHASE == 'full' else 'manifest.json'",
             "tradeoff_rows",
             "accuracy_vs_memory",
             "speed_vs_memory",
             "end_to_end_success",
+            "exact_accuracy",
             "prompt_throughput_proxy_tok_s",
             "post_first_chunk_output_tok_s",
+            "artifact-size-by-variant.png",
+            "rss-by-variant.png",
+            "success-vs-artifact-size.png",
+            "accuracy-vs-rss.png",
+            "ttft-vs-context.png",
+            "throughput-vs-context.png",
             "recommend_baseline",
         ):
             self.assertIn(required, source)
@@ -279,6 +297,7 @@ class QuantizationAnalysisTests(unittest.TestCase):
         for required in (
             "capability_frame",
             "systems_cost_frame",
+            "median_peak_memory_bytes",
             "stream-derived proxies",
             "native prefill/decode counters are unavailable",
         ):

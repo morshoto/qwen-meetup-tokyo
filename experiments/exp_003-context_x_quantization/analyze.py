@@ -260,13 +260,22 @@ def _validate_coverage(
         expected_trial_n = independent_n * repeats
         if coverage.get("expected_trial_n") != expected_trial_n:
             raise AnalysisInputError(f"coverage expected trial count mismatch: {key}")
-        if coverage.get("trial_n") != expected_trial_n or coverage.get("scored_n") != expected_trial_n:
+        coverage_trial_n = coverage.get("trial_n")
+        coverage_scored_n = coverage.get("scored_n")
+        if coverage_trial_n != expected_trial_n:
             raise AnalysisInputError(f"coverage cell is incomplete: {key}")
+        if (
+            not isinstance(coverage_scored_n, int)
+            or isinstance(coverage_scored_n, bool)
+            or coverage_scored_n < 0
+            or coverage_scored_n > coverage_trial_n
+        ):
+            raise AnalysisInputError(f"coverage scored count is invalid: {key}")
         actual = summary_groups.get(key)
         if actual is None or actual["attempted_n"] != expected_trial_n:
             raise AnalysisInputError(f"summary is missing coverage cell: {key}")
-        if actual["scored_n"] != expected_trial_n:
-            raise AnalysisInputError(f"summary coverage is not fully scored: {key}")
+        if actual["scored_n"] != coverage_scored_n:
+            raise AnalysisInputError(f"summary and manifest scored counts differ: {key}")
 
 
 def _coverage_key(row: Mapping[str, Any]) -> tuple[str, str, int, float]:

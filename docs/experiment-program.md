@@ -153,7 +153,7 @@ Use short/medium-context versions of the shared task ladder. Avoid spending the 
 - prefill throughput;
 - decode throughput;
 - task accuracy;
-- accuracy-vs-memory Pareto plot;
+- capability-vs-artifact-size and capability-vs-sampled-RSS plots;
 - recommendation of two or three variants to carry into exp_003.
 
 ## Exit criteria

@@ -198,6 +198,10 @@ class Exp002RunnerTests(unittest.TestCase):
             )
             self.assertEqual("calibrated.v1", trial.input["scorer_version"])
             self.assertEqual(64, len(trial.input["context_sha256"]))
+            self.assertEqual(
+                "task.fixture:baseline:ctx008192:p050:seed43",
+                trial.input["context_instance_id"],
+            )
             self.assertIn("context/synthetic.py", trial.input["source_revisions"])
             self.assertIn("evaluation/contracts.py", trial.input["source_revisions"])
             self.assertIn("generation/types.py", trial.input["source_revisions"])
@@ -261,6 +265,70 @@ class Exp002RunnerTests(unittest.TestCase):
             self.assertTrue(all("format_valid" in item.score for item in trials))
             self.assertTrue(summary_path.is_file())
             self.assertTrue(all(instance.closed for instance in FakeRuntime.instances))
+
+    def test_timing_probes_are_written_separately_from_capability_trials(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            record = json.loads(manifest_path.read_text(encoding="utf-8"))
+            record["controls"]["capability_repeats"] = 1
+            record["controls"]["timing_repeats"] = 3
+            manifest_path.write_text(json.dumps(record), encoding="utf-8")
+            capability_output = root / "raw" / "capability.jsonl"
+            capability_summary = root / "processed" / "summary.csv"
+            timing_output = root / "raw" / "timing.jsonl"
+            timing_summary = root / "processed" / "timing-summary.csv"
+
+            result = runner.run_experiment(
+                manifest_path=manifest_path,
+                output_path=capability_output,
+                processed_path=capability_summary,
+                timing_output_path=timing_output,
+                timing_processed_path=timing_summary,
+                condition_ids=("q8_0",),
+                context_lengths=(8192,),
+                repeats=1,
+                timing_repeats=3,
+                runtime_factory=FakeRuntime,
+            )
+
+            self.assertEqual(3, result["actual_trial_n"])
+            self.assertEqual(9, result["actual_timing_trial_n"])
+            self.assertEqual(3, len(runner.load_trial_results(capability_output)))
+            timing_trials = runner.load_trial_results(timing_output)
+            self.assertEqual(9, len(timing_trials))
+            self.assertTrue(
+                all(trial.input.get("sample_role") == "timing" for trial in timing_trials)
+            )
+            self.assertTrue(timing_summary.is_file())
+            capability_rows = capability_summary.read_text(encoding="utf-8").splitlines()
+            timing_rows = timing_summary.read_text(encoding="utf-8").splitlines()
+            self.assertIn("raw_results_sha256", capability_rows[0].split(","))
+            self.assertIn("timing_raw_results_sha256", timing_rows[0].split(","))
+            self.assertEqual(
+                hashlib.sha256(capability_output.read_bytes()).hexdigest(),
+                result["raw_results_sha256"],
+            )
+            self.assertEqual(
+                hashlib.sha256(timing_output.read_bytes()).hexdigest(),
+                result["timing_raw_results_sha256"],
+            )
+
+    def test_timing_probes_require_explicit_manifest_repeat_control(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = _manifest_file(root)
+            with self.assertRaisesRegex(ValueError, "explicit timing_repeats"):
+                runner.run_experiment(
+                    manifest_path=manifest_path,
+                    output_path=root / "raw" / "capability.jsonl",
+                    processed_path=root / "processed" / "summary.csv",
+                    timing_output_path=root / "raw" / "timing.jsonl",
+                    condition_ids=("q8_0",),
+                    context_lengths=(8192,),
+                    repeats=1,
+                    runtime_factory=FakeRuntime,
+                )
 
     def test_task_level_summary_keeps_distinct_tasks_in_one_family(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -341,6 +409,8 @@ class Exp002RunnerTests(unittest.TestCase):
         )
 
         self.assertIn("EXPECTED_SCORER = 'calibrated.v1'", notebook)
+        self.assertIn("TIMING_SUMMARY_PATH", notebook)
+        self.assertIn("separate timing summary is required", notebook)
 
     def test_resume_reuses_completed_pilot_trials_without_duplicates(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

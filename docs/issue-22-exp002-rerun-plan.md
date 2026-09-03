@@ -22,8 +22,9 @@ be independently traceable and must not silently reuse that historical output.
 ### Current Delivery Status
 
 The implementation is complete and a real-model v002 pilot is committed. The
-pilot covers 30 Q8_0 trials at 8,192 input tokens; the remaining 1,170 trials
-of the declared 1,200-trial matrix are intentionally unrun, so the full
+pilot covers 30 Q8_0 capability trials at 8,192 input tokens; the remaining
+210 capability cells of the declared 240-cell matrix are intentionally unrun.
+The separate 3–5-repeat timing matrix is also pending, so the full
 quantization comparison and recommendation remain pending.
 
 ### Scope
@@ -40,7 +41,7 @@ quantization comparison and recommendation remain pending.
   native prefill/decode counters.
 - Report end-to-end success and failure rate using all attempted trials, while
   retaining runtime and invalid-output failures as distinct outcomes.
-- Run the v002 pilot/full matrix only from a resolved manifest and record the
+- Run the v002 pilot/full matrices only from resolved manifests and record the
   resulting summary and analysis provenance.
 
 **Out of scope**
@@ -66,7 +67,7 @@ quantization comparison and recommendation remain pending.
 | Acceptance Criterion | Test ID | Test Name |
 | --- | --- | --- |
 | Every artifact has revision, conversion command, SHA-256, and size provenance. | B1, B2 | `test_resolver_records_real_artifact_identity_and_revisions` and `test_trial_records_artifact_and_catalog_provenance` |
-| Task-level results are available for every quantization variant. | B2, B3, B6 | `test_task_level_summary_keeps_task_ids` and `test_full_selection_has_1200_expected_trials` |
+| Task-level results are available for every quantization variant. | B2, B3, B6 | `test_task_level_summary_keeps_distinct_tasks_in_one_family` plus complete-matrix validation tests |
 | Stream-derived proxies are clearly separated from native metrics. | B4, B5 | `test_streamed_generation_records_measurement_fields` and `test_notebook_separates_capability_and_systems_metrics` |
 | Runtime failures remain in the denominator. | B4, B5 | `test_aggregation_reports_calibrated_metrics_and_failure_kinds` and `test_tradeoff_rows_reports_failures_and_recommendation_uses_end_to_end_success` |
 | Capability and systems-cost figures are separate. | B5 | `test_notebook_separates_capability_and_systems_metrics` |
@@ -171,7 +172,8 @@ quantization comparison and recommendation remain pending.
 **Red**
 
 - Add contract assertions for the resolved v002 manifest, pilot count
-  (30 trials), full matrix count (1,200 trials), and complete task/variant/
+  (30 capability trials), capability matrix count (240 trials), separate
+  timing matrix count (up to 1,200 timing trials), and complete task/variant/
   context coverage.
 - Expected failure before implementation/evidence: the checked-in manifest and
   processed summary still identify v001/120 historical trials.
@@ -181,9 +183,11 @@ quantization comparison and recommendation remain pending.
 
 - Resolve all four local GGUF artifacts against the v002 template with the
   exact model/tokenizer/runtime/converter revisions and catalog hash.
-- Run the v002 pilot first, then resume the same append-only JSONL to complete
-  the full 4 × 2 × 30 × 5 matrix when runtime/hardware permits. The committed
-  evidence currently contains the pilot only.
+- Run the v002 capability pilot first, then use the pinned full manifest and a
+  new append-only JSONL to complete the 4 × 2 × 30 × 1 capability matrix when
+  runtime/hardware permits. Collect the separate 3–5-repeat timing matrix into
+  its own JSONL/summary. The committed evidence currently contains the pilot
+  only.
 - Generate task-level `summary.csv` after the full matrix, run the measured-only
   notebook, and retain runtime/invalid-output rows rather than filtering them.
 - Commit only the resolved manifest, processed summaries/figures, README, and
@@ -213,9 +217,9 @@ quantization comparison and recommendation remain pending.
 | `tests/experiments/test_exp_002_resolver.py` | Modify | Red | Catalog hash resolution. |
 | `tests/analysis/test_aggregation.py` | Modify | Red | Task-level grouping and denominator preservation. |
 | `tests/analysis/test_quantization.py` | Modify | Red | Analysis boundary contract. |
-| `experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.json` | Replace after measurement | Evidence | Resolved v002 artifact/control manifest. |
+| `experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json` | Pin before measurement | Evidence | Resolved v002 full-matrix artifact/control manifest; the historical pilot manifest remains separate. |
 | `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-summary.csv` | Create | Evidence | Measured 30-trial v002 pilot summaries. |
-| `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv` | Pending full matrix | Evidence | Task-level measured v002 summaries after all 1,200 trials. |
+| `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv` | Pending full matrix | Evidence | Task-level measured v002 capability summaries after all 240 capability trials; timing summary is separate. |
 
 ### Test Commands
 
@@ -239,8 +243,8 @@ git diff --check
 - **Risk**: A stale or wrong task catalog changes expected answers silently.
   **Mitigation**: resolve and verify the catalog SHA-256 before inference and
   record it in every v002 trial.
-- **Risk**: The 1,200-trial 27B matrix is long-running and may encounter OOM or
-  timeout failures.
+- **Risk**: The 240 capability trials plus separate timing probes on the 27B
+  model are long-running and may encounter OOM or timeout failures.
   **Mitigation**: run the 30-trial pilot first, resume by deterministic trial
   ID, and keep every failure in the attempted denominator.
 - **Risk**: Historical v001 output is accidentally mixed with v002 output.
@@ -259,8 +263,10 @@ git diff --check
   manifest and raw SHA-256 to reproduce the measured output.
 - The old v001 result is historical evidence and must remain identifiable as
   such after v002 files are published.
-- Reviewers should check all 30 task IDs across four variants, two context
-  lengths, and five repeats, then inspect runtime/invalid-output counts before
+- Reviewers should check all 30 task IDs across four variants and two context
+  lengths in the one-repeat capability matrix, then inspect the separate
+  3–5-repeat timing envelope and
+  runtime/invalid-output counts before
   interpreting a quantization recommendation.
 
 ### Definition of Done

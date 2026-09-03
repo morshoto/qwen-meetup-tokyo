@@ -16,7 +16,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from llm_lab.agents import AgentHarness, AgentTask, TrajectoryControl  # noqa: E402
-from llm_lab.analysis import aggregate_jsonl, write_summary_csv  # noqa: E402
+from llm_lab.analysis import aggregate_agent_trials, write_summary_csv  # noqa: E402
 from llm_lab.evaluation import (  # noqa: E402
     TrialResult,
     TrialStatus,
@@ -340,12 +340,14 @@ def run_experiment(
         critical_positions=critical_positions,
     )
     run_repeats = _select_repeats(phase, repeats, config)
+    retry_policy = _retry_policy(config)
     seed = (
         int(_section(config, "experiment")["fixture_seed"])
         if fixture_seed is None
         else int(fixture_seed)
     )
     sampling = _sampling_config(_section(config, "sampling"))
+    output_policy = _output_policy(config, sampling)
     run_fingerprint = _run_fingerprint(
         config=config,
         source_manifest_path=source_manifest_path,
@@ -420,9 +422,7 @@ def run_experiment(
                 harness = AgentHarness(
                     runtime=runtime,
                     model=model,
-                    max_action_attempts=int(
-                        _section(config, "runtime")["max_action_attempts"]
-                    ),
+                    max_action_attempts=retry_policy["max_attempts"],
                 )
                 for control, task, repeat_index in missing:
                     context_instance_id = _context_instance_id(
@@ -442,6 +442,9 @@ def run_experiment(
                         "environment_fingerprint": task.environment().fingerprint,
                         "run_fingerprint": run_fingerprint,
                         "fixture_seed": seed,
+                        "sampling": sampling.to_record(),
+                        "output_policy": output_policy,
+                        "retry_policy": retry_policy,
                     }
                     if selected_backend == "fixture":
                         run_metadata["fixture_expected_answer"] = task.expected_answer
@@ -463,6 +466,9 @@ def run_experiment(
                         backend=selected_backend,
                         context_instance_id=context_instance_id,
                         run_fingerprint=run_fingerprint,
+                        sampling=sampling,
+                        output_policy=output_policy,
+                        retry_policy=retry_policy,
                     )
                     writer.append(result)
                     existing_ids.add(trial_id)
@@ -470,7 +476,7 @@ def run_experiment(
                 runtime.close()
     finally:
         all_results = load_trial_results(output_path)
-    summaries = aggregate_jsonl(output_path)
+    summaries = aggregate_agent_trials(all_results)
     write_summary_csv(processed_path, summaries)
     manifest = _build_manifest(
         config=config,
@@ -489,6 +495,9 @@ def run_experiment(
         results=all_results,
         effective_runtime=observed_runtime,
         raw_result_path=output_path,
+        sampling=sampling,
+        output_policy=output_policy,
+        retry_policy=retry_policy,
     )
     manifest_output_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_output_path.write_text(
@@ -518,6 +527,9 @@ def _trial_result(
     backend: str,
     context_instance_id: str,
     run_fingerprint: str,
+    sampling: SamplingConfig,
+    output_policy: Mapping[str, Any],
+    retry_policy: Mapping[str, Any],
 ) -> TrialResult:
     last_response = run.last_response
     correct = (
@@ -558,6 +570,9 @@ def _trial_result(
         "total_input_tokens": run.metrics.get("total_input_tokens"),
         "fixture_only": backend == "fixture",
         "metrics": dict(run.metrics),
+        "sampling": sampling.to_record(),
+        "output_policy": dict(output_policy),
+        "retry_policy": dict(retry_policy),
     }
     timing = {
         "total_s": sum(
@@ -682,6 +697,9 @@ def _build_manifest(
     results: Iterable[TrialResult],
     effective_runtime: Mapping[str, Any],
     raw_result_path: Path,
+    sampling: SamplingConfig,
+    output_policy: Mapping[str, Any],
+    retry_policy: Mapping[str, Any],
 ) -> dict[str, Any]:
     variant_list = list(variants)
     result_list = list(results)
@@ -708,6 +726,10 @@ def _build_manifest(
                 {control.critical_position for control in controls_list}
             ),
             "condition_ids": [control.condition_id for control in controls_list],
+            "one_turn_control": _one_turn_control_record(config),
+            "sampling": sampling.to_record(),
+            "output_policy": dict(output_policy),
+            "retry_policy": dict(retry_policy),
         },
         "source_manifest": {
             "path": str(source_manifest_path),
@@ -779,6 +801,73 @@ def _select_repeats(
     if selected < 1:
         raise ValueError("repeats must be positive")
     return selected
+
+
+def _retry_policy(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Resolve the fixed action retry policy and reject drift-prone settings."""
+
+    runtime = _section(config, "runtime")
+    max_action_attempts = int(runtime.get("max_action_attempts", 0))
+    policy = runtime.get("retry_policy")
+    if not isinstance(policy, Mapping):
+        raise ValueError("runtime.retry_policy must be an object")
+    max_attempts = int(policy.get("max_attempts", 0))
+    if max_action_attempts < 1 or max_attempts != max_action_attempts:
+        raise ValueError(
+            "runtime.retry_policy.max_attempts must match max_action_attempts"
+        )
+    backoff_seconds = float(policy.get("backoff_seconds", -1))
+    if backoff_seconds != 0.0:
+        raise ValueError("exp_004 requires zero retry backoff")
+    retry_on = policy.get("retry_on")
+    if not isinstance(retry_on, list) or not retry_on or any(
+        not isinstance(value, str) or not value.strip() for value in retry_on
+    ):
+        raise ValueError("runtime.retry_policy.retry_on must be non-empty strings")
+    return {
+        "name": str(policy.get("name", "fixed_action_attempts")),
+        "max_attempts": max_attempts,
+        "retry_on": [str(value) for value in retry_on],
+        "backoff_seconds": backoff_seconds,
+    }
+
+
+def _output_policy(
+    config: Mapping[str, Any], sampling: SamplingConfig
+) -> dict[str, Any]:
+    """Resolve the fixed JSON action output contract."""
+
+    sampling_config = _section(config, "sampling")
+    output_format = sampling_config.get("output_format")
+    if not isinstance(output_format, str) or not output_format.strip():
+        raise ValueError("sampling.output_format must be a non-empty string")
+    if output_format != "single_json_object":
+        raise ValueError(
+            "exp_004 requires sampling.output_format=single_json_object"
+        )
+    return {
+        "format": output_format,
+        "max_new_tokens": sampling.max_new_tokens,
+        "markdown_allowed": False,
+    }
+
+
+def _one_turn_control_record(config: Mapping[str, Any]) -> dict[str, Any]:
+    trajectory = _section(config, "trajectory")
+    value = trajectory.get("one_turn_control")
+    if not isinstance(value, Mapping):
+        raise ValueError("trajectory.one_turn_control must be an object")
+    length = int(value.get("trajectory_length", 0))
+    position = float(value.get("critical_position", -1))
+    if length != 1 or not 0.0 <= position <= 1.0:
+        raise ValueError(
+            "trajectory.one_turn_control must use trajectory_length=1 and a valid position"
+        )
+    return {
+        "trajectory_length": length,
+        "critical_position": position,
+        "semantics": str(value.get("semantics", "")),
+    }
 
 
 def _phase_config(config: Mapping[str, Any], phase: str) -> Mapping[str, Any]:

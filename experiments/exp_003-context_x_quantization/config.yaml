@@ -3,7 +3,7 @@ experiment:
   name: context_x_quantization
   description: Measure whether quantization loss changes with context length and evidence position.
   default_phase: smoke
-  source_manifest: ../exp_002-quantization_llama_cpp_gguf/results/manifest.json
+  source_manifest: ../exp_002-quantization_llama_cpp_gguf/results/manifest.full.json
   task_catalog: data/tasks/core.v002.jsonl
   prompt_id: prompt.qa.v001
   fixture_seed: 42
@@ -17,7 +17,7 @@ runtime:
   binding: llama-cpp-python
   kernel: ggml
   n_ctx: 131392
-  n_batch: 512
+  n_batch: 128
   max_new_tokens: 64
 
 quantization:
@@ -38,18 +38,24 @@ phases:
     lengths: [8192, 32768]
     evidence_positions: [0.05, 0.50]
     repeats: 1
+    capability_repeats: 1
+    timing_repeats: 1
     backend: fixture
     purpose: Validate matching, scoring, storage, and coverage only.
   pilot:
     lengths: [8192, 32768, 65536]
     evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
     repeats: 5
+    capability_repeats: 1
+    timing_repeats: 5
     backend: llama.cpp
     purpose: Estimate interaction effect and resource exclusions.
   main:
     lengths: [8192, 32768, 65536, 131072]
     evidence_positions: [0.05, 0.25, 0.50, 0.75, 0.95]
     repeats: 20
+    capability_repeats: 1
+    timing_repeats: 20
     backend: llama.cpp
     purpose: Produce the matched interaction measurements when resources permit.
 

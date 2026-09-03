@@ -183,9 +183,10 @@ def interaction_report(
 ) -> list[dict[str, Any]]:
     """Describe whether each variant's gap from a reference changes by context.
 
-    Gaps are weighted by the number of matched scored trials across evidence
-    positions. The returned classification is descriptive and deliberately
-    does not claim statistical significance.
+    Gaps are weighted by the number of matched attempted trials across
+    evidence positions. Runtime and invalid-output failures therefore remain
+    in the primary end-to-end success denominator. The returned classification
+    is descriptive and deliberately does not claim statistical significance.
     """
 
     if approx_constant_gap_tolerance < 0:
@@ -216,10 +217,7 @@ def interaction_report(
             )
         current_accuracy = _accuracy(row)
         reference_accuracy = _accuracy(reference)
-        matched_n = min(
-            _scored_n(row),
-            _scored_n(reference),
-        )
+        matched_n = min(_attempted_n(row), _attempted_n(reference))
         if current_accuracy is None or reference_accuracy is None or matched_n < 1:
             continue
         grouped[(task_type, variant, context_tokens)].append(
@@ -258,6 +256,11 @@ def interaction_report(
                 "task_type": task_type,
                 "variant_condition_id": variant,
                 "reference_variant": reference_variant,
+                "metric": (
+                    "end_to_end_success"
+                    if any("end_to_end_success" in row for row in rows)
+                    else "scored_accuracy"
+                ),
                 "context_points": points,
                 "shortest_context_tokens": points[0]["context_tokens"] if points else None,
                 "largest_context_tokens": points[-1]["context_tokens"] if points else None,
@@ -383,7 +386,16 @@ def _interaction_key(
 
 
 def _accuracy(row: Mapping[str, Any]) -> float | None:
-    value = row.get("accuracy")
+    """Return the primary capability rate, retaining old-summary fallback.
+
+    New aggregates expose ``end_to_end_success`` over every attempted trial,
+    including runtime and invalid-output failures. Older hand-authored
+    summaries only have scored ``accuracy``; retaining that fallback keeps the
+    reusable analysis helpers backwards compatible without changing the
+    semantics of new experiment outputs.
+    """
+
+    value = row.get("end_to_end_success", row.get("accuracy"))
     return None if value is None else float(value)
 
 
@@ -391,4 +403,13 @@ def _scored_n(row: Mapping[str, Any]) -> int:
     value = row.get("scored_n", 0)
     if isinstance(value, bool):
         raise InteractionAnalysisError("scored_n must be an integer")
+    return int(value)
+
+
+def _attempted_n(row: Mapping[str, Any]) -> int:
+    value = row.get("attempted_n", row.get("n", row.get("scored_n", 0)))
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise InteractionAnalysisError("attempted_n must be numeric")
+    if int(value) != value or value < 0:
+        raise InteractionAnalysisError("attempted_n must be a non-negative integer")
     return int(value)

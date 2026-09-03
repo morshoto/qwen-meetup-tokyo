@@ -1,0 +1,176 @@
+[
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 0.2,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": false,
+    "capability_metric": "end_to_end_success",
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 0.2,
+        "attempted_n": 10,
+        "context_tokens": 8192,
+        "scored_n": 10
+      },
+      {
+        "accuracy": 0.4,
+        "attempted_n": 10,
+        "context_tokens": 32768,
+        "scored_n": 10
+      }
+    ],
+    "status": "baseline_limited",
+    "task_type": "literal_retrieval",
+    "threshold_accuracy": 0.18000000000000002,
+    "variant_condition_id": "q4_k_m"
+  },
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 0.7,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": false,
+    "capability_metric": "end_to_end_success",
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 0.7,
+        "attempted_n": 10,
+        "context_tokens": 8192,
+        "scored_n": 10
+      },
+      {
+        "accuracy": 0.8,
+        "attempted_n": 10,
+        "context_tokens": 32768,
+        "scored_n": 10
+      }
+    ],
+    "status": "baseline_limited",
+    "task_type": "multi_hop",
+    "threshold_accuracy": 0.63,
+    "variant_condition_id": "q4_k_m"
+  },
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 0.3,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": false,
+    "capability_metric": "end_to_end_success",
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 0.3,
+        "attempted_n": 10,
+        "context_tokens": 8192,
+        "scored_n": 10
+      },
+      {
+        "accuracy": 0.3,
+        "attempted_n": 10,
+        "context_tokens": 32768,
+        "scored_n": 10
+      }
+    ],
+    "status": "baseline_limited",
+    "task_type": "semantic_retrieval",
+    "threshold_accuracy": 0.27,
+    "variant_condition_id": "q4_k_m"
+  },
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 0.2,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": false,
+    "capability_metric": "end_to_end_success",
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 0.2,
+        "attempted_n": 10,
+        "context_tokens": 8192,
+        "scored_n": 10
+      },
+      {
+        "accuracy": 0.6,
+        "attempted_n": 10,
+        "context_tokens": 32768,
+        "scored_n": 10
+      }
+    ],
+    "status": "baseline_limited",
+    "task_type": "literal_retrieval",
+    "threshold_accuracy": 0.18000000000000002,
+    "variant_condition_id": "q8_0"
+  },
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 0.8,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": true,
+    "capability_metric": "end_to_end_success",
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 0.8,
+        "attempted_n": 10,
+        "context_tokens": 8192,
+        "scored_n": 10
+      },
+      {
+        "accuracy": 0.9,
+        "attempted_n": 10,
+        "context_tokens": 32768,
+        "scored_n": 10
+      }
+    ],
+    "status": "right_censored",
+    "task_type": "multi_hop",
+    "threshold_accuracy": 0.7200000000000001,
+    "variant_condition_id": "q8_0"
+  },
+  {
+    "alpha": 0.9,
+    "baseline_accuracy": 0.4,
+    "baseline_context_tokens": 8192,
+    "baseline_valid": false,
+    "capability_metric": "end_to_end_success",
+    "crossing_context_tokens": null,
+    "effective_context_tokens": null,
+    "largest_tested_context_tokens": 32768,
+    "minimum_baseline_accuracy": 0.8,
+    "points": [
+      {
+        "accuracy": 0.4,
+        "attempted_n": 10,
+        "context_tokens": 8192,
+        "scored_n": 10
+      },
+      {
+        "accuracy": 0.3,
+        "attempted_n": 10,
+        "context_tokens": 32768,
+        "scored_n": 10
+      }
+    ],
+    "status": "baseline_limited",
+    "task_type": "semantic_retrieval",
+    "threshold_accuracy": 0.36000000000000004,
+    "variant_condition_id": "q8_0"
+  }
+]

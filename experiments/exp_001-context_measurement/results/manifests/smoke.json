@@ -1,10 +1,89 @@
 {
   "actual_trial_n": 180,
   "backend": "fixture",
+  "capability_repeats": 1,
   "context_lengths": [
     8192,
     32768
   ],
+  "context_provenance": {
+    "conditions": [
+      {
+        "condition_id": "baseline:ctx008192:p005",
+        "evidence_position": 0.05,
+        "target_context_tokens": 8192
+      },
+      {
+        "condition_id": "baseline:ctx008192:p050",
+        "evidence_position": 0.5,
+        "target_context_tokens": 8192
+      },
+      {
+        "condition_id": "baseline:ctx008192:p095",
+        "evidence_position": 0.95,
+        "target_context_tokens": 8192
+      },
+      {
+        "condition_id": "baseline:ctx032768:p005",
+        "evidence_position": 0.05,
+        "target_context_tokens": 32768
+      },
+      {
+        "condition_id": "baseline:ctx032768:p050",
+        "evidence_position": 0.5,
+        "target_context_tokens": 32768
+      },
+      {
+        "condition_id": "baseline:ctx032768:p095",
+        "evidence_position": 0.95,
+        "target_context_tokens": 32768
+      }
+    ],
+    "config_path": "experiments/exp_001-context_measurement/config.yaml",
+    "config_sha256": "38aa3d5c6913f4d5db67b024e6981f6c08475fb403ae1df6aaac3eda04c0112c",
+    "fixture_seed": 42,
+    "repeats": 1,
+    "source_revision": "4c02cb847aa0e82b6fe730fd316d768123d766ea",
+    "task_catalog": "data/tasks/core.v002.jsonl",
+    "task_catalog_sha256": "7631adc23aab29b0a1b06fae51267a940aa9f86d58dbe830724a3a2bc8703512",
+    "task_ids": [
+      "task.literal.000001",
+      "task.literal.000002",
+      "task.literal.000003",
+      "task.literal.000004",
+      "task.literal.000005",
+      "task.literal.000006",
+      "task.literal.000007",
+      "task.literal.000008",
+      "task.literal.000009",
+      "task.literal.000010",
+      "task.semantic.000001",
+      "task.semantic.000002",
+      "task.semantic.000003",
+      "task.semantic.000004",
+      "task.semantic.000005",
+      "task.semantic.000006",
+      "task.semantic.000007",
+      "task.semantic.000008",
+      "task.semantic.000009",
+      "task.semantic.000010",
+      "task.multihop.000001",
+      "task.multihop.000002",
+      "task.multihop.000003",
+      "task.multihop.000004",
+      "task.multihop.000005",
+      "task.multihop.000006",
+      "task.multihop.000007",
+      "task.multihop.000008",
+      "task.multihop.000009",
+      "task.multihop.000010"
+    ],
+    "task_types": [
+      "literal_retrieval",
+      "semantic_retrieval",
+      "multi_hop"
+    ]
+  },
   "coverage": [
     {
       "condition_id": "baseline:ctx008192:p005",
@@ -288,7 +367,7 @@
     ]
   },
   "environment": {
-    "git_sha": "0b81f4afc8a0f293cbdf19a2c5e4040c2d3ea5f6",
+    "git_sha": "4c02cb847aa0e82b6fe730fd316d768123d766ea",
     "machine": "arm64",
     "os": "Darwin",
     "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
@@ -311,22 +390,27 @@
   "manifest_path": "experiments/exp_001-context_measurement/results/manifests/smoke.json",
   "model": {
     "id": "Qwen/Qwen3.8-27B",
-    "revision": null,
+    "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
     "tokenizer_id": "Qwen/Qwen3.8-27B",
-    "tokenizer_revision": null
+    "tokenizer_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
   },
   "phase": "smoke",
   "planned_cell_n": 18,
   "planned_condition_n": 6,
   "planned_trial_n": 180,
   "raw_results": "experiments/exp_001-context_measurement/results/raw/smoke-trials.jsonl",
-  "raw_results_sha256": "a77d222ee1700a9d298bfc76b011a45b4a76753cded7a3886772bfbc7164a199",
+  "raw_results_sha256": "e493461a7bf8f552b7a73792578daee1dffeea1a314dfc5a699c012e82847585",
   "repeats": 1,
+  "runtime": {
+    "name": "fixture",
+    "options": {},
+    "version": null
+  },
   "sampling": {
     "do_sample": false,
-    "generation_seed_policy": "greedy-decoding-no-seed",
-    "max_new_tokens": 32,
-    "seed": null,
+    "generation_seed_policy": "configured-seed",
+    "max_new_tokens": 64,
+    "seed": 42,
     "temperature": 0.0,
     "top_k": null,
     "top_p": 1.0
@@ -370,5 +454,6 @@
     "literal_retrieval",
     "semantic_retrieval",
     "multi_hop"
-  ]
+  ],
+  "timing_repeats": 1
 }

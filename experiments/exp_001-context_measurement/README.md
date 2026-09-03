@@ -22,11 +22,11 @@ additional variable.
 | Context length | 8K, 32K, 64K, 128K |
 | Evidence position | 5%, 25%, 50%, 75%, 95% |
 | Task family | literal, semantic, multi-hop; 10 independent tasks per family |
-| Repeats | 20 per cell where resources permit |
-| Sampling | temperature 0.0, max 32 generated tokens |
+| Capability repeats | 1 per independent task; timing repeats are a separate probe |
+| Sampling | temperature 0.0, seed 42, max 64 generated tokens |
 
 The 8K reference condition is used for the 80% baseline-validity gate. Effective
-context uses the first sustained accuracy drop below `alpha × baseline`; no
+context uses the first sustained end-to-end-success drop below `alpha × baseline`; no
 crossing is reported as right-censored, not unlimited. Position comparisons use
 the requested position for the curve and retain actual token offsets in every
 trial. A task family below the 80% gate is marked `baseline-limited` and is not
@@ -42,7 +42,13 @@ experiment contract.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase smoke --backend fixture --overwrite-smoke
 
-# Pilot/main runs use the optional local Transformers backend and local Qwen weights.
+# Operational pilot/main runs use the resolved Q8_0 GGUF through llama.cpp.
+PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
+  --phase pilot --backend llama.cpp
+PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
+  --phase main --backend llama.cpp
+
+# A full-precision comparison is optional and uses the local Transformers backend.
 python3 -m pip install -e '.[transformers,analysis]'
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase pilot --backend transformers
@@ -53,15 +59,23 @@ PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
 # sampling checkpoint in the existing manifest.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
   --phase main --backend transformers --resume
+PYTHONPATH=src python3 experiments/exp_001-context_measurement/runner.py \
+  --phase main --backend llama.cpp --resume
 
 # Regenerate tables from a completed, verified model manifest.
 PYTHONPATH=src python3 experiments/exp_001-context_measurement/analyze.py \
   --manifest experiments/exp_001-context_measurement/results/manifests/main.json
 ```
 
-The real-model command is intentionally not a download command. The required
-Transformers/Torch stack, Qwen weights, and hardware must already be available;
-otherwise the run is blocked and fixture output must not be substituted.
+The real-model command is intentionally not a download command. The resolved
+Q8_0 artifact, llama.cpp binding, and hardware must already be available;
+otherwise the run is blocked and fixture output must not be substituted. The
+artifact path and SHA-256 in `config.yaml` are verified before inference.
+
+The default operational reference is Q8_0 through llama.cpp, matching exp_002
+and exp_003. A Transformers run is a separately labelled full-precision
+reference; its absolute accuracy, latency, and memory values must not be
+pooled with GGUF results.
 
 The fixture backend returns catalog answers by design. It validates task
 construction, evidence offsets, scoring, append-only storage, and coverage; it
@@ -71,8 +85,11 @@ independent-task trials as valid.
 The explicit `--overwrite-smoke` flag makes this deterministic fixture command
 safe to rerun against the committed artifact paths; other existing output paths
 fail closed so append-only trial data cannot be accidentally duplicated.
-The main matrix remains resource-dependent; runtime/OOM/timeout cells are kept
-in raw JSONL and listed as exclusions with reasons in the phase manifest. The
+The catalog is a controlled synthetic retrieval stress test, not a general
+reasoning benchmark. The main matrix remains resource-dependent; runtime/OOM/timeout
+trials are kept in raw JSONL, counted in the end-to-end denominator, and listed
+by status in the phase manifest. A cell is excluded only when planned attempts
+are missing. The
 runner's `--resume` option uses deterministic trial IDs to fill only missing
 attempts. A model run writes its resolved sampling checkpoint before the first
 trial; resume requires that checkpoint and rejects changes to its effective

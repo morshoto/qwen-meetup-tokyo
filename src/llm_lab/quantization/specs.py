@@ -142,6 +142,8 @@ class QuantizationManifest:
     sampling: Mapping[str, Any]
     variants: tuple[QuantizationVariant, ...]
     repeats: int = 1
+    capability_repeats: int | None = None
+    timing_repeats: int | None = None
     context_length_semantics: str = "input_tokens"
     context_overhead_tokens: int = 0
     runtime_options: Mapping[str, Any] = field(default_factory=dict)
@@ -176,6 +178,13 @@ class QuantizationManifest:
             raise ValueError("duplicate condition_id in variants")
         if self.repeats < 1:
             raise ValueError("repeats must be positive")
+        if self.capability_repeats is not None:
+            if self.capability_repeats < 1:
+                raise ValueError("capability_repeats must be positive")
+            if self.capability_repeats > self.repeats:
+                raise ValueError("capability_repeats cannot exceed repeats")
+        if self.timing_repeats is not None and self.timing_repeats < 1:
+            raise ValueError("timing_repeats must be positive")
         if self.context_length_semantics != "input_tokens":
             raise ValueError("context_length_semantics must be input_tokens")
         if self.context_overhead_tokens < 0:
@@ -223,6 +232,10 @@ class QuantizationManifest:
             },
             "variants": [variant.to_record() for variant in self.variants],
         }
+        if self.capability_repeats is not None:
+            record["controls"]["capability_repeats"] = self.capability_repeats
+        if self.timing_repeats is not None:
+            record["controls"]["timing_repeats"] = self.timing_repeats
         if self.task_catalog is not None:
             record["controls"]["task_catalog"] = self.task_catalog
             record["controls"]["task_catalog_sha256"] = self.task_catalog_sha256
@@ -251,6 +264,16 @@ class QuantizationManifest:
                 QuantizationVariant.from_record(value) for value in record["variants"]
             ),
             repeats=int(controls.get("repeats", 1)),
+            capability_repeats=(
+                int(controls["capability_repeats"])
+                if controls.get("capability_repeats") is not None
+                else None
+            ),
+            timing_repeats=(
+                int(controls["timing_repeats"])
+                if controls.get("timing_repeats") is not None
+                else None
+            ),
             context_length_semantics=str(
                 controls.get("context_length_semantics", "input_tokens")
             ),

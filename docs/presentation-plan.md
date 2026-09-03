@@ -4,11 +4,18 @@
 
 This is a **presentation plan**, not the final slide deck. The narrative should change if the experiments produce a different strongest finding.
 
+As of 2026-09-03 this should be presented as an intermediate measurement
+report. exp_001 has fixture evidence plus a reduced real-model baseline,
+exp_002 has a complete calibrated capability matrix but incomplete timing
+probes, exp_003 has a calibrated matched pilot, and exp_004 has a fixed-policy
+agent recheck with a one-turn control and three repeats. The full position matrix
+and repository-transfer claim remain incomplete.
+
 ## 1. Audience promise
 
 The audience should leave knowing:
 
-1. what “262K context” does and does not mean in practice;
+1. why nominal context length does not establish useful capability;
 2. whether local quantization changes useful long-context behavior;
 3. what happens when a local model's own agent history grows;
 4. which local configuration appears practically attractive under the measured hardware/runtime;
@@ -54,6 +61,30 @@ more context
 lower precision
 longer agent history
 ```
+
+## 3a. Current 12-slide version
+
+Use this shorter sequence until the main matrices are measured:
+
+1. title and question: when does a local LLM start to break?
+2. break definition: capability, systems cost, and trajectory reliability;
+3. experiment map: what is measured, pilot, harness-only, or unrun;
+4. scorer calibration: exact, answer-bearing, and format-valid outcomes;
+5. exp_002 capability matrix and artifact footprint (Q8_0 29.05 GB → Q4_K_M
+   16.81 GB); timing probes remain incomplete;
+6. long-input cost: stream TTFT is a proxy, not a native kernel counter;
+7. exp_003 matched pilot: a descriptive interaction observation, with the
+   64K/128K and all-position matrix still `insufficient_data`;
+8. agent transition: static context versus self-generated history;
+9. exp_004 fixed-policy recheck: 300/300 completed with no history-length degradation;
+10. compare the earlier parse-failure pilot with the fixed-policy recheck;
+11. what is known and unknown, including backend and synthetic-task limits;
+12. measurement quality gate and claim-evidence provenance;
+13. next measurements and conclusion.
+
+Do not use a Q4/Q8 quality ranking, an effective-context number, a position-bias
+claim, or a 262K capability claim until the corresponding calibrated matrix is
+complete.
 
 ## 4. Act I — Experimental subject
 

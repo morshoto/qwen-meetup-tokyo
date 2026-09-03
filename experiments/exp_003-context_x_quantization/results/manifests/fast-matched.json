@@ -1,0 +1,373 @@
+{
+  "actual_trial_n": 120,
+  "analysis": {
+    "alpha": 0.9,
+    "approx_constant_gap_tolerance": 0.1,
+    "baseline_accuracy_gate": 0.8,
+    "baseline_context_tokens": 8192,
+    "primary_gap_reference": "q8_0",
+    "scorer_version": "calibrated.v1",
+    "sensitivity_alphas": [
+      0.85,
+      0.95
+    ]
+  },
+  "backend": "llama.cpp",
+  "capability_repeats": 1,
+  "context_lengths": [
+    8192,
+    32768
+  ],
+  "coverage": [
+    {
+      "condition_id": "q8_0:ctx008192:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 10,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx008192:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 10,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx008192:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 10,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 10,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 10,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q8_0:ctx032768:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 10,
+      "variant_condition_id": "q8_0"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 8192,
+      "task_type": "literal_retrieval",
+      "trial_n": 10,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 8192,
+      "task_type": "semantic_retrieval",
+      "trial_n": 10,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx008192:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 8192,
+      "task_type": "multi_hop",
+      "trial_n": 10,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 32768,
+      "task_type": "literal_retrieval",
+      "trial_n": 10,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 32768,
+      "task_type": "semantic_retrieval",
+      "trial_n": 10,
+      "variant_condition_id": "q4_k_m"
+    },
+    {
+      "condition_id": "q4_k_m:ctx032768:p050",
+      "exclusion_reason": null,
+      "expected_trial_n": 10,
+      "independent_task_n": 10,
+      "requested_evidence_position": 0.5,
+      "scored_n": 10,
+      "status": "valid",
+      "statuses": {
+        "completed": 10
+      },
+      "target_context_tokens": 32768,
+      "task_type": "multi_hop",
+      "trial_n": 10,
+      "variant_condition_id": "q4_k_m"
+    }
+  ],
+  "effective_context": {
+    "alpha": 0.9,
+    "baseline_accuracy_gate": 0.8,
+    "baseline_length": 8192
+  },
+  "environment": {
+    "git_sha": "7dfe9ccb50e98284f07b94bbdbe03f61ad781469",
+    "machine": "arm64",
+    "os": "Darwin",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python_version": "3.11.15"
+  },
+  "evidence_positions": [
+    0.5
+  ],
+  "excluded_cells": [],
+  "experiment_id": "exp_003",
+  "fixture_seed": 42,
+  "interpretation": "Results are model/runtime observations under the recorded environment.",
+  "manifest_path": "experiments/exp_003-context_x_quantization/results/manifests/fast-matched.json",
+  "matching": "same task seed, generated context text, context length, and evidence position across variants",
+  "model": {
+    "id": "Qwen/Qwen3.8-27B",
+    "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "tokenizer_id": "Qwen/Qwen3.8-27B",
+    "tokenizer_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+  },
+  "phase": "main",
+  "planned_cell_n": 12,
+  "planned_condition_n": 2,
+  "planned_trial_n": 120,
+  "prompt_id": "prompt.qa.v001",
+  "quantization_variants": [
+    {
+      "artifact": {
+        "artifact_sha256": "6cb70620c7811dce01e1a622fe0a4f9ac445e31c569640c36ecfac85c4609b6c",
+        "artifact_size_bytes": 29047084256,
+        "artifact_uri": "artifacts/q8_0.gguf",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf Q8_0 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "source_uri": "hf://Qwen/Qwen3.8-27B"
+      },
+      "bits": 8,
+      "condition_id": "q8_0",
+      "format": "GGUF",
+      "label": "Q8_0",
+      "quantization_type": "Q8_0",
+      "runtime_kernel": "ggml"
+    },
+    {
+      "artifact": {
+        "artifact_sha256": "8b259e30f860c924fa1fd12d459343e8c2520eb12741f943ad5dcea5d1c4d120",
+        "artifact_size_bytes": 16810714336,
+        "artifact_uri": "artifacts/q4_k_m.gguf",
+        "conversion_command": ".venv/bin/python experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama.cpp/convert_hf_to_gguf.py --outfile experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf --outtype f16 --use-temp-file experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b && experiments/exp_002-quantization_llama_cpp_gguf/results/cache/llama-build/bin/llama-quantize experiments/exp_002-quantization_llama_cpp_gguf/results/cache/qwen3.8-27b-f16.gguf experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf Q4_K_M 8",
+        "converter_revision": "d7a2074112d27649303fa107eb8c94db1ee435f3",
+        "source_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+        "source_uri": "hf://Qwen/Qwen3.8-27B"
+      },
+      "bits": 4,
+      "condition_id": "q4_k_m",
+      "format": "GGUF",
+      "label": "Q4_K_M",
+      "quantization_type": "Q4_K_M",
+      "runtime_kernel": "ggml"
+    }
+  ],
+  "raw_results": "experiments/exp_003-context_x_quantization/results/raw/fast-matched-trials.jsonl",
+  "raw_results_sha256": "2bcc89b3e7f14d3bb71947cef4c2f1cd1a992ed6df6ba815a62dc6491cba9212",
+  "repeats": 1,
+  "run_fingerprint": "ab2b49f9b5f98dd0e8bb3570df57b19af192e9484743506f7d9e9169a21a88a3",
+  "runtime": {
+    "effective_options_by_variant": {
+      "q4_k_m": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q4_k_m.gguf",
+        "n_batch": 128,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q4_K_M",
+        "verbose": false
+      },
+      "q8_0": {
+        "flash_attn": true,
+        "model_path": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/artifacts/q8_0.gguf",
+        "n_batch": 128,
+        "n_ctx": 33088,
+        "n_gpu_layers": -1,
+        "quantization_type": "Q8_0",
+        "verbose": false
+      }
+    },
+    "name": "llama.cpp",
+    "source_options": {
+      "flash_attn": true,
+      "n_batch": 128,
+      "n_ctx": 33088,
+      "n_gpu_layers": -1,
+      "verbose": false
+    },
+    "version": "llama-cpp-python==0.3.35; llama.cpp=d7a2074112d27649303fa107eb8c94db1ee435f3"
+  },
+  "schema_version": 1,
+  "scorer_version": "calibrated.v1",
+  "source_experiment_id": "exp_002",
+  "source_manifest": "experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json",
+  "source_manifest_sha256": "a9ff222fd2263729ef4d658f5cf2223fe4c8385824420ff35f19694c61ce2ba2",
+  "source_revisions": {
+    "context/synthetic.py": "bf38ef02b2136a7a3910c41119b6dae21bcd6749db627ba7130c17f4245aafc8",
+    "datasets/catalog.py": "53c0ff28be59617a4d9576c763058a7832e2b90264b028ea0a25f664fd4e3432",
+    "evaluation/contracts.py": "fc114957af5a802936ec6af85ca904c8fe2fc1101d0a3744efcded7a2138218a",
+    "evaluation/runner.py": "e46462438731d833bbef795bc067a5fbad816de2be67cd83f71db6a0c12f9314",
+    "generation/types.py": "4503456b34c317e2e232cffdbebe6a32dec1c70162627f804b45c53a36af4cae",
+    "runner.py": "5e7f359a9cc491bb4e730fb23d29c653626a5233548f33544e37e11267fe35a4",
+    "runtimes/base.py": "1eb200be9d6a614749ecc728bec684093942fdbeed4f70c2e0cf97bb83e0dbb4",
+    "runtimes/llama_cpp.py": "5c8d68430ffeb4a74b01339550264712eea7869908a07c19827fd2f89a8dedd0"
+  },
+  "task_catalog": "data/tasks/core.v002.jsonl",
+  "task_catalog_sha256": "7631adc23aab29b0a1b06fae51267a940aa9f86d58dbe830724a3a2bc8703512",
+  "task_ids": [
+    "task.literal.000001",
+    "task.literal.000002",
+    "task.literal.000003",
+    "task.literal.000004",
+    "task.literal.000005",
+    "task.literal.000006",
+    "task.literal.000007",
+    "task.literal.000008",
+    "task.literal.000009",
+    "task.literal.000010",
+    "task.semantic.000001",
+    "task.semantic.000002",
+    "task.semantic.000003",
+    "task.semantic.000004",
+    "task.semantic.000005",
+    "task.semantic.000006",
+    "task.semantic.000007",
+    "task.semantic.000008",
+    "task.semantic.000009",
+    "task.semantic.000010",
+    "task.multihop.000001",
+    "task.multihop.000002",
+    "task.multihop.000003",
+    "task.multihop.000004",
+    "task.multihop.000005",
+    "task.multihop.000006",
+    "task.multihop.000007",
+    "task.multihop.000008",
+    "task.multihop.000009",
+    "task.multihop.000010"
+  ],
+  "task_types": [
+    "literal_retrieval",
+    "semantic_retrieval",
+    "multi_hop"
+  ],
+  "timing_repeats": 20
+}

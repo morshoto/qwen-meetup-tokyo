@@ -241,6 +241,9 @@ class Exp004RunnerTests(unittest.TestCase):
                 self.assertTrue(matched_trials[0].score["correct"])
                 self.assertGreater(len(matched_trials[0].input["trajectory"]), 0)
             self.assertTrue(summary_path.is_file())
+            summary_header = summary_path.read_text(encoding="utf-8").splitlines()[0]
+            self.assertIn("final_task_success", summary_header)
+            self.assertIn("failure_category_counts", summary_header)
             self.assertTrue(all(instance.closed for instance in FakeRuntime.instances))
 
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -253,6 +256,36 @@ class Exp004RunnerTests(unittest.TestCase):
             self.assertEqual(
                 "fixture-agent",
                 trials[0].runtime["name"],
+            )
+            self.assertEqual(128, trials[0].input["sampling"]["max_new_tokens"])
+            self.assertEqual(
+                "single_json_object", trials[0].input["output_policy"]["format"]
+            )
+            self.assertEqual(3, trials[0].input["retry_policy"]["max_attempts"])
+            self.assertEqual(
+                {"trajectory_length": 1, "critical_position": 0.5},
+                {
+                    key: manifest["protocol"]["one_turn_control"][key]
+                    for key in ("trajectory_length", "critical_position")
+                },
+            )
+
+    def test_recheck_protocol_includes_one_turn_control_and_repeats(self) -> None:
+        controls = runner.planned_conditions("recheck")
+        self.assertEqual([1, 4, 8, 16, 32], [item.trajectory_length for item in controls])
+        self.assertEqual([0.5] * 5, [item.critical_position for item in controls])
+        self.assertEqual(0, controls[0].pre_discovery_steps)
+        self.assertEqual(0, controls[0].post_discovery_steps)
+        self.assertEqual(0.0, controls[0].actual_critical_position)
+        with tempfile.TemporaryDirectory() as directory:
+            source_manifest = _source_manifest(Path(directory))
+            self.assertEqual(
+                300,
+                runner.expected_trial_count(
+                    runner.load_source_manifest(source_manifest),
+                    runner.load_tasks(),
+                    phase="recheck",
+                ),
             )
 
     def test_runner_loads_exp003_run_manifest_with_exp002_source(self) -> None:

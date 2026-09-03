@@ -5,23 +5,31 @@ Expected outputs include:
 ```text
 results/
 ├── manifest.json              # resolved, hashed v002 artifact/control manifest
+├── manifest.full.json         # pinned full-run controls (capability=1, timing=5)
 ├── manifest.v001.json         # preserved historical v001 manifest
 ├── raw/
 │   ├── trials-v002.jsonl      # ignored by Git; append-only v002 evidence
+│   ├── full-capability.jsonl  # ignored by Git; complete capability evidence
+│   ├── timing-v002.jsonl      # ignored by Git; separate repeated timing probes
 │   └── trials.jsonl           # ignored historical v001 evidence
 ├── processed/
 │   ├── pilot-v002-summary.csv  # measured 30-trial v002 pilot summary
+│   ├── summary.csv             # complete capability summary after full run
+│   ├── timing-summary.csv      # task-level summary of separate timing probes
 │   ├── pilot-v002-report.md    # pilot hash, observations, and completion boundary
 │   ├── summary.v001.csv        # preserved historical v001 summary
 │   ├── pilot-v001-summary.csv  # preserved historical v001 pilot summary
 │   ├── rescored-summary.csv    # issue #28 diagnostic comparison
 │   └── rescoring-report.md     # issue #28 provenance and caveat
-└── figures/                   # generated only after the complete v002 run
+└── figures/                   # generated from the selected pilot/full phase
 ```
 
 `manifest.json` must be derived from the experiment's template and contain
 actual model/runtime revisions, artifact SHA-256 digests, and artifact sizes.
 The template or a result with placeholder values is not a completed run.
+`manifest.full.json` is the checked-in resolved control manifest for the full
+matrix; pass it through `EXP002_MANIFEST_PATH` (or resolve a fresh
+`results/manifest.json`) before running the full phase.
 
 The v002 pilot command selects `q8_0`, context length `8192`, and
 `--repeats 1`, for 30 trials:
@@ -34,14 +42,36 @@ PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py
   --condition-id q8_0 --context-length 8192 --repeats 1
 ```
 
-Running the same command again resumes by deterministic trial ID. Running it
-without selectors, with the same `--output`, completes the full 1,200-trial
-matrix; duplicate or mismatched trial records are rejected. The v001 manifest,
-summary, and historical raw path remain preserved separately. The committed
-`pilot-v002-summary.csv` is pilot evidence only; a full v002 `summary.csv` is
-not valid until all variants, contexts, tasks, and repeats have been measured.
-The committed notebook has no cached outputs, and stale figures are removed;
-the two figures are regenerated only from the complete v002 summary.
+Running the same pilot command again resumes by deterministic trial ID. The
+historical pilot raw file is not reused for the full run because its manifest
+fingerprint is different. Use `manifest.full.json` and a new raw path for the
+full 240-trial capability matrix; duplicate or mismatched trial records are
+rejected. The v001 manifest, summary, and historical raw path remain preserved
+separately. The committed `pilot-v002-summary.csv` is pilot evidence only; a
+full v002 `summary.csv` is not valid until all variants, contexts, and tasks
+have been measured. The capability matrix uses one greedy run per independent
+task. Timing probes use a separate raw output and summary, with the manifest-
+declared 3–5 repeats; those repeated prompts never enter the capability
+denominator. Use `manifest.full.json` for these separate timing probes:
+
+```bash
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/runner.py \
+  --manifest experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json \
+  --output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/full-capability.jsonl \
+  --processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/summary.csv \
+  --timing-output experiments/exp_002-quantization_llama_cpp_gguf/results/raw/timing-v002.jsonl \
+  --timing-processed experiments/exp_002-quantization_llama_cpp_gguf/results/processed/timing-summary.csv \
+  --repeats 1 --timing-repeats 5
+```
+The committed notebook has no cached outputs. It writes separate capability
+and systems-cost figures: `artifact-size-by-variant.png`,
+`rss-by-variant.png`, `success-vs-artifact-size.png`, `accuracy-vs-rss.png`,
+`ttft-vs-context.png`, and `throughput-vs-context.png`. Pilot figures are
+explicitly pilot-only; a full comparison requires the complete v002 summary and
+the separate timing summary.
+The older `accuracy-vs-memory.png` and `speed-vs-memory.png` files are
+historical outputs and are not presentation figures for the calibrated v002
+analysis.
 The committed pilot was regenerated under the source-revision resume guard;
 extend its raw JSONL only when the manifest and recorded source revisions still
 match.

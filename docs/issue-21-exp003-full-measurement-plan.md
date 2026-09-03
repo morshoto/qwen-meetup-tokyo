@@ -12,7 +12,8 @@
 Issue #21 turns the existing exp_003 harness into the full matched real-model
 measurement. Q8 and Q4 must use the same versioned tasks and generated context
 instances at 8K, 32K, 64K, and 128K across all evidence positions, with
-independent tasks and repeated trials. The processed result must calculate the
+independent tasks. Any timing repeats are separate from the capability run; a
+deterministic greedy repeat is not an independent capability observation. The processed result must calculate the
 context × quantization interaction directly and classify it as
 `approximately_constant`, `context_dependent`, or `insufficient_data`.
 
@@ -30,8 +31,9 @@ run exists. Fixture output remains harness evidence only.
 **In scope**
 
 - A committed exp_003 main protocol with 8K, 32K, 64K, and 128K input-token
-  contexts, all five evidence positions, Q8/Q4 coverage, independent catalog
-  tasks, and multiple repeats.
+  contexts, all five evidence positions, Q8/Q4 coverage, and independent catalog
+  tasks. `capability_repeats: 1` is the accuracy denominator; timing repeats are
+  recorded separately.
 - Loading the resolved exp_002 catalog and calibrated scorer policy as the
   execution source of truth, with catalog hash and scorer provenance on every
   trial and run manifest.
@@ -58,7 +60,7 @@ run exists. Fixture output remains harness evidence only.
 
 | ID | Behaviour | Test Level | First Test File | Notes |
 | --- | --- | --- | --- | --- |
-| B1 | The main protocol declares the four issue-required contexts, all evidence positions, Q8/Q4, independent tasks, and more than one repeat. | Contract | `tests/experiments/test_exp_003_contract.py` | 128K is required; 262K is not part of this issue's required main matrix. |
+| B1 | The main protocol declares the four issue-required contexts, all evidence positions, Q8/Q4, independent tasks, and an explicit capability/timing repeat policy. | Contract | `tests/experiments/test_exp_003_contract.py` | 128K is required; 262K is not part of this issue's required main matrix. |
 | B2 | The runner loads the resolved source catalog and calibrated scorer, records their identity, and plans only declared task IDs. | Integration | `tests/experiments/test_exp_003_runner.py` | A catalog hash mismatch fails closed before inference. |
 | B3 | Every quantization receives the same generated task/context instance, including stable context ID, text hash, seed, and evidence offsets. | Integration | `tests/experiments/test_exp_003_runner.py` | Independent tasks must not collide during aggregation. |
 | B4 | Repeated raw trials aggregate at task × variant × context × position level while retaining attempted, scored, and failure denominators. | Unit / integration | `tests/analysis/test_interaction.py` | Runtime and invalid-output trials remain attempted. |
