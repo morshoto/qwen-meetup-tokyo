@@ -120,7 +120,7 @@ style: |
 <div class="map">
 <div class="map-node">
   <div class="map-code">EXP_001</div><div class="map-title">Context<br>baseline</div>
-  <span class="status measured">MEASURED</span><div class="map-kpi" style="margin-top:10px;">60/60</div><div class="map-note">8K / 32K · p50<br>reduced baseline</div>
+  <span class="status measured">MEASURED</span><div class="map-kpi" style="margin-top:10px;">60/60 + 9</div><div class="map-note">baseline + bounded feasibility probe<br>Q8 · p50</div>
 </div>
 <div class="map-node">
   <div class="map-code">EXP_002</div><div class="map-title">Quantization<br>trade-off</div>
@@ -158,10 +158,26 @@ style: |
 <tr><td>semantic</td><td>4/10</td><td>3/10</td></tr>
 <tr><td>multi-hop</td><td>8/10</td><td>9/10</td></tr>
 </tbody></table>
-<div class="warning" style="margin-top:18px;">p50のみ。64K/128Kとposition biasはまだ測っていない。</div>
+<div class="warning" style="margin-top:18px;">baseline matrixはp50のみ。別のfeasibility probeは固定3タスク・p50で、position biasはまだ測っていない。</div>
 </div>
 </div>
 <p class="source">60/60 completed · Q8_0 · 30 independent tasks · calibrated.v1</p>
+
+---
+
+## exp_001 feasibility — 262Kは「入る」前に時間で壊れる
+
+<table class="table" style="margin-top:22px;"><thead><tr><th>target context</th><th>attempts</th><th>classification</th><th>observed boundary</th></tr></thead><tbody>
+<tr><td>64K</td><td>3/3 completed</td><td><span class="status measured">accepted + useful</span></td><td>answer-bearing 3/3 · TTFT 783–786s</td></tr>
+<tr><td>128K</td><td>3/3 attempted</td><td><span class="status pilot">operational failure</span></td><td>3/3 timeout at 900s · RSS ≈ 37.6GB</td></tr>
+<tr><td>262K</td><td>3/3 attempted</td><td><span class="status pilot">operational failure</span></td><td>3/3 timeout at 900s · RSS ≈ 46.2GB</td></tr>
+</tbody></table>
+
+<div class="grid2" style="margin-top:28px;">
+<div class="highlight">64Kでは、exact/formatではなく<strong>answer-bearing correctness</strong>で3タスクとも通過。</div>
+<div class="warning">Q8・p50・固定3タスク・各1回・900秒timeoutの結果。262Kの一般的なeffective contextを意味しない。</div>
+</div>
+<p class="source">exp_001 feasibility manifest + raw JSONL · 9/9 attempted · source revision 67941cd · calibrated.v1</p>
 
 ---
 
@@ -238,7 +254,7 @@ style: |
 ## 5つの強い主張を、証拠の強さに合わせて言い換える
 
 <div class="claim-list">
-<div class="claim"><strong><span class="status pending">未測定</span> 262Kまで有効に使える？</strong><span>まず実行可能性probe。受け入れられることと有用性を分ける。</span></div>
+<div class="claim"><strong><span class="status pilot">境界を観測</span> 262Kまで有効に使える？</strong><span>このQ8環境では64Kは通過、128K/262Kは900秒timeout。一般的なeffective contextではない。</span></div>
 <div class="claim"><strong><span class="status pilot">限定的</span> Q4とQ8は同等？</strong><span>answer-bearingでは近いが、exact/formatまで同等とは言わない。</span></div>
 <div class="claim"><strong><span class="status pending">未確認</span> position bias？</strong><span>p50のみ測定。全position sweepが必要。</span></div>
 <div class="claim"><strong><span class="status measured">支持せず</span> 履歴が長いほど悪化？</strong><span>固定ポリシーのrecheckでは300/300。普遍則ではない。</span></div>
@@ -255,9 +271,9 @@ style: |
 <div class="rule"></div>
 <p class="lead">モデルを評価する前に、<br>評価器と出力プロトコルを校正する。</p>
 <div class="next">
-<div class="card"><h3>1 · Feasibility</h3><p>64K / 128K / 262Kの実行可能性</p></div>
+<div class="card"><h3>1 · Scorer</h3><p>exact / answer-bearing / formatを分離</p></div>
 <div class="card"><h3>2 · Position</h3><p>matched evidence sweep</p></div>
 <div class="card"><h3>3 · Transfer</h3><p>repository task validation</p></div>
 </div>
-<p class="source">Current status: exp_001–exp_004 measured or pilot; exp_005 remains unmeasured.</p>
+<p class="source">Current status: exp_001 baseline + bounded feasibility probe; exp_002–exp_004 measured or pilot; exp_005 remains unmeasured.</p>
 </div>

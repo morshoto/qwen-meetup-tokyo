@@ -794,6 +794,7 @@ def _trial_from_probe(
                 "task_seed": fixture_seed + int(definition.metadata["seed"]),
                 "sampling": sampling.to_record(),
             },
+            score={"scorer": SCORER_VERSION},
             error=error or {"type": "ProbeWorkerError", "message": "missing result"},
         )
 

@@ -203,6 +203,7 @@ class Exp001RunnerTests(unittest.TestCase):
         self.assertEqual(-15, result.runtime["config"]["probe_exit_code"])
         self.assertEqual(123456, result.memory["rss_peak_bytes"])
         self.assertIsNone(result.timing["ttft_s"])
+        self.assertEqual("calibrated.v1", result.score["scorer"])
         self.assertEqual(
             64,
             len(result.input["provenance"]["raw_record_sha256"]),

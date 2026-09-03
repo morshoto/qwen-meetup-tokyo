@@ -352,7 +352,7 @@ ul { margin-top: 10px; }
 .next .card { min-height: 120px; }
 .next .card h3 { font-size: 19px; }
 .next .card p { font-size: 16px; }
-;" data-marpit-pagination-total="9" data-size="16:9">
+;" data-marpit-pagination-total="10" data-size="16:9">
 <h2 id="break%E3%82%923%E3%81%A4%E3%81%AB%E5%88%86%E3%81%91%E3%81%A6%E6%B8%AC%E3%82%8B">“Break”を3つに分けて測る</h2>
 <div class="grid3">
 <div class="axis"><h3>Capability</h3><p>答えを含むか。<br />正確に答えられるか。<br />形式も満たすか。</p></div>
@@ -530,12 +530,12 @@ ul { margin-top: 10px; }
 .next .card { min-height: 120px; }
 .next .card h3 { font-size: 19px; }
 .next .card p { font-size: 16px; }
-;" data-marpit-pagination-total="9" data-size="16:9">
+;" data-marpit-pagination-total="10" data-size="16:9">
 <h2 id="4%E3%81%A4%E3%81%AE%E5%AE%9F%E9%A8%93%E3%82%921%E6%9C%AC%E3%81%AE%E6%B8%AC%E5%AE%9A%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC%E3%81%AB%E3%81%99%E3%82%8B">4つの実験を、1本の測定ストーリーにする</h2>
 <div class="map">
 <div class="map-node">
   <div class="map-code">EXP_001</div><div class="map-title">Context<br />baseline</div>
-  <span class="status measured">MEASURED</span><div class="map-kpi" style="margin-top:10px;">60/60</div><div class="map-note">8K / 32K · p50<br />reduced baseline</div>
+  <span class="status measured">MEASURED</span><div class="map-kpi" style="margin-top:10px;">60/60 + 9</div><div class="map-note">baseline + bounded feasibility probe<br />Q8 · p50</div>
 </div>
 <div class="map-node">
   <div class="map-code">EXP_002</div><div class="map-title">Quantization<br />trade-off</div>
@@ -725,7 +725,7 @@ ul { margin-top: 10px; }
 .next .card { min-height: 120px; }
 .next .card h3 { font-size: 19px; }
 .next .card p { font-size: 16px; }
-;" data-marpit-pagination-total="9" data-size="16:9">
+;" data-marpit-pagination-total="10" data-size="16:9">
 <h2 id="exp_001--%E9%95%B7%E3%81%84%E6%96%87%E8%84%88%E3%82%92%E4%BD%BF%E3%81%88%E3%82%8B%E3%81%A8%E3%81%AF%E9%99%90%E3%82%89%E3%81%AA%E3%81%84">exp_001 — 長い文脈を「使える」とは限らない</h2>
 <div class="grid2">
 <div>
@@ -738,7 +738,7 @@ ul { margin-top: 10px; }
 <tr><td>semantic</td><td>4/10</td><td>3/10</td></tr>
 <tr><td>multi-hop</td><td>8/10</td><td>9/10</td></tr>
 </tbody></table>
-<div class="warning" style="margin-top:18px;">p50のみ。64K/128Kとposition biasはまだ測っていない。</div>
+<div class="warning" style="margin-top:18px;">baseline matrixはp50のみ。別のfeasibility probeは固定3タスク・p50で、position biasはまだ測っていない。</div>
 </div>
 </div>
 <p class="source">60/60 completed · Q8_0 · 30 independent tasks · calibrated.v1</p>
@@ -911,30 +911,18 @@ ul { margin-top: 10px; }
 .next .card { min-height: 120px; }
 .next .card h3 { font-size: 19px; }
 .next .card p { font-size: 16px; }
-;" data-marpit-pagination-total="9" data-size="16:9">
-<h2 id="exp_002--%E9%87%8F%E5%AD%90%E5%8C%96%E3%81%A7%E5%B0%8F%E3%81%95%E3%81%8F%E3%81%AA%E3%82%8B%E3%81%8C%E5%93%81%E8%B3%AA%E3%81%AE%E5%95%8F%E3%81%84%E3%81%AF%E5%8D%98%E7%B4%94%E3%81%A7%E3%81%AF%E3%81%AA%E3%81%84">exp_002 — 量子化で小さくなるが、品質の問いは単純ではない</h2>
-<div class="grid2">
-<div class="card">
-<h3>Artifact footprint</h3>
-<div class="bars">
-<div class="bar-line"><b>Q8</b><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="bar-value">29.05 GB</span></div>
-<div class="bar-line"><b>Q6</b><div class="bar-track"><div class="bar-fill" style="width:77.2%"></div></div><span class="bar-value">22.43 GB</span></div>
-<div class="bar-line"><b>Q5</b><div class="bar-track"><div class="bar-fill" style="width:67.3%"></div></div><span class="bar-value">19.54 GB</span></div>
-<div class="bar-line"><b>Q4</b><div class="bar-track"><div class="bar-fill" style="width:57.9%"></div></div><span class="bar-value">16.81 GB</span></div>
-</div>
-<div class="big" style="margin-top:20px;">−42.1%<small><br />Q8 → Q4 artifact size</small></div>
-</div>
-<div>
-<table class="table"><thead><tr><th>variant</th><th>end-to-end</th><th>answer-bearing</th></tr></thead><tbody>
-<tr><td>Q8</td><td>32/60</td><td>60/60</td></tr>
-<tr><td>Q6</td><td>32/60</td><td>60/60</td></tr>
-<tr><td>Q5</td><td>32/60</td><td>60/60</td></tr>
-<tr><td>Q4</td><td>27/60</td><td>59/60</td></tr>
+;" data-marpit-pagination-total="10" data-size="16:9">
+<h2 id="exp_001-feasibility--262k%E3%81%AF%E5%85%A5%E3%82%8B%E5%89%8D%E3%81%AB%E6%99%82%E9%96%93%E3%81%A7%E5%A3%8A%E3%82%8C%E3%82%8B">exp_001 feasibility — 262Kは「入る」前に時間で壊れる</h2>
+<table class="table" style="margin-top:22px;"><thead><tr><th>target context</th><th>attempts</th><th>classification</th><th>observed boundary</th></tr></thead><tbody>
+<tr><td>64K</td><td>3/3 completed</td><td><span class="status measured">accepted + useful</span></td><td>answer-bearing 3/3 · TTFT 783–786s</td></tr>
+<tr><td>128K</td><td>3/3 attempted</td><td><span class="status pilot">operational failure</span></td><td>3/3 timeout at 900s · RSS ≈ 37.6GB</td></tr>
+<tr><td>262K</td><td>3/3 attempted</td><td><span class="status pilot">operational failure</span></td><td>3/3 timeout at 900s · RSS ≈ 46.2GB</td></tr>
 </tbody></table>
-<div class="warning" style="margin-top:18px;">このsynthetic catalog・1 greedy runでは、Q4/Q8の一般的な品質同等性は確定しない。timing probesも474/1,200と未完。</div>
+<div class="grid2" style="margin-top:28px;">
+<div class="highlight">64Kでは、exact/formatではなく<strong>answer-bearing correctness</strong>で3タスクとも通過。</div>
+<div class="warning">Q8・p50・固定3タスク・各1回・900秒timeoutの結果。262Kの一般的なeffective contextを意味しない。</div>
 </div>
-</div>
-<p class="source">240/240 completed · Q8_0/Q6_K/Q5_K_M/Q4_K_M · 8K/32K · p50</p>
+<p class="source">exp_001 feasibility manifest + raw JSONL · 9/9 attempted · source revision 67941cd · calibrated.v1</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="6" data-paginate="true" data-theme="default" data-style=":root {
   --ink: #10233f;
@@ -1104,20 +1092,30 @@ ul { margin-top: 10px; }
 .next .card { min-height: 120px; }
 .next .card h3 { font-size: 19px; }
 .next .card p { font-size: 16px; }
-;" data-marpit-pagination-total="9" data-size="16:9">
-<h2 id="exp_003--%E9%87%8F%E5%AD%90%E5%8C%96%C3%97%E6%96%87%E8%84%88%E3%81%AEinteraction%E3%81%AF%E3%82%BF%E3%82%B9%E3%82%AF%E4%BE%9D%E5%AD%98">exp_003 — 量子化×文脈のinteractionは「タスク依存」</h2>
-<table class="table" style="margin-top:28px;"><thead><tr><th>task family</th><th>Q8 8K → 32K</th><th>Q4 8K → 32K</th><th>interaction</th></tr></thead><tbody>
-<tr><td>literal</td><td>2/10 → 6/10</td><td>2/10 → 4/10</td><td><span class="status pilot">context-dependent</span></td></tr>
-<tr><td>semantic</td><td>4/10 → 3/10</td><td>3/10 → 3/10</td><td><span class="status measured">≈ constant</span></td></tr>
-<tr><td>multi-hop</td><td>8/10 → 9/10</td><td>7/10 → 8/10</td><td><span class="status measured">≈ constant</span></td></tr>
-</tbody></table>
-<div class="metric-row" style="margin-top:34px;">
-<div class="metric"><span class="value">120/120</span><span class="label">completed matched trials</span></div>
-<div class="metric"><span class="value">p50</span><span class="label">evidence position only</span></div>
-<div class="metric"><span class="value">64K/128K</span><span class="label">not measured</span></div>
+;" data-marpit-pagination-total="10" data-size="16:9">
+<h2 id="exp_002--%E9%87%8F%E5%AD%90%E5%8C%96%E3%81%A7%E5%B0%8F%E3%81%95%E3%81%8F%E3%81%AA%E3%82%8B%E3%81%8C%E5%93%81%E8%B3%AA%E3%81%AE%E5%95%8F%E3%81%84%E3%81%AF%E5%8D%98%E7%B4%94%E3%81%A7%E3%81%AF%E3%81%AA%E3%81%84">exp_002 — 量子化で小さくなるが、品質の問いは単純ではない</h2>
+<div class="grid2">
+<div class="card">
+<h3>Artifact footprint</h3>
+<div class="bars">
+<div class="bar-line"><b>Q8</b><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="bar-value">29.05 GB</span></div>
+<div class="bar-line"><b>Q6</b><div class="bar-track"><div class="bar-fill" style="width:77.2%"></div></div><span class="bar-value">22.43 GB</span></div>
+<div class="bar-line"><b>Q5</b><div class="bar-track"><div class="bar-fill" style="width:67.3%"></div></div><span class="bar-value">19.54 GB</span></div>
+<div class="bar-line"><b>Q4</b><div class="bar-track"><div class="bar-fill" style="width:57.9%"></div></div><span class="bar-value">16.81 GB</span></div>
 </div>
-<div class="highlight" style="margin-top:28px;">「Q4は常に悪い」でも「Q4とQ8は常に同じ」でもない。</div>
-<p class="source">Calibrated matched pilot · one greedy run per independent task · descriptive labels, not significance tests.</p>
+<div class="big" style="margin-top:20px;">−42.1%<small><br />Q8 → Q4 artifact size</small></div>
+</div>
+<div>
+<table class="table"><thead><tr><th>variant</th><th>end-to-end</th><th>answer-bearing</th></tr></thead><tbody>
+<tr><td>Q8</td><td>32/60</td><td>60/60</td></tr>
+<tr><td>Q6</td><td>32/60</td><td>60/60</td></tr>
+<tr><td>Q5</td><td>32/60</td><td>60/60</td></tr>
+<tr><td>Q4</td><td>27/60</td><td>59/60</td></tr>
+</tbody></table>
+<div class="warning" style="margin-top:18px;">このsynthetic catalog・1 greedy runでは、Q4/Q8の一般的な品質同等性は確定しない。timing probesも474/1,200と未完。</div>
+</div>
+</div>
+<p class="source">240/240 completed · Q8_0/Q6_K/Q5_K_M/Q4_K_M · 8K/32K · p50</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="7" data-paginate="true" data-theme="default" data-style=":root {
   --ink: #10233f;
@@ -1287,28 +1285,20 @@ ul { margin-top: 10px; }
 .next .card { min-height: 120px; }
 .next .card h3 { font-size: 19px; }
 .next .card p { font-size: 16px; }
-;" data-marpit-pagination-total="9" data-size="16:9">
-<h2 id="exp_004--agent%E3%81%AE%E5%A4%B1%E6%95%97%E3%81%AF%E5%B1%A5%E6%AD%B4%E9%95%B7%E3%81%A0%E3%81%91%E3%81%A7%E3%81%AF%E8%AA%AC%E6%98%8E%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%84">exp_004 — agentの失敗は、履歴長だけでは説明できない</h2>
-<div class="grid2">
-<div>
-<div class="big">300/300<small><br />final task success<br />trajectory 1 → 32</small></div>
-<div class="metric-row">
-<div class="metric"><span class="value">300/300</span><span class="label">critical-fact reuse</span></div>
-<div class="metric"><span class="value">0</span><span class="label">planning errors</span></div>
+;" data-marpit-pagination-total="10" data-size="16:9">
+<h2 id="exp_003--%E9%87%8F%E5%AD%90%E5%8C%96%C3%97%E6%96%87%E8%84%88%E3%81%AEinteraction%E3%81%AF%E3%82%BF%E3%82%B9%E3%82%AF%E4%BE%9D%E5%AD%98">exp_003 — 量子化×文脈のinteractionは「タスク依存」</h2>
+<table class="table" style="margin-top:28px;"><thead><tr><th>task family</th><th>Q8 8K → 32K</th><th>Q4 8K → 32K</th><th>interaction</th></tr></thead><tbody>
+<tr><td>literal</td><td>2/10 → 6/10</td><td>2/10 → 4/10</td><td><span class="status pilot">context-dependent</span></td></tr>
+<tr><td>semantic</td><td>4/10 → 3/10</td><td>3/10 → 3/10</td><td><span class="status measured">≈ constant</span></td></tr>
+<tr><td>multi-hop</td><td>8/10 → 9/10</td><td>7/10 → 8/10</td><td><span class="status measured">≈ constant</span></td></tr>
+</tbody></table>
+<div class="metric-row" style="margin-top:34px;">
+<div class="metric"><span class="value">120/120</span><span class="label">completed matched trials</span></div>
+<div class="metric"><span class="value">p50</span><span class="label">evidence position only</span></div>
+<div class="metric"><span class="value">64K/128K</span><span class="label">not measured</span></div>
 </div>
-</div>
-<div class="card">
-<h3>Protocol changed the observation</h3>
-<ul>
-<li>以前のpilot：64-token limitで30件がinvalid output</li>
-<li>recheck：128-token JSON + 3 action attempts</li>
-<li>最大completionは109 tokens、全件成功</li>
-</ul>
-<div class="warning">これは因果ablationではない。出力予算とretry policyが同時に変わっている。</div>
-</div>
-</div>
-<div class="quote" style="margin-top:34px;">固定ポリシー下では、履歴長による劣化は観測されなかった。</div>
-<p class="source">Q8_0/Q4_K_M · trajectory 1/4/8/16/32 · p50 · 10 tasks × 3 deterministic repeats</p>
+<div class="highlight" style="margin-top:28px;">「Q4は常に悪い」でも「Q4とQ8は常に同じ」でもない。</div>
+<p class="source">Calibrated matched pilot · one greedy run per independent task · descriptive labels, not significance tests.</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="8" data-paginate="true" data-theme="default" data-style=":root {
   --ink: #10233f;
@@ -1478,16 +1468,28 @@ ul { margin-top: 10px; }
 .next .card { min-height: 120px; }
 .next .card h3 { font-size: 19px; }
 .next .card p { font-size: 16px; }
-;" data-marpit-pagination-total="9" data-size="16:9">
-<h2 id="5%E3%81%A4%E3%81%AE%E5%BC%B7%E3%81%84%E4%B8%BB%E5%BC%B5%E3%82%92%E8%A8%BC%E6%8B%A0%E3%81%AE%E5%BC%B7%E3%81%95%E3%81%AB%E5%90%88%E3%82%8F%E3%81%9B%E3%81%A6%E8%A8%80%E3%81%84%E6%8F%9B%E3%81%88%E3%82%8B">5つの強い主張を、証拠の強さに合わせて言い換える</h2>
-<div class="claim-list">
-<div class="claim"><strong><span class="status pending">未測定</span> 262Kまで有効に使える？</strong><span>まず実行可能性probe。受け入れられることと有用性を分ける。</span></div>
-<div class="claim"><strong><span class="status pilot">限定的</span> Q4とQ8は同等？</strong><span>answer-bearingでは近いが、exact/formatまで同等とは言わない。</span></div>
-<div class="claim"><strong><span class="status pending">未確認</span> position bias？</strong><span>p50のみ測定。全position sweepが必要。</span></div>
-<div class="claim"><strong><span class="status measured">支持せず</span> 履歴が長いほど悪化？</strong><span>固定ポリシーのrecheckでは300/300。普遍則ではない。</span></div>
-<div class="claim"><strong><span class="status pending">未測定</span> repositoryでも再現？</strong><span>exp_005のcurated vs broad pilotが次の検証。</span></div>
+;" data-marpit-pagination-total="10" data-size="16:9">
+<h2 id="exp_004--agent%E3%81%AE%E5%A4%B1%E6%95%97%E3%81%AF%E5%B1%A5%E6%AD%B4%E9%95%B7%E3%81%A0%E3%81%91%E3%81%A7%E3%81%AF%E8%AA%AC%E6%98%8E%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%84">exp_004 — agentの失敗は、履歴長だけでは説明できない</h2>
+<div class="grid2">
+<div>
+<div class="big">300/300<small><br />final task success<br />trajectory 1 → 32</small></div>
+<div class="metric-row">
+<div class="metric"><span class="value">300/300</span><span class="label">critical-fact reuse</span></div>
+<div class="metric"><span class="value">0</span><span class="label">planning errors</span></div>
 </div>
-<p class="source">Claim boundary follows the experiment manifests, scorer version, task catalog, and raw-result provenance.</p>
+</div>
+<div class="card">
+<h3>Protocol changed the observation</h3>
+<ul>
+<li>以前のpilot：64-token limitで30件がinvalid output</li>
+<li>recheck：128-token JSON + 3 action attempts</li>
+<li>最大completionは109 tokens、全件成功</li>
+</ul>
+<div class="warning">これは因果ablationではない。出力予算とretry policyが同時に変わっている。</div>
+</div>
+</div>
+<div class="quote" style="margin-top:34px;">固定ポリシー下では、履歴長による劣化は観測されなかった。</div>
+<p class="source">Q8_0/Q4_K_M · trajectory 1/4/8/16/32 · p50 · 10 tasks × 3 deterministic repeats</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="9" data-paginate="true" data-theme="default" data-style=":root {
   --ink: #10233f;
@@ -1657,18 +1659,197 @@ ul { margin-top: 10px; }
 .next .card { min-height: 120px; }
 .next .card h3 { font-size: 19px; }
 .next .card p { font-size: 16px; }
-;" data-marpit-pagination-total="9" data-size="16:9">
+;" data-marpit-pagination-total="10" data-size="16:9">
+<h2 id="5%E3%81%A4%E3%81%AE%E5%BC%B7%E3%81%84%E4%B8%BB%E5%BC%B5%E3%82%92%E8%A8%BC%E6%8B%A0%E3%81%AE%E5%BC%B7%E3%81%95%E3%81%AB%E5%90%88%E3%82%8F%E3%81%9B%E3%81%A6%E8%A8%80%E3%81%84%E6%8F%9B%E3%81%88%E3%82%8B">5つの強い主張を、証拠の強さに合わせて言い換える</h2>
+<div class="claim-list">
+<div class="claim"><strong><span class="status pilot">境界を観測</span> 262Kまで有効に使える？</strong><span>このQ8環境では64Kは通過、128K/262Kは900秒timeout。一般的なeffective contextではない。</span></div>
+<div class="claim"><strong><span class="status pilot">限定的</span> Q4とQ8は同等？</strong><span>answer-bearingでは近いが、exact/formatまで同等とは言わない。</span></div>
+<div class="claim"><strong><span class="status pending">未確認</span> position bias？</strong><span>p50のみ測定。全position sweepが必要。</span></div>
+<div class="claim"><strong><span class="status measured">支持せず</span> 履歴が長いほど悪化？</strong><span>固定ポリシーのrecheckでは300/300。普遍則ではない。</span></div>
+<div class="claim"><strong><span class="status pending">未測定</span> repositoryでも再現？</strong><span>exp_005のcurated vs broad pilotが次の検証。</span></div>
+</div>
+<p class="source">Claim boundary follows the experiment manifests, scorer version, task catalog, and raw-result provenance.</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="10" data-paginate="true" data-theme="default" data-style=":root {
+  --ink: #10233f;
+  --muted: #64748b;
+  --line: #d7e0ec;
+  --paper: #f7f9fc;
+  --navy: #163a63;
+  --blue: #1d70b8;
+  --teal: #168b8b;
+  --amber: #c47a11;
+  --red: #b23b3b;
+  --green: #287a54;
+}
+section {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: &quot;Hiragino Sans&quot;, &quot;Hiragino Kaku Gothic ProN&quot;, &quot;Yu Gothic&quot;, sans-serif;
+  padding: 54px 68px 48px;
+}
+section::after {
+  color: #8a9ab0;
+  font-size: 13px;
+  right: 58px;
+  bottom: 24px;
+}
+h1, h2, h3 { color: var(--ink); letter-spacing: -0.02em; }
+h1 { font-size: 46px; line-height: 1.12; margin: 0 0 18px; }
+h2 { font-size: 34px; line-height: 1.16; margin: 0 0 18px; }
+h3 { font-size: 22px; margin: 0 0 8px; }
+p, li { font-size: 21px; line-height: 1.42; }
+ul { margin-top: 10px; }
+.eyebrow { color: var(--blue); font-size: 16px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.lead { font-size: 30px; line-height: 1.3; font-weight: 700; max-width: 920px; }
+.subtle { color: var(--muted); font-size: 17px; }
+.source { color: #73839a; font-size: 13px; margin-top: 18px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: start; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; box-shadow: 0 5px 18px rgba(16,35,63,.05); }
+.card p { margin: 8px 0 0; font-size: 18px; }
+.hero { display: flex; height: 74%; flex-direction: column; justify-content: center; }
+.rule { height: 5px; width: 98px; background: var(--blue); border-radius: 4px; margin: 18px 0 22px; }
+.quote { border-left: 6px solid var(--blue); padding: 4px 0 4px 20px; font-size: 28px; line-height: 1.32; font-weight: 700; }
+.axis { border-top: 4px solid var(--blue); padding-top: 14px; }
+.axis.teal { border-color: var(--teal); }
+.axis.amber { border-color: var(--amber); }
+.big { font-size: 42px; font-weight: 800; line-height: 1.05; }
+.big small { font-size: 18px; font-weight: 600; color: var(--muted); }
+.metric-row { display: flex; gap: 16px; margin: 16px 0 0; }
+.metric { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.metric .value { display: block; font-size: 28px; font-weight: 800; }
+.metric .label { display: block; color: var(--muted); font-size: 15px; margin-top: 5px; }
+.map { display: grid; grid-template-columns: repeat(5, 1fr); gap: 13px; align-items: center; margin-top: 28px; }
+.map-node { position: relative; min-height: 192px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 17px 15px 14px; box-shadow: 0 5px 15px rgba(16,35,63,.05); }
+.map-node::after { content: &quot;→&quot;; position: absolute; right: -22px; top: 78px; color: #91a3b9; font-size: 28px; font-weight: 700; }
+.map-node:last-child::after { content: &quot;&quot;; }
+.map-node.future { border: 2px dashed #b5c0cf; background: #f1f4f8; }
+.map-code { font-size: 14px; color: var(--blue); font-weight: 800; letter-spacing: .06em; }
+.map-title { font-size: 21px; font-weight: 800; margin: 12px 0 12px; line-height: 1.18; }
+.map-kpi { font-size: 18px; font-weight: 800; }
+.map-note { color: var(--muted); font-size: 14px; line-height: 1.35; margin-top: 8px; }
+.status { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 800; letter-spacing: .04em; }
+.measured { color: #1b633f; background: #dff2e8; }
+.pilot { color: #8d5b0a; background: #fff0ce; }
+.pending { color: #5d6d82; background: #e7edf4; }
+.table { display: table; width: 100%; table-layout: fixed; border-collapse: collapse; background: #fff; border: 1px solid var(--line); font-size: 17px; }
+.table th, .table td { padding: 11px 13px; border-bottom: 1px solid var(--line); text-align: right; }
+.table th:first-child, .table td:first-child { text-align: left; }
+.table th { color: var(--muted); font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
+.table tr:last-child td { border-bottom: 0; }
+.highlight { background: #eaf3fb; border-left: 5px solid var(--blue); border-radius: 9px; padding: 15px 18px; font-size: 20px; font-weight: 700; }
+.warning { background: #fff5df; border-left: 5px solid var(--amber); border-radius: 9px; padding: 14px 18px; font-size: 17px; }
+.bars { margin-top: 8px; }
+.bar-line { display: grid; grid-template-columns: 74px 1fr 78px; gap: 12px; align-items: center; margin: 15px 0; font-size: 16px; }
+.bar-track { height: 20px; background: #e6edf5; border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; background: linear-gradient(90deg, #1d70b8, #4fa2db); border-radius: 999px; }
+.bar-value { font-weight: 800; text-align: right; }
+.claim-list { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 20px; margin-top: 20px; }
+.claim { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.claim strong { display: block; font-size: 19px; margin-bottom: 6px; }
+.claim span { font-size: 16px; line-height: 1.35; color: #42536a; }
+.closing { display: flex; flex-direction: column; justify-content: center; height: 77%; }
+.next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+.next .card { min-height: 120px; }
+.next .card h3 { font-size: 19px; }
+.next .card p { font-size: 16px; }
+" lang="C" data-marpit-pagination="10" style="--paginate:true;--theme:default;--style::root {
+  --ink: #10233f;
+  --muted: #64748b;
+  --line: #d7e0ec;
+  --paper: #f7f9fc;
+  --navy: #163a63;
+  --blue: #1d70b8;
+  --teal: #168b8b;
+  --amber: #c47a11;
+  --red: #b23b3b;
+  --green: #287a54;
+}
+section {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: &quot;Hiragino Sans&quot;, &quot;Hiragino Kaku Gothic ProN&quot;, &quot;Yu Gothic&quot;, sans-serif;
+  padding: 54px 68px 48px;
+}
+section::after {
+  color: #8a9ab0;
+  font-size: 13px;
+  right: 58px;
+  bottom: 24px;
+}
+h1, h2, h3 { color: var(--ink); letter-spacing: -0.02em; }
+h1 { font-size: 46px; line-height: 1.12; margin: 0 0 18px; }
+h2 { font-size: 34px; line-height: 1.16; margin: 0 0 18px; }
+h3 { font-size: 22px; margin: 0 0 8px; }
+p, li { font-size: 21px; line-height: 1.42; }
+ul { margin-top: 10px; }
+.eyebrow { color: var(--blue); font-size: 16px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.lead { font-size: 30px; line-height: 1.3; font-weight: 700; max-width: 920px; }
+.subtle { color: var(--muted); font-size: 17px; }
+.source { color: #73839a; font-size: 13px; margin-top: 18px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: start; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; box-shadow: 0 5px 18px rgba(16,35,63,.05); }
+.card p { margin: 8px 0 0; font-size: 18px; }
+.hero { display: flex; height: 74%; flex-direction: column; justify-content: center; }
+.rule { height: 5px; width: 98px; background: var(--blue); border-radius: 4px; margin: 18px 0 22px; }
+.quote { border-left: 6px solid var(--blue); padding: 4px 0 4px 20px; font-size: 28px; line-height: 1.32; font-weight: 700; }
+.axis { border-top: 4px solid var(--blue); padding-top: 14px; }
+.axis.teal { border-color: var(--teal); }
+.axis.amber { border-color: var(--amber); }
+.big { font-size: 42px; font-weight: 800; line-height: 1.05; }
+.big small { font-size: 18px; font-weight: 600; color: var(--muted); }
+.metric-row { display: flex; gap: 16px; margin: 16px 0 0; }
+.metric { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.metric .value { display: block; font-size: 28px; font-weight: 800; }
+.metric .label { display: block; color: var(--muted); font-size: 15px; margin-top: 5px; }
+.map { display: grid; grid-template-columns: repeat(5, 1fr); gap: 13px; align-items: center; margin-top: 28px; }
+.map-node { position: relative; min-height: 192px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 17px 15px 14px; box-shadow: 0 5px 15px rgba(16,35,63,.05); }
+.map-node::after { content: &quot;→&quot;; position: absolute; right: -22px; top: 78px; color: #91a3b9; font-size: 28px; font-weight: 700; }
+.map-node:last-child::after { content: &quot;&quot;; }
+.map-node.future { border: 2px dashed #b5c0cf; background: #f1f4f8; }
+.map-code { font-size: 14px; color: var(--blue); font-weight: 800; letter-spacing: .06em; }
+.map-title { font-size: 21px; font-weight: 800; margin: 12px 0 12px; line-height: 1.18; }
+.map-kpi { font-size: 18px; font-weight: 800; }
+.map-note { color: var(--muted); font-size: 14px; line-height: 1.35; margin-top: 8px; }
+.status { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 800; letter-spacing: .04em; }
+.measured { color: #1b633f; background: #dff2e8; }
+.pilot { color: #8d5b0a; background: #fff0ce; }
+.pending { color: #5d6d82; background: #e7edf4; }
+.table { display: table; width: 100%; table-layout: fixed; border-collapse: collapse; background: #fff; border: 1px solid var(--line); font-size: 17px; }
+.table th, .table td { padding: 11px 13px; border-bottom: 1px solid var(--line); text-align: right; }
+.table th:first-child, .table td:first-child { text-align: left; }
+.table th { color: var(--muted); font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
+.table tr:last-child td { border-bottom: 0; }
+.highlight { background: #eaf3fb; border-left: 5px solid var(--blue); border-radius: 9px; padding: 15px 18px; font-size: 20px; font-weight: 700; }
+.warning { background: #fff5df; border-left: 5px solid var(--amber); border-radius: 9px; padding: 14px 18px; font-size: 17px; }
+.bars { margin-top: 8px; }
+.bar-line { display: grid; grid-template-columns: 74px 1fr 78px; gap: 12px; align-items: center; margin: 15px 0; font-size: 16px; }
+.bar-track { height: 20px; background: #e6edf5; border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; background: linear-gradient(90deg, #1d70b8, #4fa2db); border-radius: 999px; }
+.bar-value { font-weight: 800; text-align: right; }
+.claim-list { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 20px; margin-top: 20px; }
+.claim { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.claim strong { display: block; font-size: 19px; margin-bottom: 6px; }
+.claim span { font-size: 16px; line-height: 1.35; color: #42536a; }
+.closing { display: flex; flex-direction: column; justify-content: center; height: 77%; }
+.next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+.next .card { min-height: 120px; }
+.next .card h3 { font-size: 19px; }
+.next .card p { font-size: 16px; }
+;" data-marpit-pagination-total="10" data-size="16:9">
 <div class="closing">
 <div class="eyebrow">TAKEAWAY</div>
 <h1>Fits ≠ Useful</h1>
 <div class="rule"></div>
 <p class="lead">モデルを評価する前に、<br />評価器と出力プロトコルを校正する。</p>
 <div class="next">
-<div class="card"><h3>1 · Feasibility</h3><p>64K / 128K / 262Kの実行可能性</p></div>
+<div class="card"><h3>1 · Scorer</h3><p>exact / answer-bearing / formatを分離</p></div>
 <div class="card"><h3>2 · Position</h3><p>matched evidence sweep</p></div>
 <div class="card"><h3>3 · Transfer</h3><p>repository task validation</p></div>
 </div>
-<p class="source">Current status: exp_001–exp_004 measured or pilot; exp_005 remains unmeasured.</p>
+<p class="source">Current status: exp_001 baseline + bounded feasibility probe; exp_002–exp_004 measured or pilot; exp_005 remains unmeasured.</p>
 </div>
 </section>
 <script>!function(){"use strict";const t={h1:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"1"},style:"display: block; font-size: 2em; margin-block-start: 0.67em; margin-block-end: 0.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h2:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"2"},style:"display: block; font-size: 1.5em; margin-block-start: 0.83em; margin-block-end: 0.83em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h3:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"3"},style:"display: block; font-size: 1.17em; margin-block-start: 1em; margin-block-end: 1em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h4:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"4"},style:"display: block; margin-block-start: 1.33em; margin-block-end: 1.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h5:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"5"},style:"display: block; font-size: 0.83em; margin-block-start: 1.67em; margin-block-end: 1.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h6:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"6"},style:"display: block; font-size: 0.67em; margin-block-start: 2.33em; margin-block-end: 2.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},span:{proto:()=>HTMLSpanElement},pre:{proto:()=>HTMLElement,style:"display: block; font-family: monospace; white-space: pre; margin: 1em 0; --marp-auto-scaling-white-space: pre;"}},e="data-marp-auto-scaling-wrapper",i="data-marp-auto-scaling-svg",n="data-marp-auto-scaling-container";class s extends HTMLElement{container;containerSize;containerObserver;svg;svgComputedStyle;svgPreserveAspectRatio="xMinYMid meet";wrapper;wrapperSize;wrapperObserver;constructor(){super();const t=t=>([e])=>{const{width:i,height:n}=e.contentRect;this[t]={width:i,height:n},this.updateSVGRect()};this.attachShadow({mode:"open"}),this.containerObserver=new ResizeObserver(t("containerSize")),this.wrapperObserver=new ResizeObserver((...e)=>{t("wrapperSize")(...e),this.flushSvgDisplay()})}static get observedAttributes(){return["data-downscale-only"]}connectedCallback(){this.shadowRoot.innerHTML=`\n<style>\n  svg[${i}] { display: block; width: 100%; height: auto; vertical-align: top; }\n  span[${n}] { display: table; white-space: var(--marp-auto-scaling-white-space, nowrap); width: max-content; }\n</style>\n<div ${e}>\n  <svg part="svg" ${i}>\n    <foreignObject><span ${n}><slot></slot></span></foreignObject>\n  </svg>\n</div>\n    `.split(/\n\s*/).join(""),this.wrapper=this.shadowRoot.querySelector(`div[${e}]`)??void 0;const t=this.svg;this.svg=this.wrapper?.querySelector(`svg[${i}]`)??void 0,this.svg!==t&&(this.svgComputedStyle=this.svg?window.getComputedStyle(this.svg):void 0),this.container=this.svg?.querySelector(`span[${n}]`)??void 0,this.observe()}disconnectedCallback(){this.svg=void 0,this.svgComputedStyle=void 0,this.wrapper=void 0,this.container=void 0,this.observe()}attributeChangedCallback(){this.observe()}flushSvgDisplay(){const{svg:t}=this;t&&(t.style.display="inline",requestAnimationFrame(()=>{t.style.display=""}))}observe(){this.containerObserver.disconnect(),this.wrapperObserver.disconnect(),this.wrapper&&this.wrapperObserver.observe(this.wrapper),this.container&&this.containerObserver.observe(this.container),this.svgComputedStyle&&this.observeSVGStyle(this.svgComputedStyle)}observeSVGStyle(t){const e=()=>{const i=(()=>{const e=t.getPropertyValue("--preserve-aspect-ratio");if(e)return e.trim();return`x${(({textAlign:t,direction:e})=>{if(t.endsWith("left"))return"Min";if(t.endsWith("right"))return"Max";if("start"===t||"end"===t){let i="rtl"===e;return"end"===t&&(i=!i),i?"Max":"Min"}return"Mid"})(t)}YMid meet`})();i!==this.svgPreserveAspectRatio&&(this.svgPreserveAspectRatio=i,this.updateSVGRect()),t===this.svgComputedStyle&&requestAnimationFrame(e)};e()}updateSVGRect(){let t=Math.ceil(this.containerSize?.width??0);const e=Math.ceil(this.containerSize?.height??0);void 0!==this.dataset.downscaleOnly&&(t=Math.max(t,this.wrapperSize?.width??0));const i=this.svg?.querySelector(":scope > foreignObject");if(i?.setAttribute("width",`${t}`),i?.setAttribute("height",`${e}`),this.svg&&(this.svg.setAttribute("viewBox",`0 0 ${t} ${e}`),this.svg.setAttribute("preserveAspectRatio",this.svgPreserveAspectRatio),this.svg.style.height=t<=0||e<=0?"0":""),this.container){const t=this.svgPreserveAspectRatio.toLowerCase();this.container.style.marginLeft=t.startsWith("xmid")||t.startsWith("xmax")?"auto":"0",this.container.style.marginRight=t.startsWith("xmi")?"auto":"0"}}}const r=(t,{attrs:e={},style:i})=>class extends t{constructor(...t){super(...t);for(const[t,i]of Object.entries(e))this.hasAttribute(t)||this.setAttribute(t,i);this._shadow()}static get observedAttributes(){return["data-auto-scaling"]}connectedCallback(){this._update()}attributeChangedCallback(){this._update()}_shadow(){if(!this.shadowRoot)try{this.attachShadow({mode:"open"})}catch(t){if(!(t instanceof Error&&"NotSupportedError"===t.name))throw t}return this.shadowRoot}_update(){const t=this._shadow();if(t){const e=i?`<style>:host { ${i} }</style>`:"";let n="<slot></slot>";const{autoScaling:s}=this.dataset;if(void 0!==s){n=`<marp-auto-scaling exportparts="svg:auto-scaling" ${"downscale-only"===s?"data-downscale-only":""}>${n}</marp-auto-scaling>`}t.innerHTML=e+n}}};let o;const a=()=>o??(o=!!document.createElement("div",{is:"marp-auto-scaling"}).outerHTML.startsWith("<div is"),o),l=Symbol();let c;const d="marpitSVGPolyfill:setZoomFactor,",h=Symbol(),g=Symbol();const p=()=>{const t="Apple Computer, Inc."===navigator.vendor,e=t?[v]:[],i={then:e=>(t?(async()=>{if(void 0===c){const t=document.createElement("canvas");t.width=10,t.height=10;const e=t.getContext("2d"),i=new Image(10,10),n=new Promise(t=>{i.addEventListener("load",()=>t())});i.crossOrigin="anonymous",i.src="data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%20viewBox%3D%220%200%201%201%22%3E%3CforeignObject%20width%3D%221%22%20height%3D%221%22%20requiredExtensions%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%3E%3Cdiv%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%20style%3D%22width%3A%201px%3B%20height%3A%201px%3B%20background%3A%20red%3B%20position%3A%20relative%22%3E%3C%2Fdiv%3E%3C%2FforeignObject%3E%3C%2Fsvg%3E",await n,e.drawImage(i,0,0),c=e.getImageData(5,5,1,1).data[3]<128}return c})().then(t=>{null==e||e(t?[v]:[])}):null==e||e([]),i)};return Object.assign(e,i)};let m,u;function v(t){const e="object"==typeof t&&t.target||document,i="object"==typeof t?t.zoom:t;window[g]||(Object.defineProperty(window,g,{configurable:!0,value:!0}),document.body.style.zoom=1.0001,document.body.offsetHeight,document.body.style.zoom=1,window.addEventListener("message",({data:t,origin:e})=>{if(e===window.origin)try{if(t&&"string"==typeof t&&t.startsWith(d)){const[,e]=t.split(","),i=Number.parseFloat(e);Number.isNaN(i)||(u=i)}}catch(t){console.error(t)}}));let n=!1;Array.from(e.querySelectorAll("svg[data-marpit-svg]"),t=>{var e,s,r,o;t.style.transform||(t.style.transform="translateZ(0)");const a=i||u||t.currentScale||1;m!==a&&(m=a,n=a);const l=t.getBoundingClientRect(),{length:c}=t.children;for(let i=0;i<c;i+=1){const n=t.children[i];if(n.getScreenCTM){const t=n.getScreenCTM();if(t){const i=null!==(s=null===(e=n.x)||void 0===e?void 0:e.baseVal.value)&&void 0!==s?s:0,c=null!==(o=null===(r=n.y)||void 0===r?void 0:r.baseVal.value)&&void 0!==o?o:0,d=n.children.length;for(let e=0;e<d;e+=1){const s=n.children[e];if("SECTION"===s.tagName){const{style:e}=s;e.transformOrigin||(e.transformOrigin=`${-i}px ${-c}px`),e.transform=`scale(${a}) matrix(${t.a}, ${t.b}, ${t.c}, ${t.d}, ${t.e-l.left}, ${t.f-l.top}) translateZ(0.0001px)`;break}}}}}}),!1!==n&&Array.from(e.querySelectorAll("iframe"),({contentWindow:t})=>{null==t||t.postMessage(`${d}${n}`,"null"===window.origin?"*":window.origin)})}function w({once:t=!1,target:e=document}={}){const i=function(t=document){if(t[h])return t[h];let e=!0;const i=()=>{e=!1,delete t[h]};Object.defineProperty(t,h,{configurable:!0,value:i});let n=[],s=!1;(async()=>{try{n=await p()}finally{s=!0}})();const r=()=>{for(const e of n)e({target:t});s&&0===n.length||e&&window.requestAnimationFrame(r)};return r(),i}(e);return t?(i(),()=>{}):i}m=1,u=void 0;const b=Symbol(),y=(e=document)=>{if("undefined"==typeof window)throw new Error("Marp Core's browser script is valid only in browser context.");if(((e=document)=>{const i=window[l];i||customElements.define("marp-auto-scaling",s);for(const n of Object.keys(t)){const s=`marp-${n}`,o=t[n].proto();a()&&o!==HTMLElement?i||customElements.define(s,r(o,{style:t[n].style}),{extends:n}):(i||customElements.define(s,r(HTMLElement,t[n])),e.querySelectorAll(`${n}[is="${s}"]`).forEach(t=>{t.outerHTML=t.outerHTML.replace(new RegExp(`^<${n}`,"i"),`<${s}`).replace(new RegExp(`</${n}>$`,"i"),`</${s}>`)}))}window[l]=!0})(e),e[b])return e[b];const i=w({target:e}),n=()=>{i(),delete e[b]},o=Object.assign(n,{cleanup:n,update:()=>y(e)});return Object.defineProperty(e,b,{configurable:!0,value:o}),o},f=document.currentScript;y(f?f.getRootNode():document)}();

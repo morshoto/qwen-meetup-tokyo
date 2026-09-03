@@ -11,7 +11,7 @@ Do not copy hypotheses, expected plots, vendor benchmarks, community anecdotes, 
 ## Status
 
 ```text
-exp_001: calibrated real-model reduced baseline measured (Q8_0 x 8,192/32,768 x p50 x 30 tasks); full matrix pending
+exp_001: calibrated real-model reduced baseline plus bounded Q8 feasibility probe measured; full context matrix pending
 exp_002: calibrated real-model capability matrix measured (Q8_0/Q6_K/Q5_K_M/Q4_K_M x 8,192/32,768 x 30 tasks); separate timing matrix incomplete
 exp_003: calibrated matched pilot measured (Q8_0/Q4_K_M x 8,192/32,768 x p50 x 30 tasks); full matrix pending
 exp_004: fixed-policy real-model recheck measured (Q8_0/Q4_K_M x trajectory 1/4/8/16/32 x p50 x 10 tasks x 3 repeats); full position matrix pending
@@ -20,6 +20,53 @@ exp_005: not yet measured
 
 The measured exp_002 pilot is documented in
 [`pilot-v002-report.md`](../experiments/exp_002-quantization_llama_cpp_gguf/results/processed/pilot-v002-report.md).
+
+## 2026-09-03 — exp_001 bounded feasibility: 64K useful, larger probes time out
+
+Experiments:
+- exp_001 feasibility follow-up
+
+Result artifacts:
+- raw: `experiments/exp_001-context_measurement/results/raw/feasibility-trials.jsonl`
+- manifest: `experiments/exp_001-context_measurement/results/manifests/feasibility.json`
+- processed: `experiments/exp_001-context_measurement/results/processed/feasibility-summary.csv`, `experiments/exp_001-context_measurement/results/processed/feasibility-aggregate.csv`
+- raw SHA-256: `7b58322e06d149bd438e7d9a0dbaf78ffe5a4163f90db4c9006e01cc50af551e`
+
+Conditions:
+- model/runtime: Qwen/Qwen3.8-27B, pinned Q8_0 GGUF through llama.cpp on the recorded arm64/macOS environment
+- contexts: 65,536, 131,072, and 262,144 target tokens; evidence position 50%
+- task catalog: `data/tasks/core.v002.jsonl`, three explicitly selected task IDs (one per family)
+- one child process per task, one greedy run, fixed 900-second hard timeout; all 9 attempts retained
+- scorer: `calibrated.v1`; timeout records carry no correctness score, but retain scorer/version and provenance metadata
+
+Measured result (conservative all-task classification):
+
+| target context | attempted | completed | answer-bearing | classification |
+| ---: | ---: | ---: | ---: | --- |
+| 65,536 | 3 | 3 | 3 | `accepted_and_useful` |
+| 131,072 | 3 | 0 | 0 | `operational_failure` (3 timeouts) |
+| 262,144 | 3 | 0 | 0 | `operational_failure` (3 timeouts) |
+
+The completed 65,536-token trials had TTFT of 782.8–786.2 seconds and peak
+RSS of approximately 33.3 GB. The timeout trials reached approximately 37.6 GB
+RSS at 131,072 and 46.2 GB at 262,144. “Useful” here means all three selected
+outputs were answer-bearing under the calibrated scorer; exact and format-valid
+correctness were lower for two of the three outputs.
+
+Interpretation:
+
+In this pinned environment and fixed protocol, 65,536 tokens completed with
+answer-bearing results, while 131,072 and 262,144 did not complete within the
+900-second wall-clock budget. This is evidence about an environment- and
+protocol-bounded feasibility boundary, not a general effective-context limit,
+model capability limit, or position-bias result. The probe uses one position,
+one repeat, and three tasks, so it cannot estimate task or position variance.
+
+Next check:
+
+Treat the result as a bounded systems/capability probe in the presentation.
+Run the full declared position matrix or repository pilot only with a separately
+budgeted measurement plan; do not label the timeout boundary as “262K impossible”.
 
 ## 2026-09-02 — exp_002 full capability matrix: footprint shrinks, quality remains task-shaped
 
