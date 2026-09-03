@@ -39,8 +39,10 @@ from llm_lab.evaluation import (  # noqa: E402
     CalibratedAnswerScorer,
     TrialResult,
     TrialStatus,
+    JsonlResultWriter,
     load_trial_results,
 )
+from llm_lab.evaluation.isolated_probe import ProbeOutcome, run_isolated_probe  # noqa: E402
 from llm_lab.generation import (  # noqa: E402
     GenerationRequest,
     GenerationResponse,
@@ -54,6 +56,7 @@ from llm_lab.runtimes import RuntimeConfig  # noqa: E402
 from llm_lab.runtimes.llama_cpp import LlamaCppRuntime  # noqa: E402
 from llm_lab.runtimes.transformers import QwenTransformersRuntime  # noqa: E402
 from llm_lab.telemetry import capture_environment  # noqa: E402
+from llm_lab.analysis import classify_feasibility_by_length  # noqa: E402
 
 
 CONFIG_PATH = ROOT / "experiments/exp_001-context_measurement/config.yaml"
@@ -66,7 +69,8 @@ PILOT_CONTEXT_LENGTHS = (8192, 32768, 65536)
 MAIN_CONTEXT_LENGTHS = (8192, 32768, 65536, 131072)
 SMOKE_POSITIONS = (0.05, 0.50, 0.95)
 FULL_POSITIONS = (0.05, 0.25, 0.50, 0.75, 0.95)
-REPEATS = {"smoke": 1, "pilot": 5, "main": 20}
+REPEATS = {"smoke": 1, "pilot": 5, "main": 20, "feasibility": 1}
+FEASIBILITY_WORKER = "llm_lab.evaluation.isolated_probe:run_exp001_qwen_probe"
 
 
 class FixtureTokenizer:
@@ -103,11 +107,12 @@ class FixtureTokenizer:
 class Condition:
     target_context_tokens: int
     evidence_position: float
+    namespace: str = "baseline"
 
     @property
     def condition_id(self) -> str:
         return (
-            f"baseline:ctx{self.target_context_tokens:06d}:"
+            f"{self.namespace}:ctx{self.target_context_tokens:06d}:"
             f"p{int(self.evidence_position * 100):03d}"
         )
 
@@ -147,11 +152,43 @@ def planned_conditions(
         raise ValueError(f"phase {phase!r} must declare lengths and evidence_positions") from error
     if not lengths or not positions:
         raise ValueError(f"phase {phase!r} must declare non-empty dimensions")
+    namespace = str(phase_config.get("condition_namespace", "baseline"))
+    if not namespace.strip():
+        raise ValueError(f"phase {phase!r} condition_namespace must be non-empty")
     return [
-        Condition(length, position)
+        Condition(length, position, namespace)
         for length in lengths
         for position in positions
     ]
+
+
+def select_probe_tasks(catalog: TaskCatalog, task_ids: Iterable[str]) -> TaskCatalog:
+    """Return the explicitly selected one-to-three feasibility tasks."""
+
+    selected_ids = tuple(str(task_id) for task_id in task_ids)
+    if not 1 <= len(selected_ids) <= 3:
+        raise ValueError("probe task IDs must contain between one and three tasks")
+    if len(set(selected_ids)) != len(selected_ids):
+        raise ValueError("probe task IDs must be unique")
+    missing = [task_id for task_id in selected_ids if task_id not in catalog.ids]
+    if missing:
+        raise ValueError(f"probe task IDs are missing from catalog: {missing}")
+    return TaskCatalog(catalog.get(task_id) for task_id in selected_ids)
+
+
+def _task_definition_record(definition: Any) -> dict[str, Any]:
+    """Serialize a validated catalog task for the child-process boundary."""
+
+    return {
+        "schema_version": 1,
+        "id": definition.task_id,
+        "type": definition.task_type,
+        "version": definition.version,
+        "question": definition.question,
+        "expected": dict(definition.expected),
+        "evidence": [dict(item) for item in definition.evidence],
+        "metadata": dict(definition.metadata),
+    }
 
 
 def build_tasks(
@@ -337,6 +374,19 @@ def run_experiment(
     working_output_path = temporary_output or output_path
     catalog = TaskCatalog.from_jsonl(catalog_path)
     conditions = planned_conditions(phase, config=config)
+    if phase == "feasibility":
+        return _run_feasibility_experiment(
+            config=config,
+            config_file=config_file,
+            catalog=catalog,
+            catalog_path=catalog_path,
+            model=model,
+            backend=backend,
+            output_path=output_path,
+            manifest_path=manifest_path,
+            fixture_seed=fixture_seed,
+            conditions=conditions,
+        )
     max_context_tokens = max(
         condition.target_context_tokens for condition in conditions
     )
@@ -539,6 +589,274 @@ def run_experiment(
     return manifest
 
 
+def _run_feasibility_experiment(
+    *,
+    config: Mapping[str, Any],
+    config_file: Path,
+    catalog: TaskCatalog,
+    catalog_path: Path,
+    model: ModelSpec,
+    backend: str,
+    output_path: Path,
+    manifest_path: Path,
+    fixture_seed: int,
+    conditions: Iterable[Condition],
+) -> dict[str, Any]:
+    """Execute the bounded Q8 feasibility phase one task per child process."""
+
+    if backend != "llama.cpp":
+        raise ValueError("feasibility phase requires the llama.cpp Q8 backend")
+    phase_config = config.get("phases", {}).get("feasibility")
+    if not isinstance(phase_config, Mapping):
+        raise ValueError("feasibility phase is missing from the experiment config")
+    task_ids = phase_config.get("task_ids")
+    if not isinstance(task_ids, list):
+        raise ValueError("feasibility phase must declare task_ids")
+    probe_catalog = select_probe_tasks(catalog, task_ids)
+    timeout_seconds = float(phase_config.get("timeout_seconds", 0))
+    if timeout_seconds <= 0:
+        raise ValueError("feasibility timeout_seconds must be positive")
+    condition_list = tuple(conditions)
+    if not condition_list:
+        raise ValueError("feasibility phase must declare at least one condition")
+    max_context_tokens = max(
+        condition.target_context_tokens for condition in condition_list
+    )
+    resolved_runtime = _llama_cpp_options(
+        config,
+        max_context_tokens=max_context_tokens,
+    )
+    runtime_version = resolved_runtime.pop("version", None)
+    artifact_record = {
+        "uri": resolved_runtime.pop("_artifact_uri"),
+        "sha256": resolved_runtime.pop("_artifact_sha256"),
+        "size_bytes": resolved_runtime.pop("_artifact_size_bytes"),
+    }
+    runtime_options = dict(resolved_runtime)
+    sampling_config = config.get("sampling", {})
+    if not isinstance(sampling_config, Mapping):
+        raise ValueError("sampling config must be an object")
+    sampling, generation_seed_policy = _sampling_from_config(sampling_config)
+    writer = JsonlResultWriter(output_path)
+    configured_n_ctx = int(
+        config.get("runtime", {})
+        .get("llama_cpp", {})
+        .get("n_ctx", 131392)
+    )
+    for condition in condition_list:
+        for definition in probe_catalog.tasks:
+            condition_runtime_options = dict(runtime_options)
+            condition_runtime_options["n_ctx"] = _effective_n_ctx(
+                config,
+                configured_n_ctx=configured_n_ctx,
+                max_context_tokens=condition.target_context_tokens,
+            )
+            payload = {
+                "task_definition": _task_definition_record(definition),
+                "condition": {
+                    "target_context_tokens": condition.target_context_tokens,
+                    "evidence_position": condition.evidence_position,
+                    "namespace": condition.namespace,
+                },
+                "fixture_seed": fixture_seed,
+                "model": _model_record(model),
+                "runtime_options": condition_runtime_options,
+                "runtime_version": runtime_version,
+                "sampling": sampling.to_record(),
+            }
+            outcome = run_isolated_probe(
+                FEASIBILITY_WORKER,
+                payload,
+                timeout_seconds=timeout_seconds,
+            )
+            writer.append(
+                _trial_from_probe(
+                    outcome,
+                    definition=definition,
+                    condition=condition,
+                    model=model,
+                    runtime_version=runtime_version,
+                    runtime_options=condition_runtime_options,
+                    sampling=sampling,
+                    timeout_seconds=timeout_seconds,
+                    fixture_seed=fixture_seed,
+                )
+            )
+
+    persisted_results = load_trial_results(output_path)
+    context_provenance = _context_provenance(
+        config_path=config_file,
+        catalog_path=catalog_path,
+        catalog=probe_catalog,
+        conditions=condition_list,
+        repeats=1,
+        fixture_seed=fixture_seed,
+    )
+    runtime_record = {
+        "name": "llama.cpp",
+        "version": runtime_version,
+        "options": dict(runtime_options),
+        "artifact": artifact_record,
+    }
+    probe_record = {
+        "worker": FEASIBILITY_WORKER,
+        "timeout_seconds": timeout_seconds,
+        "task_ids": list(probe_catalog.ids),
+        "classification_rule": (
+            "all selected tasks must complete and be answer-bearing correct; "
+            "runtime/scorer/input/timeout/OOM/cancel/missing failures are operational"
+        ),
+        "scope": "environment-and-protocol-bounded",
+        "record_hash_required": True,
+    }
+    manifest = _manifest(
+        phase="feasibility",
+        backend=backend,
+        output_path=output_path,
+        manifest_path=manifest_path,
+        conditions=condition_list,
+        catalog=probe_catalog,
+        repeats=1,
+        results=persisted_results,
+        fixture_seed=fixture_seed,
+        catalog_path=catalog_path,
+        config=config,
+        sampling=sampling,
+        generation_seed_policy=generation_seed_policy,
+        model=model,
+        context_provenance=context_provenance,
+        runtime_record=runtime_record,
+        probe_record=probe_record,
+    )
+    classification_rows = classify_feasibility_by_length(
+        persisted_results,
+        expected_task_ids=probe_catalog.ids,
+    )
+    manifest["feasibility"] = {
+        **probe_record,
+        "classifications": classification_rows,
+    }
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return manifest
+
+
+def _trial_from_probe(
+    outcome: ProbeOutcome,
+    *,
+    definition: Any,
+    condition: Condition,
+    model: ModelSpec,
+    runtime_version: str | None,
+    runtime_options: Mapping[str, Any],
+    sampling: SamplingConfig,
+    timeout_seconds: float,
+    fixture_seed: int,
+) -> TrialResult:
+    """Normalize child output and parent timeout into one stable trial record."""
+
+    result: TrialResult | None = None
+    if outcome.value is not None:
+        try:
+            result = TrialResult.from_record(outcome.value)
+        except (TypeError, ValueError):
+            result = None
+    if result is None:
+        error = dict(outcome.error or {})
+        status = TrialStatus.TIMEOUT if outcome.timed_out else _probe_error_status(error)
+        result = TrialResult(
+            trial_id=runner_trial_id(
+                EXPERIMENT_ID,
+                definition.task_id,
+                condition.condition_id,
+                1,
+            ),
+            experiment_id=EXPERIMENT_ID,
+            task_id=definition.task_id,
+            status=status,
+            model=_model_record(model) or {},
+            runtime={
+                "name": "llama.cpp",
+                "version": runtime_version,
+                "config": dict(runtime_options),
+            },
+            input={
+                "task_type": definition.task_type,
+                "condition_id": condition.condition_id,
+                "target_context_tokens": condition.target_context_tokens,
+                "requested_evidence_position": condition.evidence_position,
+                "fixture_seed": fixture_seed,
+                "task_seed": fixture_seed + int(definition.metadata["seed"]),
+                "sampling": sampling.to_record(),
+            },
+            error=error or {"type": "ProbeWorkerError", "message": "missing result"},
+        )
+
+    record = result.to_record()
+    runtime = dict(record.get("runtime") or {})
+    runtime_config = dict(runtime.get("config") or {})
+    runtime_config.update(
+        {
+            "probe_timeout_seconds": timeout_seconds,
+            "probe_exit_code": outcome.exit_code,
+            "probe_termination_reason": outcome.termination_reason,
+            "probe_worker": FEASIBILITY_WORKER,
+        }
+    )
+    runtime["name"] = runtime.get("name") or "llama.cpp"
+    runtime["version"] = runtime.get("version") or runtime_version
+    runtime["config"] = runtime_config
+    record["runtime"] = runtime
+    input_metadata = dict(record.get("input") or {})
+    input_metadata["feasibility_probe"] = {
+        "timeout_seconds": timeout_seconds,
+        "exit_code": outcome.exit_code,
+        "timed_out": outcome.timed_out,
+        "termination_reason": outcome.termination_reason,
+    }
+    input_metadata.setdefault("sampling", sampling.to_record())
+    record["input"] = input_metadata
+    memory = dict(record.get("memory") or {})
+    memory["rss_peak_bytes"] = outcome.peak_memory_bytes
+    memory["rss_measurement"] = outcome.memory_measurement
+    if memory.get("peak_bytes") is None:
+        memory["peak_bytes"] = outcome.peak_memory_bytes
+    record["memory"] = memory
+    timing = dict(record.get("timing") or {})
+    timing.setdefault("ttft_s", None)
+    timing["ttft_observed"] = timing.get("ttft_s") is not None
+    record["timing"] = timing
+    if outcome.error and record.get("error") is None:
+        record["error"] = dict(outcome.error)
+    return TrialResult.from_record(_attach_raw_record_hash(record))
+
+
+def _probe_error_status(error: Mapping[str, Any]) -> TrialStatus:
+    error_type = str(error.get("type", ""))
+    if error_type in {"MemoryError", "MemoryException"}:
+        return TrialStatus.OUT_OF_MEMORY
+    if error_type in {"TimeoutError", "TimeoutException"}:
+        return TrialStatus.TIMEOUT
+    return TrialStatus.RUNTIME_ERROR
+
+
+def _attach_raw_record_hash(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Add a canonical per-record hash without introducing a hash cycle."""
+
+    normalized = json.loads(json.dumps(record, ensure_ascii=False, sort_keys=True))
+    input_metadata = normalized.setdefault("input", {})
+    provenance = input_metadata.setdefault("provenance", {})
+    provenance.pop("raw_record_sha256", None)
+    digest = hashlib.sha256(
+        json.dumps(normalized, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    provenance["raw_record_sha256"] = digest
+    return normalized
+
+
 def _temporary_sibling(path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
@@ -575,6 +893,7 @@ def _manifest(
     model: ModelSpec | None = None,
     context_provenance: Mapping[str, Any] | None = None,
     runtime_record: Mapping[str, Any] | None = None,
+    probe_record: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     result_list = list(results)
     condition_list = list(conditions)
@@ -686,6 +1005,13 @@ def _manifest(
             else "Results are model/runtime observations under the recorded environment."
         ),
     }
+    if probe_record is not None:
+        manifest["probe"] = dict(probe_record)
+        manifest["interpretation"] = (
+            "Feasibility classifications are bounded to the recorded model, "
+            "runtime, hardware, task set, and timeout protocol; they are not a "
+            "general effective-context claim."
+        )
     if context_provenance is not None:
         manifest["context_provenance"] = dict(context_provenance)
     return manifest
@@ -832,22 +1158,11 @@ def _llama_cpp_options(
                 f"expected {expected_sha256}, found {actual_sha256}"
             )
     configured_n_ctx = int(values.get("n_ctx", 131392))
-    effective_n_ctx = configured_n_ctx
-    if max_context_tokens is not None:
-        context_config = config.get("context", {})
-        declared_lengths = (
-            context_config.get("lengths", ())
-            if isinstance(context_config, Mapping)
-            else ()
-        )
-        try:
-            declared_max_context = max(int(value) for value in declared_lengths)
-        except (TypeError, ValueError):
-            declared_max_context = 0
-        configured_overhead = max(0, configured_n_ctx - declared_max_context)
-        effective_n_ctx = int(max_context_tokens) + configured_overhead
-        if effective_n_ctx <= int(max_context_tokens):
-            effective_n_ctx = int(max_context_tokens) + 1
+    effective_n_ctx = _effective_n_ctx(
+        config,
+        configured_n_ctx=configured_n_ctx,
+        max_context_tokens=max_context_tokens,
+    )
     options: dict[str, Any] = {
         "model_path": str(model_path),
         "n_ctx": effective_n_ctx,
@@ -863,6 +1178,31 @@ def _llama_cpp_options(
     if version is not None:
         options["version"] = str(version)
     return options
+
+
+def _effective_n_ctx(
+    config: Mapping[str, Any],
+    *,
+    configured_n_ctx: int,
+    max_context_tokens: int | None,
+) -> int:
+    """Scale llama.cpp KV capacity to the selected probe/context length."""
+
+    if max_context_tokens is None:
+        return configured_n_ctx
+    context_config = config.get("context", {})
+    declared_lengths = (
+        context_config.get("lengths", ())
+        if isinstance(context_config, Mapping)
+        else ()
+    )
+    try:
+        declared_max_context = max(int(value) for value in declared_lengths)
+    except (TypeError, ValueError):
+        declared_max_context = 0
+    configured_overhead = max(0, configured_n_ctx - declared_max_context)
+    effective_n_ctx = int(max_context_tokens) + configured_overhead
+    return effective_n_ctx if effective_n_ctx > int(max_context_tokens) else int(max_context_tokens) + 1
 
 
 def _load_resume_manifest(path: Path) -> dict[str, Any]:

@@ -57,6 +57,20 @@ phases:
     capability_repeats: 1
     timing_repeats: 20
     purpose: Produce the baseline Qwen measurement when resources permit.
+  feasibility:
+    lengths: [65536, 131072, 262144]
+    evidence_positions: [0.50]
+    condition_namespace: feasibility
+    repeats: 1
+    capability_repeats: 1
+    timing_repeats: 1
+    backend: llama.cpp
+    task_ids:
+      - task.literal.000001
+      - task.semantic.000001
+      - task.multihop.000001
+    timeout_seconds: 900
+    purpose: Time-boxed Q8 probe; classify accepted/useful versus operational failure.
 
 sampling:
   temperature: 0.0
