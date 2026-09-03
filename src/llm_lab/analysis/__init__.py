@@ -49,6 +49,11 @@ from .feasibility import (
     classify_feasibility,
     classify_feasibility_by_length,
 )
+from .equivalence import (
+    DEFAULT_METRICS,
+    EquivalenceAnalysisError,
+    paired_equivalence_report,
+)
 
 __all__ = [
     "ContextAnalysisError",
@@ -92,4 +97,7 @@ __all__ = [
     "FeasibilityAnalysisError",
     "classify_feasibility",
     "classify_feasibility_by_length",
+    "DEFAULT_METRICS",
+    "EquivalenceAnalysisError",
+    "paired_equivalence_report",
 ]

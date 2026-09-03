@@ -1,0 +1,110 @@
+{
+  "analysis": "paired_practical_equivalence",
+  "bootstrap_repeats": 100000,
+  "bootstrap_seed": 42,
+  "candidate_variant": "Q4_K_M",
+  "complete_quality_equivalent": false,
+  "confidence": 0.95,
+  "equivalence_margin": 0.1,
+  "interpretation": "Practical equivalence is established only for metrics whose full confidence interval is inside the pre-registered margin; this does not prove exact equality or generalize beyond the matched catalog.",
+  "metrics": [
+    {
+      "bootstrap_repeats": 100000,
+      "bootstrap_seed": 42,
+      "candidate_success_n": 27,
+      "candidate_variant": "Q4_K_M",
+      "ci_high": -0.016666666666666666,
+      "ci_low": -0.16666666666666666,
+      "confidence": 0.95,
+      "decision": "inconclusive",
+      "discordant_pair_n": 5,
+      "equivalence_margin": 0.1,
+      "metric": "end_to_end",
+      "observed_difference": -0.08333333333333333,
+      "pair_n": 60,
+      "reference_success_n": 32,
+      "reference_variant": "Q8_0",
+      "score_field": "correct"
+    },
+    {
+      "bootstrap_repeats": 100000,
+      "bootstrap_seed": 42,
+      "candidate_success_n": 27,
+      "candidate_variant": "Q4_K_M",
+      "ci_high": -0.016666666666666666,
+      "ci_low": -0.16666666666666666,
+      "confidence": 0.95,
+      "decision": "inconclusive",
+      "discordant_pair_n": 5,
+      "equivalence_margin": 0.1,
+      "metric": "exact",
+      "observed_difference": -0.08333333333333333,
+      "pair_n": 60,
+      "reference_success_n": 32,
+      "reference_variant": "Q8_0",
+      "score_field": "exact_correct"
+    },
+    {
+      "bootstrap_repeats": 100000,
+      "bootstrap_seed": 42,
+      "candidate_success_n": 59,
+      "candidate_variant": "Q4_K_M",
+      "ci_high": 0.0,
+      "ci_low": -0.05,
+      "confidence": 0.95,
+      "decision": "equivalent",
+      "discordant_pair_n": 1,
+      "equivalence_margin": 0.1,
+      "metric": "answer_bearing",
+      "observed_difference": -0.016666666666666666,
+      "pair_n": 60,
+      "reference_success_n": 60,
+      "reference_variant": "Q8_0",
+      "score_field": "answer_bearing_correct"
+    },
+    {
+      "bootstrap_repeats": 100000,
+      "bootstrap_seed": 42,
+      "candidate_success_n": 37,
+      "candidate_variant": "Q4_K_M",
+      "ci_high": -0.016666666666666666,
+      "ci_low": -0.16666666666666666,
+      "confidence": 0.95,
+      "decision": "inconclusive",
+      "discordant_pair_n": 5,
+      "equivalence_margin": 0.1,
+      "metric": "format_valid",
+      "observed_difference": -0.08333333333333333,
+      "pair_n": 60,
+      "reference_success_n": 42,
+      "reference_variant": "Q8_0",
+      "score_field": "format_valid"
+    }
+  ],
+  "pair_fields": [
+    "task_id",
+    "target_context_tokens",
+    "requested_evidence_position"
+  ],
+  "pair_n": 60,
+  "reference_variant": "Q8_0",
+  "schema_version": 1,
+  "scope": "Matched Q8_0/Q4_K_M capability trials in the exp_002 synthetic catalog; practical equivalence is metric-specific and does not prove exact equality or generalize to other tasks.",
+  "source": {
+    "capability_repeats": 1,
+    "context_lengths": [
+      8192,
+      32768
+    ],
+    "control_manifest": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/manifest.full.json",
+    "control_manifest_sha256": "a9ff222fd2263729ef4d658f5cf2223fe4c8385824420ff35f19694c61ce2ba2",
+    "evidence_positions": [
+      0.5
+    ],
+    "raw_results": "/Users/shotomorisaki/Engineering/qwen-meetup-tokyo/experiments/exp_002-quantization_llama_cpp_gguf/results/raw/full-capability.jsonl",
+    "raw_results_sha256": "0d222dfe0ff801c93d39f8d24d367dd013c02a860f982bf711dab0b77107c092",
+    "scorer_version": "calibrated.v1",
+    "task_catalog": "data/tasks/core.v002.jsonl",
+    "task_catalog_sha256": "7631adc23aab29b0a1b06fae51267a940aa9f86d58dbe830724a3a2bc8703512"
+  }
+}

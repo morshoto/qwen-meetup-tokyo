@@ -117,6 +117,49 @@ Next check:
 Complete the separate 3–5-repeat timing matrix only if systems-cost claims are
 needed; keep capability and timing conclusions separate.
 
+## 2026-09-03 — exp_002 Q4/Q8 practical equivalence is metric-specific
+
+Experiments:
+- exp_002 full capability matrix
+
+Result artifacts:
+- analysis: `experiments/exp_002-quantization_llama_cpp_gguf/equivalence.py`
+- report: `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/q4-q8-equivalence.json`
+- CSV: `experiments/exp_002-quantization_llama_cpp_gguf/results/processed/q4-q8-equivalence.csv`
+- source raw SHA-256: `0d222dfe0ff801c93d39f8d24d367dd013c02a860f982bf711dab0b77107c092`
+
+Method:
+- 60 matched Q8_0/Q4_K_M pairs (30 task IDs × 2 context lengths), joined by
+  task ID, target context, and evidence position;
+- candidate-minus-reference paired bootstrap, 95% confidence, 100,000 resamples
+  in the committed report, and a pre-registered ±10 percentage-point practical
+  equivalence margin;
+- exact, answer-bearing, format-valid, and end-to-end outcomes analyzed
+  separately; all selected trials were completed.
+
+Measured result:
+
+| metric | Q8_0 | Q4_K_M | observed Q4−Q8 | 95% paired CI | decision |
+| --- | ---: | ---: | ---: | ---: | --- |
+| answer-bearing | 60/60 | 59/60 | −1.7pp | −5.0pp to 0.0pp | equivalent within ±10pp |
+| exact / end-to-end | 32/60 | 27/60 | −8.3pp | −16.7pp to −1.7pp | inconclusive |
+| format-valid | 42/60 | 37/60 | −8.3pp | −16.7pp to −1.7pp | inconclusive |
+
+Interpretation:
+
+The data support practical equivalence only for answer-bearing correctness
+under the declared ±10pp margin. They do not support “Q4 and Q8 have fully
+equal quality”: the exact/end-to-end and format-valid intervals cross the
+practical margin. This is a bounded equivalence result, not a general model
+ranking or a claim about other prompts, tasks, sampling policies, or contexts.
+
+Next check:
+
+If a stronger quality claim is needed, expand the independent task catalog and
+pre-register the same metric-specific equivalence test before collecting new
+measurements. Do not reinterpret the current one-greedy-run matrix as a test
+of sampling variance.
+
 ## 2026-09-02 — exp_001 reduced real-model baseline: task-specific baseline limits
 
 Experiments:

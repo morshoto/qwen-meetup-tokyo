@@ -188,3 +188,26 @@ quantization recommendation requires both the complete capability summary and
 a separate timing summary with the manifest-declared 3–5 timing repeats. No
 conclusion or recommendation is valid until it is based on measured raw trials
 tied to a resolved manifest.
+
+## Paired practical-equivalence check
+
+The complete capability matrix can be checked with the reproducible paired
+analysis below. It matches Q4_K_M to Q8_0 by task ID, context length, and
+evidence position, then bootstraps the per-pair candidate-minus-reference
+difference. The pre-registered practical margin is ±10 percentage points at
+95% confidence; this is a test of practical equivalence, not exact equality.
+
+```bash
+PYTHONPATH=src python3 experiments/exp_002-quantization_llama_cpp_gguf/equivalence.py
+```
+
+The report writes `results/processed/q4-q8-equivalence.json` and
+`q4-q8-equivalence.csv`. In the measured 60-pair Q8_0/Q4_K_M matrix:
+
+- `answer_bearing_correct` is practically equivalent (observed −1.7pp,
+  95% paired-bootstrap CI −5.0pp to 0.0pp);
+- `correct`/`exact_correct` and `format_valid` are not established as
+  practically equivalent (observed −8.3pp, CI −16.7pp to −1.7pp); and
+- therefore a claim that Q4_K_M and Q8_0 have completely equal quality is not
+  supported by this task set. The result is limited to this catalog, prompt,
+  runtime, and one greedy capability observation per task/context pair.
