@@ -172,7 +172,9 @@ timeout and records the timeout, child exit code, peak child RSS, and missing
 TTFT explicitly; no failed attempt is removed from the denominator.
 
 Each length is classified conservatively in
-`results/processed/feasibility-summary.csv`:
+`results/processed/feasibility-summary.csv`; its aggregate trial table is
+`results/processed/feasibility-aggregate.csv` so it cannot overwrite the main
+baseline summary:
 
 - `accepted_and_useful`: every selected task completed and was
   `answer_bearing_correct`;

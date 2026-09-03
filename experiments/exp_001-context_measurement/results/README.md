@@ -14,8 +14,10 @@ The regeneration entry point writes `processed/summary.csv`,
 `processed/position-gap.csv`, `processed/effective-context.json`, and
 `processed/effective-context-by-position.json`; the notebook saves the
 corresponding position-gap and effective-context figures under `figures/`.
-For the bounded Q8 feasibility phase it also writes
-`processed/feasibility-summary.csv` with one classification per tested length.
+For the bounded Q8 feasibility phase it writes
+`processed/feasibility-aggregate.csv` and
+`processed/feasibility-summary.csv` with one classification per tested length;
+these names keep the bounded probe separate from the main baseline summary.
 Run `analyze.py --manifest results/manifests/main.json` from this experiment
 directory after a real-model phase has completed. The command verifies the raw
 JSONL SHA-256 before writing any processed output.
