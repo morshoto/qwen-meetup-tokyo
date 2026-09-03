@@ -1,0 +1,12 @@
+{
+  "name": "qwen-meetup-tokyo-presentation",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write \"presentation/**/*.{html,md}\"",
+    "lint:format": "prettier --check \"presentation/**/*.{html,md}\""
+  },
+  "devDependencies": {
+    "prettier": "3.9.6",
+    "prettier-plugin-markdown-html": "1.6.0"
+  }
+}

@@ -12,6 +12,10 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 
 # Experiment artifacts that are typically large or reproducible
 experiments/**/results/raw/
@@ -21,3 +25,6 @@ experiments/**/results/cache/
 # Local model/runtime caches
 .cache/
 models/
+
+# Node tooling
+node_modules/

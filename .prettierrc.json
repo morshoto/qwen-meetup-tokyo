@@ -1,0 +1,9 @@
+{
+  "bracketSameLine": true,
+  "htmlWhitespaceSensitivity": "ignore",
+  "htmlFragmentWhitespaceSensitivity": "ignore",
+  "htmlFragmentEmbeddedLanguageFormatting": "auto",
+  "printWidth": 100,
+  "proseWrap": "preserve",
+  "plugins": ["prettier-plugin-markdown-html"]
+}
