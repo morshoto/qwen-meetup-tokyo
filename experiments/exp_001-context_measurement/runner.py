@@ -637,6 +637,14 @@ def _run_feasibility_experiment(
     if not isinstance(sampling_config, Mapping):
         raise ValueError("sampling config must be an object")
     sampling, generation_seed_policy = _sampling_from_config(sampling_config)
+    context_provenance = _context_provenance(
+        config_path=config_file,
+        catalog_path=catalog_path,
+        catalog=probe_catalog,
+        conditions=condition_list,
+        repeats=1,
+        fixture_seed=fixture_seed,
+    )
     writer = JsonlResultWriter(output_path)
     configured_n_ctx = int(
         config.get("runtime", {})
@@ -680,18 +688,11 @@ def _run_feasibility_experiment(
                     sampling=sampling,
                     timeout_seconds=timeout_seconds,
                     fixture_seed=fixture_seed,
+                    context_provenance=context_provenance,
                 )
             )
 
     persisted_results = load_trial_results(output_path)
-    context_provenance = _context_provenance(
-        config_path=config_file,
-        catalog_path=catalog_path,
-        catalog=probe_catalog,
-        conditions=condition_list,
-        repeats=1,
-        fixture_seed=fixture_seed,
-    )
     runtime_record = {
         "name": "llama.cpp",
         "version": runtime_version,
@@ -755,6 +756,7 @@ def _trial_from_probe(
     sampling: SamplingConfig,
     timeout_seconds: float,
     fixture_seed: int,
+    context_provenance: Mapping[str, Any] | None = None,
 ) -> TrialResult:
     """Normalize child output and parent timeout into one stable trial record."""
 
@@ -817,6 +819,18 @@ def _trial_from_probe(
         "timed_out": outcome.timed_out,
         "termination_reason": outcome.termination_reason,
     }
+    provenance = dict(input_metadata.get("provenance") or {})
+    if context_provenance is not None:
+        for key in (
+            "source_revision",
+            "config_path",
+            "config_sha256",
+            "task_catalog",
+            "task_catalog_sha256",
+        ):
+            if key in context_provenance:
+                provenance[key] = context_provenance[key]
+    input_metadata["provenance"] = provenance
     input_metadata.setdefault("sampling", sampling.to_record())
     record["input"] = input_metadata
     memory = dict(record.get("memory") or {})

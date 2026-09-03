@@ -282,7 +282,12 @@ class Exp001RunnerTests(unittest.TestCase):
                 ["accepted_and_useful"] * 3,
                 [row["classification"] for row in manifest["feasibility"]["classifications"]],
             )
-            self.assertEqual(9, len(load_trial_results(root / "raw" / "feasibility.jsonl")))
+            persisted = load_trial_results(root / "raw" / "feasibility.jsonl")
+            self.assertEqual(9, len(persisted))
+            self.assertEqual(
+                manifest["context_provenance"]["config_sha256"],
+                persisted[0].input["provenance"]["config_sha256"],
+            )
             self.assertTrue(manifest["raw_results_sha256"])
 
     def test_build_tasks_records_context_provenance_and_evidence_offsets(self) -> None:
