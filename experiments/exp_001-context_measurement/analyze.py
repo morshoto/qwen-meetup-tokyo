@@ -421,8 +421,15 @@ def _output_paths(
     feasibility_summary_path: str | Path | None,
 ) -> dict[str, Path]:
     results_root = manifest_file.parent.parent
+    # Keep a feasibility probe's aggregate table separate from the main
+    # baseline output.  A probe is intentionally bounded and must not
+    # overwrite the established baseline summary when it is regenerated.
+    phase = _load_manifest(manifest_file).get("phase")
+    default_summary = (
+        "feasibility-aggregate.csv" if phase == "feasibility" else "summary.csv"
+    )
     values = {
-        "summary": summary_path or results_root / "processed/summary.csv",
+        "summary": summary_path or results_root / f"processed/{default_summary}",
         "position_gap": position_gap_path or results_root / "processed/position-gap.csv",
         "effective_context": effective_context_path
         or results_root / "processed/effective-context.json",

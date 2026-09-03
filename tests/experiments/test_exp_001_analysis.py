@@ -304,6 +304,8 @@ class Exp001AnalysisTests(unittest.TestCase):
             output = root / "processed" / "feasibility-summary.csv"
             self.assertTrue(output.is_file())
             self.assertIn("classification", output.read_text(encoding="utf-8"))
+            self.assertTrue((root / "processed" / "feasibility-aggregate.csv").is_file())
+            self.assertFalse((root / "processed" / "summary.csv").exists())
 
 
 if __name__ == "__main__":
