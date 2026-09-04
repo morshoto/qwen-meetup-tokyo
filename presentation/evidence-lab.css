@@ -87,6 +87,27 @@ ul { margin-top: 10px; }
 .metric-card__value { display: block; font-size: 28px; font-weight: 800; }
 .metric-card__label { display: block; color: var(--color-muted); font-size: 15px; margin-top: 5px; }
 
+.quantization-explainer { margin-top: 24px; }
+.quantization-main { display: grid; grid-template-columns: 1fr 52px .82fr 52px 1fr; gap: 12px; align-items: center; }
+.quantization-step { min-height: 196px; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 16px; padding: 22px 18px 18px; display: flex; flex-direction: column; justify-content: center; }
+.quantization-step--accent { background: #eaf3fb; border-color: #a6cce9; }
+.quantization-label { font-size: 25px; font-weight: 800; text-align: center; }
+.quantization-step p { color: var(--color-muted); font-size: 18px; font-weight: 700; margin: 0; text-align: center; }
+.value-rack { display: grid; gap: 8px; margin: 22px 0 12px; }
+.value-rack--fine { grid-template-columns: repeat(3, 1fr); }
+.value-rack--coarse { grid-template-columns: repeat(5, 1fr); }
+.value-rack span { background: #f7f9fc; border: 1px solid #cbd8e6; border-radius: 8px; color: var(--color-navy); font-size: 17px; font-weight: 800; padding: 9px 4px; text-align: center; }
+.value-rack--coarse span { background: #fff; }
+.quantization-round { align-items: center; background: var(--color-primary); border-radius: 999px; color: #fff; display: flex; font-size: 28px; font-weight: 800; justify-content: center; margin: 24px auto 20px; padding: 19px 22px; }
+.quantization-arrow { color: #8da1b8; font-size: 42px; font-weight: 700; text-align: center; }
+.quantization-meaning { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; margin-top: 24px; }
+.quantization-conclusion { align-items: baseline; background: #eaf3fb; border-left: 6px solid var(--color-primary); border-radius: 10px; display: flex; gap: 18px; padding: 16px 20px; }
+.quantization-conclusion__lead { font-size: 28px; font-weight: 800; }
+.quantization-conclusion__sub { color: var(--color-muted); font-size: 19px; font-weight: 700; }
+.quantization-cost { align-items: baseline; background: #fff5df; border-left: 6px solid var(--color-caution); border-radius: 10px; display: flex; gap: 18px; padding: 16px 20px; }
+.quantization-cost span { color: #8d5b0a; font-size: 17px; font-weight: 800; }
+.quantization-cost strong { font-size: 22px; }
+
 .experiment-flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 13px; align-items: center; margin-top: 28px; }
 .experiment-card { position: relative; min-height: 192px; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 14px; padding: 17px 15px 14px; box-shadow: 0 5px 15px rgba(16,35,63,.05); }
 .experiment-card::after { content: "→"; position: absolute; right: -22px; top: 78px; color: #91a3b9; font-size: 28px; font-weight: 700; }
